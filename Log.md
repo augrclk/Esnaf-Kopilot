@@ -62,7 +62,33 @@ Format: Tarih Saat:Dakika → Ne yapıldı → Neden → Bir sonraki adım
 **Faz 2 — Scraper:** http_client.py, html_parsing.py, trendyol.py yazıldı ve test edildi.
 
 ### Test Sonucu (gerçek URL)
-Ürün ID ✅ | Başlık ✅ | 26 Yorum ✅ | 7 Görsel ✅ | Açıklama ❌ (JS render gerekiyor)
+Ürün ID ✅ | Başlık ✅ | 26 Yorum ✅ | 7 Görsel ✅ | Açıklama ❌ (JS render gerekiyor, Playwright ile çözüldü)
+
+---
+
+## 2026-05-14 16:55 — Faz 3, Faz 4 ve Faz 5 Tamamlandı (AI ve Görsel Entegrasyonu)
+
+### Yapılan İş
+- **Gemini Client:** Text ve Image API işlemleri için `gemini_client.py` yazıldı. 503 ve 429 API Rate Limit hatalarına karşı **Exponential Backoff (Bekle-Tekrar Dene)** ve **Fallback Model** mantığı kuruldu.
+- **Metin Analizi:** `content.py` yazıldı. SEO ve AEO kriterlerine göre ürün açıklaması, başlığı ve yorumlar analiz edilip 100 üzerinden puanlama yapıldı ve yepyeni optimize edilmiş içerik/başlık oluşturuldu.
+- **Görsel Analizi & Üretimi:** `image.py` yazıldı.
+  - Statik 7 konsept yerine, ürün bilgisinden yola çıkarak **ürüne tamamen özel 8 konsept** ("WOW" faktörlü) icat eden dinamik bir yapı kuruldu.
+  - 8. konsept olarak **"Feature Infographic"** (Özellikleri resmin üstüne yazma) kuralı eklendi.
+- **Orkestratör (Pipeline):** `pipeline.py` yazıldı. URL'yi alıp tüm bu aşamaları uçtan uca (Scrape -> Text -> Image -> 8 Concept Edit) otonom şekilde yürüten beyin tamamlandı.
 
 ### Bir Sonraki Adım
-Faz 3: app/analyzer/gemini_client.py — Gemini API wrapper
+Faz 6: FastAPI Endpoint'lerinin yazılması (`app/api.py` ve `main.py`). Pipeline'ın HTTP istekleriyle tetiklenebilir hale getirilmesi.
+
+---
+
+## 2026-05-14 17:04 — Faz 6 Tamamlandı (API ve FastAPI)
+
+### Yapılan İş
+- **FastAPI Altyapısı:** `main.py` dosyası uvicorn ile çalışacak bir FastAPI uygulamasına dönüştürüldü. CORS ayarları ve statik dosya sunumu (`/outputs` dizini) yapılandırıldı.
+- **Rotalar (Endpoints):** `app/api.py` dosyası oluşturuldu. 
+  - `GET /api/health`
+  - `POST /api/scrape`
+  - `POST /api/analyze` uç noktaları eklendi. Sistem tamamen RESTful API mantığına oturtuldu.
+
+### Bir Sonraki Adım
+Faz 7: Test Frontend. Geliştirilen bu API'yi görselleştirecek ve test edilmesini sağlayacak basit bir web arayüzü hazırlanacak.

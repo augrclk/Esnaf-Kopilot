@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esnaf Kopilot - AI Ürün Geliştirici</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="glow-sphere sphere-1"></div>
+    <div class="glow-sphere sphere-2"></div>
+
+    <main class="container">
+        <header class="app-header">
+            <div class="logo">
+                <i class="fa-solid fa-rocket"></i>
+                <h1>Esnaf <span>Kopilot</span></h1>
+            </div>
+            <p>Trendyol Ürünlerinizi Yapay Zeka ile Yeniden Tasarlayın</p>
+        </header>
+
+        <section class="input-section glass-panel">
+            <div class="input-group">
+                <i class="fa-solid fa-link input-icon"></i>
+                <input type="text" id="urlInput" placeholder="Trendyol ürün linkini buraya yapıştırın..." value="https://www.trendyol.com/tala/hindistan-cevizi-yagi-100-saf-ve-dogal-soguk-sikim-150-ml-p-322236564?boutiqueId=61&merchantId=113082">
+                <button id="analyzeBtn" class="btn-primary">
+                    <span>Analizi Başlat</span>
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </button>
+            </div>
+            <div class="status-bar" id="statusBar" style="display: none;">
+                <div class="loader-pulse"></div>
+                <span id="statusText">Yapay zeka ürünü inceliyor... Lütfen bekleyin (Bu işlem birkaç dakika sürebilir)</span>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="results-section" style="display: none;">
+            
+            <!-- Ürün Özeti Kartı -->
+            <div class="dashboard-grid">
+                <div class="glass-panel info-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-box-open"></i>
+                        <h2>Orijinal Ürün</h2>
+                    </div>
+                    <h3 id="origTitle" class="orig-title">Yükleniyor...</h3>
+                    <div class="score-badge">
+                        <span id="seoScore">0</span>/100 SEO Skoru
+                    </div>
+                </div>
+
+                <div class="glass-panel ai-card">
+                    <div class="card-header highlight">
+                        <i class="fa-solid fa-bolt"></i>
+                        <h2>Yapay Zeka Önerisi</h2>
+                    </div>
+                    <h3 id="newTitle" class="new-title">Yükleniyor...</h3>
+                    <div class="keywords" id="keywordList"></div>
+                </div>
+            </div>
+
+            <!-- Strateji Notu -->
+            <div class="glass-panel strategy-card mt-2">
+                <div class="card-header">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <h2>Görsel Sanat Yönetimi Stratejisi</h2>
+                </div>
+                <p id="strategyNote" class="strategy-text">Strateji bekleniyor...</p>
+            </div>
+
+            <!-- Konsept Görseller -->
+            <div class="gallery-section mt-3">
+                <div class="section-title">
+                    <h2>✨ Üretilen WOW Konseptleri (8 Adet)</h2>
+                    <p>Müşteriyi büyülemek için özel olarak tasarlandı.</p>
+                </div>
+                <div class="gallery-grid" id="imageGallery">
+                    <!-- Görseller JS ile buraya eklenecek -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
