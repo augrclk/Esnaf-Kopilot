@@ -40,7 +40,11 @@ def analyze_full_pipeline(req: AnalyzeRequest):
     Uçtan uca tüm süreci (Scrape -> Text -> Image) çalıştırır.
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = f"outputs_api_{timestamp}"
+    out_dir = f"outputs/api_{timestamp}"
+    
+    # outputs klasoru yoksa olustur (main.py de yapiyor ama garanti olsun)
+    if not os.path.exists("outputs"):
+        os.makedirs("outputs")
     
     try:
         results = pipeline.run(req.url, req.max_review_pages, output_dir=out_dir)
