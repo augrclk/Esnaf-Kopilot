@@ -1,0 +1,1 @@
+"""Esnaf Kopilot backend uygulaması."""
