@@ -1,0 +1,26 @@
+[project]
+name = "ecommerce-review-scraper"
+version = "0.1.0"
+description = "Trendyol product and review scraping module"
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+rendered = ["playwright>=1.40"]
+
+[tool.setuptools.packages.find]
+include = ["ecommerce_scraper*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

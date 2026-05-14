@@ -1,0 +1,81 @@
+SKORLAMA KRİTERLERİ
+
+İçerik SEO / Pazaryeri Arama Uyumu — 50 puan
+
+1. Başlık Kalitesi — 12 puan
+- Ana ürün terimi başlıkta açık mı?
+- Ana ürün terimi başa yakın mı?
+- Marka, model, seri veya ürün tipi doğru kullanılmış mı?
+- Renk, beden, materyal, adet, ölçü gibi ayırt edici bilgi var mı?
+- Başlık okunabilir mi?
+- Gereksiz tekrar veya keyword stuffing var mı?
+- Abartılı, yanıltıcı veya promosyon ifadeleri var mı?
+- Başlık çok kısa, çok genel veya anlamsız uzun mu?
+
+2. Açıklama Kalitesi — 12 puan
+- Açıklama ürünü net anlatıyor mu?
+- İlk cümlelerde ürünün ne olduğu açık mı?
+- 150-200 kelime düzeyinde yeterli detay var mı?
+- Özellikler düzenli ve okunabilir mi?
+- Fayda odaklı anlatım var mı?
+- Materyal, kullanım amacı, ölçü, içerik, uyumluluk gibi bilgiler verilmiş mi?
+- Metin doğal mı?
+- Gereksiz tekrar veya anahtar kelime yığılması var mı?
+
+3. Anahtar Kelime ve Arama Niyeti Uyumu — 10 puan
+- Ana anahtar kelime doğal şekilde kullanılmış mı?
+- Long-tail arama ifadeleri var mı?
+- Kategoriyle uyumlu kelimeler kullanılmış mı?
+- Kullanıcının arama niyetine cevap veriyor mu?
+- Başlık, açıklama ve özelliklerde terimler tutarlı mı?
+
+4. Ürün Özellikleri / Attribute Tamlığı — 10 puan
+- Materyal, renk, beden, ölçü, kapasite, hacim, ağırlık veya boyut bilgisi var mı?
+- Kullanım alanı belirtilmiş mi?
+- Teknik özellikler varsa net yazılmış mı?
+- Garanti, iade, kargo veya bakım bilgisi varsa belirtilmiş mi?
+- Pazaryeri filtreleri için önemli attribute alanları yeterli mi?
+
+5. Kategori, Marka ve Varyant Tutarlılığı — 6 puan
+- Ürün adı, marka ve kategori tutarlı mı?
+- Varyantlar doğru ifade edilmiş mi?
+- Renk, beden, adet, model gibi bilgiler çelişiyor mu?
+- Başlık ve açıklama aynı ürünü mü anlatıyor?
+- Yorumlarda geçen ürün algısı ile ürün bilgileri tutarlı mı?
+
+AEO / AI Okunabilirlik — 50 puan
+
+6. Cevap-Öncelikli Ürün Tanımı — 10 puan
+- İlk 1-2 cümle ürünün ne olduğunu net tanımlıyor mu?
+- Ürün kim için ve hangi amaçla kullanılır açık mı?
+- AI sistemlerinin doğrudan cevap olarak çekebileceği net cümleler var mı?
+- Ürün türü, marka, kategori ve temel fayda açık mı?
+
+7. Yapılandırılmış Bilgi Düzeni — 10 puan
+- Bilgiler düzenli ve taranabilir mi?
+- Özellikler madde madde veya kısa bloklarla sunulmuş mu?
+- Teknik bilgiler, faydalar ve kullanım senaryosu ayrılmış mı?
+- Ürün bilgileri kolay çıkarılabilir mi?
+
+8. SSS / Soru-Cevap Uygunluğu — 8 puan
+- Gerçek kullanıcı sorularına cevap var mı?
+- Beden, renk, kullanım, bakım, uyumluluk, iade, garanti gibi karar verdiren sorular cevaplanmış mı?
+- Yorumlarda tekrar eden sorunlar SSS mantığında karşılanmış mı?
+
+9. Yorumlardan Gelen İçgörülerin Kullanımı — 10 puan
+- Yorumlarda tekrar eden olumlu noktalar tespit edilmiş mi?
+- Yorumlarda tekrar eden olumsuz noktalar tespit edilmiş mi?
+- Beden dar, renk farklı, kalite iyi, kargo hızlı, beklenenden küçük gibi bulgular ayrıştırılmış mı?
+- Tekil yorumlardan kesin genelleme yapılmış mı?
+
+10. Varlık Tutarlılığı — 7 puan
+- Ürün adı tutarlı mı?
+- Marka adı tutarlı mı?
+- Kategori terimleri tutarlı mı?
+- Aynı ürün için farklı isimler kullanılmış mı?
+- Ürün tipi net mi?
+
+11. Doğrulanabilirlik ve Uydurma Riskinin Düşüklüğü — 5 puan
+- Metindeki iddialar verilen bilgilerle destekleniyor mu?
+- Abartılı veya doğrulanması zor ifadeler var mı?
+- Verilmeyen fiyat, stok, rating, garanti, sertifika, menşei veya teknik özellikler iddia edilmiş mi?

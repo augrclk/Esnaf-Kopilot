@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: esnaf-kopilot
+Version: 0.1.0
+Summary: Trendyol ürün SEO/AEO analiz ve görsel iyileştirme aracı
+Requires-Python: >=3.12
+Requires-Dist: fastapi>=0.115
+Requires-Dist: uvicorn[standard]>=0.34
+Requires-Dist: google-genai>=1.0
+Requires-Dist: pydantic>=2.0
+Requires-Dist: pydantic-settings>=2.0
+Requires-Dist: python-multipart>=0.0.9
+Provides-Extra: rendered
+Requires-Dist: playwright>=1.40; extra == "rendered"
