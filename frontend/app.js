@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const origTitle = document.getElementById('origTitle');
     const seoScore = document.getElementById('seoScore');
     const newTitle = document.getElementById('newTitle');
+    const newDescription = document.getElementById('newDescription');
     const keywordList = document.getElementById('keywordList');
     const strategyNote = document.getElementById('strategyNote');
     const imageGallery = document.getElementById('imageGallery');
@@ -40,13 +41,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = resData.data;
 
             // Fill UI with Data
-            origTitle.textContent = data.scraped.product.title;
-            seoScore.textContent = data.score.total_score;
-            newTitle.textContent = data.content.new_title;
+            origTitle.textContent = data.product.original_title;
+            seoScore.textContent = data.content_analysis.score;
+            newTitle.textContent = data.content_analysis.new_title;
+            if (newDescription) {
+                newDescription.textContent = data.content_analysis.new_description;
+            }
 
             // Keywords
             keywordList.innerHTML = '';
-            data.content.suggested_keywords.forEach(kw => {
+            data.content_analysis.keywords.forEach(kw => {
                 const span = document.createElement('span');
                 span.className = 'keyword-tag';
                 span.textContent = kw;
@@ -54,21 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Strategy
-            strategyNote.textContent = data.image_analyses[0].issues.analysis_note || "Strateji notu bulunamadı.";
+            strategyNote.textContent = data.images[0].strategy_note || "Strateji notu bulunamadı.";
 
             // Images
             imageGallery.innerHTML = '';
-            data.generated_images.forEach((img, index) => {
-                // img.local_path = "outputs_api_XXX/image_name.jpg"
-                // Sunucudan (localhost:8000/outputs/...) çekeceğiz.
-                // Klasör adını api.py "outputs_api_..." yapıyor. Fakat main.py sadece "outputs" u mount ediyor.
-                // Buna dikkat! Eğer path "outputs_api..." ise bunu düzeltmemiz lazım veya backend'de mount yolunu düzeltmemiz lazım.
-                // Şu an path'i backend'den gelen haliyle sunucu url'sine ekleyeceğiz.
-                
-                // NOT: Backend'de klasörü "/outputs" a mount ettik ama klasör adı dinamik ("outputs_test_...").
-                // Bu yüzden basitçe resmi çekerken lokal yolunu frontendde dinamik ayarlayacağız.
-                // Şimdilik demo olduğu için /outputs_api_XXX altındaki dosyayı okuyacak şekilde yapılandırdık.
-                const imgUrl = 'http://localhost:8000/' + img.local_path; 
+            data.images[0].enhanced.forEach((img, index) => {
+                const imgUrl = 'http://localhost:8000/' + img.path; 
 
                 const card = document.createElement('div');
                 card.className = 'concept-card';
@@ -78,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="concept-info">
                         <span class="concept-tag">Konsept ${index + 1}</span>
-                        <h4 class="concept-name">${img.concept_name}</h4>
+                        <h4 class="concept-name">${img.concept}</h4>
                     </div>
                 `;
                 imageGallery.appendChild(card);
