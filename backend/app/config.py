@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     gemini_api_key: str
 
     # Gemini model isimleri
-    gemini_text_model: str = "gemini-3.1-pro-preview"
-    gemini_image_model: str = "gemini-3-pro-image-preview"
+    gemini_text_model: str = "gemini-3-flash-preview"
+    gemini_image_model: str = "gemini-3.1-flash-image-preview"
 
     # Scraper ayarları
     scraper_timeout: float = 20.0
