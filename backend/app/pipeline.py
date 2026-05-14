@@ -70,9 +70,11 @@ class EsnafKopilotPipeline:
                 if "analysis_note" in analysis.issues:
                     print(f"  -> Strateji Notu: {analysis.issues['analysis_note']}")
                 
-                # 4.2. Düzenleme (Gemini Image API ile tek tek üretim)
+                # 4.2. Düzenleme (Gemini Image API ile PARALEL üretim)
                 enhanced_images = []
-                for p_idx, prompt in enumerate(analysis.edit_prompts, 1):
+                
+                def _process_image_concept(args):
+                    p_idx, prompt = args
                     print(f"    [{p_idx}/{len(analysis.edit_prompts)}] Duzenleniyor ({prompt.concept_name})...")
                     
                     base_name = os.path.basename(main_image.local_path).split('.')[0]
@@ -82,18 +84,32 @@ class EsnafKopilotPipeline:
                     
                     try:
                         enhanced = self.image_analyzer.enhance(main_image, prompt, out_path)
-                        enhanced_images.append({
+                        print(f"      -> Basarili: {enhanced.local_path}")
+                        return {
                             "concept": prompt.concept_name,
                             "path": enhanced.local_path
-                        })
-                        print(f"      -> Basarili: {enhanced.local_path}")
+                        }
                     except Exception as e:
-                        print(f"      -> [HATA] Duzenleme basarisiz: {e}")
+                        print(f"      -> [HATA] Duzenleme basarisiz ({prompt.concept_name}): {e}")
+                        return None
+                        
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                    # Görevleri hazırla
+                    args_list = [(p_idx, prompt) for p_idx, prompt in enumerate(analysis.edit_prompts, 1)]
+                    # Eşzamanlı çalıştır ve sıralamayı (1'den 8'e) koruyarak sonuçları al
+                    results = list(executor.map(_process_image_concept, args_list))
+                    
+                # Başarılı olanları listeye ekle
+                for res in results:
+                    if res:
+                        enhanced_images.append(res)
                 
                 image_results.append({
                     "original_url": main_image.url,
                     "original_local": main_image.local_path,
                     "type": "ANA_GORSEL",
+                    "strategy_note": analysis.issues.get("analysis_note", ""),
                     "enhanced": enhanced_images
                 })
                 

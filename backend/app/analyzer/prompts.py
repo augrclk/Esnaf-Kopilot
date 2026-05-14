@@ -131,10 +131,12 @@ KURALI ASLA ÇIĞNEME:
 - Açıklama Türkçe olmalı, doğal ve okunabilir olmalı.
 
 YENİ BAŞLIK KURALLARI:
-- Ana ürün terimi en başta
-- Marka + ürün tipi + ayırt edici özellik + ölçü/miktar (varsa)
-- 70-100 karakter arası
-- Keyword stuffing yok
+- Orijinal başlıktaki marka etiketini (örn. Trendyol'un otomatik eklediği en baştaki marka adı) TAMAMEN YOK SAY.
+- Yeni başlık doğrudan Ana Ürün Terimi (Örn: "Hindistan Cevizi Yağı") ile başlamalı.
+- Marka adını başlığın en başına değil, başlığın içine doğal bir şekilde veya en sona ekle.
+- Ürün tipi + ayırt edici özellik + ölçü/miktar (varsa) içermeli.
+- 70-100 karakter arası olmalı.
+- Keyword stuffing yok.
 
 YENİ AÇIKLAMA KURALLARI:
 - İlk 2 cümle: Ürünü net tanımla (AI'ın doğrudan çekebileceği format)
