@@ -96,10 +96,8 @@ class GeminiClient:
         mime = _mime_type(image_path)
 
         # Kullanıcının belirttiği alternatif modeller
+        # (Şu an 3.1 serisi çok yoğun olduğu için doğrudan 2.5-flash-image e gidiyoruz)
         models_to_try = [
-            self._image_model,
-            "gemini-3.1-flash-image-preview",
-            "gemini-3-pro-image-preview",
             "gemini-2.5-flash-image"
         ]
         
