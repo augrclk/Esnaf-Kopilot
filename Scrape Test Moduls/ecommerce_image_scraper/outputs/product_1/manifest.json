@@ -1,0 +1,235 @@
+{
+  "image_count": 23,
+  "images": [
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1717/prod/QC_ENRICHMENT/20250801/12/e67b45ef-b951-3e09-add2-09b28aa33823/1_org_zoom.jpg",
+      "image_id": "e906df861eab375c",
+      "position": 1,
+      "source": "json_ld",
+      "file_path": "outputs/product_1/images/image_01.jpg"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1721/prod/QC_ENRICHMENT/20250801/12/79aff5e1-1fda-3d53-b2a9-d3b63a9bd191/1_org_zoom.jpg",
+      "image_id": "7f141c79f794eff4",
+      "position": 2,
+      "source": "json_ld",
+      "file_path": "outputs/product_1/images/image_02.jpg"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1716/prod/QC_ENRICHMENT/20250801/12/3c9f886b-5ef5-35d2-91a8-6cbea9341141/1_org_zoom.jpg",
+      "image_id": "2274ae47ad52b8a7",
+      "position": 3,
+      "source": "json_ld",
+      "file_path": "outputs/product_1/images/image_03.jpg"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1716/prod/QC_ENRICHMENT/20250801/12/49e0d8af-9397-35db-8a7d-3cc1959b8f3e/1_org_zoom.jpg",
+      "image_id": "5a371d33ef431732",
+      "position": 4,
+      "source": "json_ld",
+      "file_path": "outputs/product_1/images/image_04.jpg"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1716/prod/QC_ENRICHMENT/20250801/12/cc0471bd-e94c-35b7-8694-f792d3f407b5/1_org_zoom.jpg",
+      "image_id": "76ee16ce4eaa7b0b",
+      "position": 5,
+      "source": "json_ld",
+      "file_path": "outputs/product_1/images/image_05.jpg"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1716/prod/QC_ENRICHMENT/20250801/12/9f3ffbbd-ce1d-3980-94bf-f51af695794d/1_org_zoom.jpg",
+      "image_id": "8b4c1e0b111b491b",
+      "position": 6,
+      "source": "json_ld",
+      "file_path": "outputs/product_1/images/image_06.jpg"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1716/prod/QC_ENRICHMENT/20250801/12/9b98f70d-5bde-3296-803d-f493c1b3a472/1_org_zoom.jpg",
+      "image_id": "b321a27b2c0e0dbb",
+      "position": 7,
+      "source": "json_ld",
+      "file_path": "outputs/product_1/images/image_07.jpg"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/ty1000395/1778504824713-86c9hg4xk_tr_we_tepe_banner.png",
+      "image_id": "d8f050e530c80bdd",
+      "position": 8,
+      "source": "script_json",
+      "file_path": "outputs/product_1/images/image_08.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/iphone5_splash.png",
+      "image_id": "6a90408e471f17bb",
+      "position": 9,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_09.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/iphone6_splash.png",
+      "image_id": "2df9197b11ce8727",
+      "position": 10,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_10.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/iphoneplus_splash.png",
+      "image_id": "6a17815a750a3dc4",
+      "position": 11,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_11.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/iphonex_splash.png",
+      "image_id": "d09d1bde54cd7085",
+      "position": 12,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_12.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/iphonexr_splash.png",
+      "image_id": "7fdc22286b88cff0",
+      "position": 13,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_13.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/iphonexsmax_splash.png",
+      "image_id": "bc20fc1f813c258c",
+      "position": 14,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_14.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/ipad_splash.png",
+      "image_id": "31f61fb7fdbddfce",
+      "position": 15,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_15.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/ipadpro1_splash.png",
+      "image_id": "0d34d95224e94e21",
+      "position": 16,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_16.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/ipadpro3_splash.png",
+      "image_id": "f9687cbe15c7c0fc",
+      "position": 17,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_17.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/mweb/production/ipadpro2_splash.png",
+      "image_id": "5230dbd71889a692",
+      "position": 18,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_18.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/web/production/ty-plus-banner.png",
+      "image_id": "976da65b52efab09",
+      "position": 19,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_19.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/web/production/footer-etbis.png",
+      "image_id": "77bcd341b9460070",
+      "position": 20,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_20.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/web/production/footer-trust-stamp.png",
+      "image_id": "bd088a0f36ad99e0",
+      "position": 21,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_21.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/web/production/footer-pci-dss.png",
+      "image_id": "e8802317d9c2e3c9",
+      "position": 22,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_22.png"
+    },
+    {
+      "platform": "trendyol",
+      "product_url": "https://www.trendyol.com/imprime/pluie-edp-unisex-parfum-50ml-ferah-ciceksi-bergamot-pembe-biber-yagmur-gul-yasemin-cam-misk-p-962087817",
+      "product_id": "962087817",
+      "image_url": "https://cdn.dsmcdn.com/web/production/footer-iso.png",
+      "image_id": "f9c229bd07d9c69f",
+      "position": 23,
+      "source": "script_text",
+      "file_path": "outputs/product_1/images/image_23.png"
+    }
+  ]
+}

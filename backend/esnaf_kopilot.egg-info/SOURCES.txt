@@ -1,0 +1,14 @@
+pyproject.toml
+app/__init__.py
+app/config.py
+app/models.py
+app/analyzer/__init__.py
+app/scraper/__init__.py
+app/scraper/html_parsing.py
+app/scraper/http_client.py
+app/scraper/trendyol.py
+esnaf_kopilot.egg-info/PKG-INFO
+esnaf_kopilot.egg-info/SOURCES.txt
+esnaf_kopilot.egg-info/dependency_links.txt
+esnaf_kopilot.egg-info/requires.txt
+esnaf_kopilot.egg-info/top_level.txt
