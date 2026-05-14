@@ -1,0 +1,70 @@
+─────────────────────────────────────────────────────────────
+📝 BAŞLIK
+─────────────────────────────────────────────────────────────
+
+ESKİ BAŞLIK:
+"[mevcut başlık]"
+→ Karakter: [X] | Sorun: [kısa sorun açıklaması]
+
+YENİ BAŞLIK:
+"[yeni başlık]"
+→ Karakter: [X] ✅ | Anahtar kelime: ✅ | AEO uyumlu: ✅
+                                                    [Kopyala]
+
+─────────────────────────────────────────────────────────────
+📄 AÇIKLAMA
+─────────────────────────────────────────────────────────────
+
+ESKİ AÇIKLAMA:
+"[mevcut açıklama — ilk 100 karakter...]"
+→ Sorun: [kısa sorun açıklaması]
+
+YENİ AÇIKLAMA:
+[İlk 2 cümle: Ürünü somut ve net tanımlayan, AI'ın
+doğrudan çıkarabileceği formatta yazılmış giriş]
+
+• [Özellik 1 — somut, ölçülebilir]
+• [Özellik 2 — materyal/bileşen bilgisi]
+• [Özellik 3 — kullanım senaryosu]
+• [Özellik 4 — garanti/iade/kargo]
+• [Özellik 5 — fark yaratan özellik]
+
+[Kapanış: Hedef kitleye yönelik, harekete geçirici]
+                                                    [Kopyala]
+Kelime sayısı: [X] ✅
+
+─────────────────────────────────────────────────────────────
+❓ SIKÇA SORULAN SORULAR (SSS)
+─────────────────────────────────────────────────────────────
+
+Not: SSS bölümü hem müşteri güvenini artırır hem de
+AI aramalarında doğrudan önerilme olasılığını yükseltir.
+
+S1: [Gerçek kullanıcı sorusu — ürüne özel]
+C1: [Direkt cevap ilk cümlede. Sonra gerekirse detay.]
+
+S2: [Ürün özelliğiyle ilgili sık sorulan soru]
+C2: [Direkt cevap.]
+
+S3: [Beden/ölçü/uyum sorusu — varsa]
+C3: [Direkt cevap.]
+
+S4: [Kargo/teslimat sorusu]
+C4: [Direkt cevap.]
+
+S5: [İade/garanti sorusu]
+C5: [Direkt cevap.]
+                                                    [Kopyala]
+
+─────────────────────────────────────────────────────────────
+🔑 ÖNERİLEN ANAHTAR KELİMELER
+─────────────────────────────────────────────────────────────
+
+Ana keyword:    [ürünün en güçlü long-tail anahtar kelimesi]
+Destekleyici:   [keyword 2]
+Destekleyici:   [keyword 3]
+Fırsat:         [rakiplerin az kullandığı, fırsat keyword]
+Fırsat:         [keyword 5]
+                                                    [Kopyala]
+
+─────────────────────────────────────────────────────────────
