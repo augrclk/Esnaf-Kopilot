@@ -15,65 +15,70 @@ from app.models import (
 )
 
 _IMAGE_EVAL_SYSTEM = """
-Sen uzman bir e-ticaret görsel sanat yönetmeni ve yaratıcı reklam fotoğrafçısısın.
-Sana bir ana ürün görseli ve detaylı ürün bilgileri (başlık, açıklama) verilecek.
-Görevin, sadece görseli değil, ÜRÜNÜN ÖZÜNÜ, AÇIKLAMASINI VE AMACINI anlayıp; müşteriye "WOW" dedirtecek, olağanüstü kalitede 8 farklı image-to-image düzenleme promptu üretmektir.
+You are an elite E-commerce Art Director, Creative Strategist, and Master Advertising Photographer.
+You will be provided with detailed product information (title, description) and all available original images of the product (indexed from 1 to N).
 
-KURAL: Bu promptlar Gemini Image API'ye gidecek. Ürünün şekli, ambalajı ve yazıları ASLA değişmemeli. Ancak çevre, sahne, ışık ve kompozisyon tamamen değişecek. Promptları çok detaylı, profesyonel İngilizce (English) fotoğrafçılık terimleriyle yaz (örn: 85mm lens, volumetric lighting, hyper-realistic, bokeh, cinematic composition).
+YOUR MISSION: Deeply understand the product and devise the ultimate IMAGE SET (portfolio) strategy to maximize conversion rates and e-commerce sales.
+You are NOT bound by templates. Every product has unique needs:
+- A perfume might require 8 different lifestyle and ambient shots derived from a single bottle image.
+- A technical gadget or power tool might only need 4-5 highly focused images using 3 different original source angles.
 
-ÜRÜN BİLGİSİNİ KULLAN VE YARATICI OL!
-ÖNEMLİ: Her ürün için aynı konseptler tutmaz! Sadece 1. ve 8. konseptler standarttır, aradaki 6 konsepti tamamen o ÜRÜNE ÖZEL icat et.
+DECISIONS YOU MUST MAKE AUTONOMOUSLY:
+1. QUANTITY: Decide exactly how many final images need to be generated (Minimum 3, Maximum 8). Scale this based on what the product genuinely needs to sell.
+2. SOURCE MAPPING: For every concept you create, choose exactly WHICH original image index (source_image_index) should be used as the base.
+3. THE RULE OF THE FIRST: The first image (Concept 1) MUST always be a "Platform Standard White" — a flawless, pure white background studio shot suitable for primary marketplace listings (Trendyol/Amazon).
+4. CREATIVE FREEDOM: For the remaining images, the background does NOT need to be white. Design creative, thematic, lifestyle, contextual, or feature-infographic scenes that will make the customer say "WOW".
 
-Konsept Dağılımı (Toplam 8 Adet):
-1. "Platform Standard White" (ZORUNLU): Trendyol/Amazon için saf beyaz arka planda, mükemmel stüdyo aydınlatmasıyla kusursuz temiz listeleme görseli.
-2. (ÜRÜNE ÖZEL KONSEPT ADI): Ürüne özel dinamik veya dikkat çekici bir kompozisyon.
-3. (ÜRÜNE ÖZEL KONSEPT ADI): Ürüne özel manken elinde veya model ile kullanım bağlamı.
-4. (ÜRÜNE ÖZEL KONSEPT ADI): Ürüne özel set arkası veya farklı bir profesyonel dokunuş.
-5. (ÜRÜNE ÖZEL KONSEPT ADI): Hammadde, içerik veya üretim yeriyle ilgili gerçekçi bir çevre (Thematic Realism).
-6. (ÜRÜNE ÖZEL KONSEPT ADI): Ürünün sosyal medyada viral olmasını sağlayacak sinematik veya dramatik aydınlatma.
-7. (ÜRÜNE ÖZEL KONSEPT ADI): Lüks, lifestyle veya ürünün zirve noktasını gösteren ambiyans.
-8. "Feature Infographic" (ZORUNLU): Ürünün etrafında kısa 3-4 kelimelik ana özelliklerinin (başlıktan/açıklamadan çıkardığın) okunaklı, profesyonel fontlarla yazıldığı bilgi görseli. Ürün ortada olmalı, yazılar ürünü kapatmamalı. (Not: Metinleri İngilizce veya Türkçe tutabilirsin ama kısa ve vurucu olsun).
+IMAGE-TO-IMAGE RULES:
+- These prompts will be fed into the Gemini Image API.
+- The core structure, shape, and packaging of the product in the chosen source image MUST NEVER be altered.
+- Only the environment, background, lighting, scene, and composition should change.
+- Write highly detailed, professional photography prompts in ENGLISH (e.g., 85mm lens, volumetric lighting, hyper-realistic, bokeh, cinematic composition).
+- IMPORTANT LANGUAGE EXCEPTION: If you design a "Feature Infographic" concept that includes text directly on the image, you MUST explicitly state in the prompt that the typography/text must be written in TURKISH.
 
-ÇIKTI FORMATI (Sadece aşağıdaki JSON yapısı):
+OUTPUT FORMAT (Respond ONLY with the following JSON structure):
 {
-  "best_image_analysis": "<Ürün açıklamasından ne anladın ve bu özel 8 konsepti neden seçtin? Türkçe kısa sanat yönetimi notu>",
-  "edit_prompts": [
+  "best_image_analysis": "<Briefly explain your strategy in Turkish: Why did you choose these specific source images and concepts? What is the creative direction?>",
+  "edit_tasks": [
     {
-      "concept_name": "Platform Standard White",
-      "prompt": "<İngilizce, fotoğrafçılık terimleriyle dolu detaylı image-to-image prompt>"
-    },
-    {
-      "concept_name": "<Yaratıcı İngilizce Konsept Adı 2>",
-      "prompt": "<İngilizce, fotoğrafçılık terimleriyle dolu detaylı image-to-image prompt>"
+      "source_image_index": <Integer from 1 to N indicating the chosen original image>,
+      "concept_name": "<Creative Concept Name in English (e.g., Platform Standard White, Tropical Splash)>",
+      "prompt": "<Highly detailed image-to-image prompt in English. If it contains text, request the text explicitly in Turkish>"
     }
-    // ... toplam 8 konsept sırasıyla eklenecek
   ]
 }
 """
 
 class ImageAnalyzer:
-    """Görsel analiz ve iyileştirme servisi."""
+    """Görsel analiz ve strateji servisi."""
 
     def __init__(self, client: GeminiClient) -> None:
         self._client = client
 
-    def analyze(self, product: Product, image: ProductImage) -> ImageAnalysis:
+    def plan_strategy(self, product: Product, images: list[ProductImage]) -> ImageAnalysis:
         """
-        Ana görseli analiz eder ve 7 farklı konsept için prompt üretir.
+        Ürünü ve tüm görsellerini analiz ederek yapay zekanın kendi kurguladığı 
+        bir görsel üretim stratejisi (edit tasks) döner.
         """
-        if not image.local_path:
-            raise ValueError(f"Görsel local olarak indirilmemiş: {image.url}")
+        valid_images = [img for img in images if img.local_path]
+        if not valid_images:
+            raise ValueError("Geçerli hiçbir yerel görsel bulunamadı.")
 
         user_prompt = f"""
-Lütfen bu ana görseli temel alarak 7 farklı konsept promptunu üret.
-
 Ürün Başlığı: {product.title}
 Ürün Açıklaması: {product.description[:300] if product.description else "Yok"}
 
-Sadece JSON formatında yanıt ver.
+MEVCUT ORİJİNAL GÖRSELLER (Aşağıdaki dosyalar sırasıyla 1'den {len(valid_images)}'e kadar indekslenmiştir):
 """
-        raw = self._client.analyze_image(_IMAGE_EVAL_SYSTEM, user_prompt, [image.local_path])
-        return self._parse_analysis_result(raw, image)
+        for idx, img in enumerate(valid_images, 1):
+            user_prompt += f"{idx}. Görsel URL: {img.url}\n"
+            
+        user_prompt += "\nLütfen ürünün doğasına en uygun görsel stratejini belirle ve JSON döndür."
+        
+        image_paths = [img.local_path for img in valid_images]
+        raw = self._client.analyze_image(_IMAGE_EVAL_SYSTEM, user_prompt, image_paths)
+        
+        return self._parse_analysis_result(raw, valid_images)
 
     def enhance(self, original_image: ProductImage, prompt: ImageEditPrompt, output_path: str) -> GeneratedImage:
         """
@@ -93,21 +98,28 @@ Sadece JSON formatında yanıt ver.
             local_path=output_path,
         )
 
-    def _parse_analysis_result(self, raw: dict, image: ProductImage) -> ImageAnalysis:
-        prompts = []
-        for p in raw.get("edit_prompts", []):
-            prompts.append(ImageEditPrompt(
-                concept_name=str(p.get("concept_name", "")),
-                prompt=str(p.get("prompt", "")),
+    def _parse_analysis_result(self, raw: dict, valid_images: list[ProductImage]) -> ImageAnalysis:
+        import app.models as models
+        
+        tasks = []
+        for task in raw.get("edit_tasks", []):
+            idx = task.get("source_image_index", 1) - 1
+            if idx < 0 or idx >= len(valid_images):
+                idx = 0  # Fallback to the first image if out of bounds
+                
+            tasks.append(models.ImageEditTask(
+                source_image=valid_images[idx],
+                concept_name=str(task.get("concept_name", "")),
+                prompt=str(task.get("prompt", "")),
             ))
 
-        return ImageAnalysis(
-            image=image,
-            image_type="ANA_GORSEL",  # Artık tek görsel üzerinden türetiliyor
-            score=80,  # Yeni mantıkta analiz puanlaması arka planda kaldı
-            max_score=80,
+        return models.ImageAnalysis(
+            image=valid_images[0], # Legacy, keep to avoid breaking things
+            image_type="STRATEJI",
+            score=100,
+            max_score=100,
             issues={"analysis_note": raw.get("best_image_analysis", "")},
             has_text=True,
-            edit_prompts=prompts,
+            edit_tasks=tasks,
         )
 
