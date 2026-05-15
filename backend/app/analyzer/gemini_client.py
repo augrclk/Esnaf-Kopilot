@@ -95,10 +95,10 @@ class GeminiClient:
         image_bytes = Path(image_path).read_bytes()
         mime = _mime_type(image_path)
 
-        # Kullanıcının belirttiği alternatif modeller
-        # (Şu an 3.1 serisi çok yoğun olduğu için doğrudan 2.5-flash-image e gidiyoruz)
+        # Kullanıcının belirlediği sırayla kullanılacak image-to-image modelleri
         models_to_try = [
-            "gemini-2.5-flash-image"
+            "gemini-3.1-flash-image-preview",
+            "gemini-3-pro-image-preview"
         ]
         
         # Yinelenenleri sıralamayı bozmadan temizle

@@ -1,81 +1,313 @@
-SKORLAMA KRİTERLERİ
+════════════════════════════════════════════════════════════════
+ESNAF KOPİLOT — SKORLAMA KRİTERLERİ V3
+DETERMİNİSTİK DEĞERLENDİRME RUBRİĞİ (TOPLAM: 100 PUAN)
+════════════════════════════════════════════════════════════════
 
-İçerik SEO / Pazaryeri Arama Uyumu — 50 puan
+Bu dosya SADECE mevcut ürün sayfasını PUANLAMAK için kullanılır.
+Yeni başlık, açıklama veya SSS ÜRETİLMEZ. Sadece analiz ve skor.
 
-1. Başlık Kalitesi — 12 puan
-- Ana ürün terimi başlıkta açık mı?
-- Ana ürün terimi başa yakın mı?
-- Marka, model, seri veya ürün tipi doğru kullanılmış mı?
-- Renk, beden, materyal, adet, ölçü gibi ayırt edici bilgi var mı?
-- Başlık okunabilir mi?
-- Gereksiz tekrar veya keyword stuffing var mı?
-- Abartılı, yanıltıcı veya promosyon ifadeleri var mı?
-- Başlık çok kısa, çok genel veya anlamsız uzun mu?
+┌─────────────────────────────────────────────────────────────┐
+│ KRİTİK KURALLAR (LLM ZORUNLU TALİMATLARI)                  │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Her kriter BİNARY'dir: ya TAM puan ya 0 puan.           │
+│    Ara puan (kısmi puan, yarım puan) KESİNLİKLE YASAKTIR.  │
+│                                                             │
+│ 2. SADECE verilen metni oku. Metinde yazılı olmayan bilgiyi │
+│    "muhtemelen var" diye VARSAYMA. Yoksa yoktur → 0 puan.   │
+│                                                             │
+│ 3. Daha önce kendin ürettiğin bir metni değerlendiriyorsan  │
+│    "ben ürettim" diye BONUS verme. Aynı kuralları uygula.   │
+│                                                             │
+│ 4. Her kriter için SAĞLANDI/SAĞLANMADI + 1 cümle gerekçe   │
+│    + metinden kısa alıntı (kanıt) yaz.                      │
+│                                                             │
+│ 5. Aynı metni 10 kez analiz etsen de aynı sonucu üret.     │
+│    Kendi inisiyatifini, hissiyatını KULLANMA.                │
+│                                                             │
+│ 6. "Yeterli", "iyi", "güzel" gibi GÖRECELİ kelimelerle    │
+│    karar VERME. Sadece aşağıdaki somut koşulları uygula.    │
+│                                                             │
+│ 7. Şüpheli/sınırda bir durum varsa → SAĞLANMADI (0 puan).  │
+│    Şüphede her zaman düşük puan ver.                        │
+└─────────────────────────────────────────────────────────────┘
 
-2. Açıklama Kalitesi — 12 puan
-- Açıklama ürünü net anlatıyor mu?
-- İlk cümlelerde ürünün ne olduğu açık mı?
-- 150-200 kelime düzeyinde yeterli detay var mı?
-- Özellikler düzenli ve okunabilir mi?
-- Fayda odaklı anlatım var mı?
-- Materyal, kullanım amacı, ölçü, içerik, uyumluluk gibi bilgiler verilmiş mi?
-- Metin doğal mı?
-- Gereksiz tekrar veya anahtar kelime yığılması var mı?
 
-3. Anahtar Kelime ve Arama Niyeti Uyumu — 10 puan
-- Ana anahtar kelime doğal şekilde kullanılmış mı?
-- Long-tail arama ifadeleri var mı?
-- Kategoriyle uyumlu kelimeler kullanılmış mı?
-- Kullanıcının arama niyetine cevap veriyor mu?
-- Başlık, açıklama ve özelliklerde terimler tutarlı mı?
+════════════════════════════════════════════════════════════════
+BÖLÜM A — İÇERİK SEO / PAZARYERİ ARAMA UYUMU (50 Puan)
+════════════════════════════════════════════════════════════════
 
-4. Ürün Özellikleri / Attribute Tamlığı — 10 puan
-- Materyal, renk, beden, ölçü, kapasite, hacim, ağırlık veya boyut bilgisi var mı?
-- Kullanım alanı belirtilmiş mi?
-- Teknik özellikler varsa net yazılmış mı?
-- Garanti, iade, kargo veya bakım bilgisi varsa belirtilmiş mi?
-- Pazaryeri filtreleri için önemli attribute alanları yeterli mi?
+── A1. BAŞLIK KALİTESİ (Maks. 12 Puan) ──────────────────────
 
-5. Kategori, Marka ve Varyant Tutarlılığı — 6 puan
-- Ürün adı, marka ve kategori tutarlı mı?
-- Varyantlar doğru ifade edilmiş mi?
-- Renk, beden, adet, model gibi bilgiler çelişiyor mu?
-- Başlık ve açıklama aynı ürünü mü anlatıyor?
-- Yorumlarda geçen ürün algısı ile ürün bilgileri tutarlı mı?
+A1.1 — Ana Ürün Terimi Başta mı? (+3 Puan)
+  KOŞUL: Başlığın ilk 3 kelimesinden en az biri, ürünün
+         genel kategori adıdır (ör: "tişört", "bluetooth kulaklık",
+         "yemek termosu", "çanta").
+  TEST:  Başlığın ilk 3 kelimesini ayır. Bu kelimelerden biri
+         tek başına ürünün ne olduğunu anlatıyor mu?
+  ✅ GEÇER:  "Bluetooth Kulaklık Samsung AKG Siyah"
+             → "Bluetooth Kulaklık" ilk 2 kelime
+  ❌ KALMAZ: "Samsung AKG Serisi Profesyonel Bluetooth Kulaklık"
+             → "Bluetooth Kulaklık" 5. ve 6. kelime
 
-AEO / AI Okunabilirlik — 50 puan
+A1.2 — Marka/Model Bilgisi (+3 Puan)
+  KOŞUL: Başlıkta marka adı VE (model adı VEYA seri adı)
+         açıkça yazılıdır.
+  TEST:  Başlıkta en az 2 tanımlayıcı isim (biri marka, biri
+         model/seri) bulunuyor mu?
+         Sadece marka varsa model/seri yoksa → 0 puan.
+  İSTİSNA: Ürünün bilinen markası yoksa (no-name/jenerik ürün),
+           bu kriter DEĞERLENDİRME DIŞI bırakılır → 3 puan
+           otomatik verilir, gerekçeye "D.DIŞI" yazılır.
+  ✅ GEÇER:  "Nike Air Max 270 Erkek Koşu Ayakkabısı"
+             → Nike (marka) + Air Max 270 (model)
+  ❌ KALMAZ: "Koşu Ayakkabısı Erkek Siyah Spor"
+             → Marka yok
 
-6. Cevap-Öncelikli Ürün Tanımı — 10 puan
-- İlk 1-2 cümle ürünün ne olduğunu net tanımlıyor mu?
-- Ürün kim için ve hangi amaçla kullanılır açık mı?
-- AI sistemlerinin doğrudan cevap olarak çekebileceği net cümleler var mı?
-- Ürün türü, marka, kategori ve temel fayda açık mı?
+A1.3 — Ayırt Edici Özellikler (+3 Puan)
+  KOŞUL: Başlıkta şu 6 kategoriden EN AZ 2 tanesi bulunmalıdır:
+         [Renk | Beden | Boyut/Ölçü | Materyal | Adet/Miktar | Cinsiyet/Yaş Grubu]
+  TEST:  Başlığı tara, yukarıdaki 6 kategoriden kaç tanesi var?
+         ≥2 ise → SAĞLANDI. <2 ise → 0 puan.
+  ✅ GEÇER:  "Siyah Deri Erkek Cüzdan Küçük Boy"
+             → Siyah (renk) + Deri (materyal) + Erkek (cinsiyet) = 3
+  ❌ KALMAZ: "Cüzdan Hakiki Deri"
+             → Deri (materyal) = sadece 1
 
-7. Yapılandırılmış Bilgi Düzeni — 10 puan
-- Bilgiler düzenli ve taranabilir mi?
-- Özellikler madde madde veya kısa bloklarla sunulmuş mu?
-- Teknik bilgiler, faydalar ve kullanım senaryosu ayrılmış mı?
-- Ürün bilgileri kolay çıkarılabilir mi?
+A1.4 — Spam/Gereksiz İfade Yokluğu (+3 Puan)
+  KOŞUL: Başlıkta aşağıdakilerden HİÇBİRİ bulunmamalıdır:
+         a) Aynı kelimenin 2+ kez tekrarı
+         b) Promosyon: "ücretsiz kargo", "kampanyalı", "indirimli",
+            "bedava", "ucuz", "en uygun fiyat", "süper fırsat"
+         c) Abartı: "en iyi", "1 numara", "efsane", "müthiş"
+         d) Başlığın >%50'sinin BÜYÜK HARF olması
+  TEST:  (a), (b), (c), (d) maddelerini kontrol et.
+         Herhangi biri varsa → 0 puan.
+  ✅ GEÇER:  "Samsung Galaxy A54 128GB Siyah Cep Telefonu"
+  ❌ KALMAZ: "SÜPER FIRSAT Samsung En İyi Telefon UCUZ Galaxy"
 
-8. SSS / Soru-Cevap Uygunluğu — 8 puan
-- Gerçek kullanıcı sorularına cevap var mı?
-- Beden, renk, kullanım, bakım, uyumluluk, iade, garanti gibi karar verdiren sorular cevaplanmış mı?
-- Yorumlarda tekrar eden sorunlar SSS mantığında karşılanmış mı?
 
-9. Yorumlardan Gelen İçgörülerin Kullanımı — 10 puan
-- Yorumlarda tekrar eden olumlu noktalar tespit edilmiş mi?
-- Yorumlarda tekrar eden olumsuz noktalar tespit edilmiş mi?
-- Beden dar, renk farklı, kalite iyi, kargo hızlı, beklenenden küçük gibi bulgular ayrıştırılmış mı?
-- Tekil yorumlardan kesin genelleme yapılmış mı?
+── A2. AÇIKLAMA KALİTESİ (Maks. 12 Puan) ────────────────────
 
-10. Varlık Tutarlılığı — 7 puan
-- Ürün adı tutarlı mı?
-- Marka adı tutarlı mı?
-- Kategori terimleri tutarlı mı?
-- Aynı ürün için farklı isimler kullanılmış mı?
-- Ürün tipi net mi?
+A2.1 — Net Giriş Cümlesi (+3 Puan)
+  KOŞUL: Açıklamanın ilk cümlesi, ürünün ne olduğunu belirsizlik
+         bırakmadan tanımlar. Tek cümle okunduğunda "Bu ürün nedir?"
+         sorusu cevaplanır.
+  TEST:  İlk cümleyi izole et. Sadece o cümleyi okuyan birisi
+         ürünün ne olduğunu anlayabiliyor mu?
+  ✅ GEÇER:  "Bu ürün, 500ml kapasiteli çift cidarlı paslanmaz
+             çelik termosdur."
+  ❌ KALMAZ: "Harika bir ürün, herkes çok beğeniyor!"
+             → Ne olduğu belli değil, sadece yorum.
 
-11. Doğrulanabilirlik ve Uydurma Riskinin Düşüklüğü — 5 puan
-- Metindeki iddialar verilen bilgilerle destekleniyor mu?
-- Abartılı veya doğrulanması zor ifadeler var mı?
-- Verilmeyen fiyat, stok, rating, garanti, sertifika, menşei veya teknik özellikler iddia edilmiş mi?
+A2.2 — Yeterli Uzunluk (+3 Puan)
+  KOŞUL: Açıklama metni toplam EN AZ 50 kelime içerir.
+         (Madde imlerindeki kelimeler dahildir. Başlık hariçtir.)
+  TEST:  Açıklamadaki kelimeleri say. ≥50 → SAĞLANDI. <50 → 0 puan.
+  ✅ GEÇER:  150 kelimelik düzenli açıklama
+  ❌ KALMAZ: "Güzel ürün. Hızlı kargo. Tavsiye ederim." (~6 kelime)
+
+A2.3 — Somut Bilgi İçeriği (+3 Puan)
+  KOŞUL: Açıklamada şu 5 kategoriden EN AZ 2'si somut olarak geçer:
+         [Materyal/malzeme | Boyut/ölçü/ağırlık | Kullanım alanı |
+          İçerik/bileşen | Kapasite/hacim]
+  TEST:  Açıklamayı tara, kaç kategori somut bilgi içeriyor?
+         ≥2 → SAĞLANDI. <2 → 0 puan.
+         "Kaliteli malzeme" somut DEĞİLDİR. "Paslanmaz çelik" somuttur.
+  ✅ GEÇER:  "Paslanmaz çelik gövde (materyal) + 500ml kapasite"
+  ❌ KALMAZ: "Çok kaliteli ve dayanıklı bir ürün" → Somut bilgi yok
+
+A2.4 — Düzenli Format (+3 Puan)
+  KOŞUL: Açıklama aşağıdakilerden EN AZ BİRİNİ kullanır:
+         • Madde imleri (bullet / tire / yıldız)
+         • Numaralı liste
+         • Alt başlıklar
+         VEYA birden fazla paragraftan oluşur (en az 2 paragraf).
+  TEST:  Herhangi bir yapısal öge (liste, başlık, çoklu paragraf) var mı?
+  ✅ GEÇER:  Madde imleriyle 5 özellik sıralanmış
+  ❌ KALMAZ: Tek paragrafta kesintisiz uzun metin bloğu
+
+
+── A3. ANAHTAR KELİME VE ARAMA NİYETİ (Maks. 10 Puan) ──────
+
+A3.1 — Long-Tail Terim Varlığı (+5 Puan)
+  KOŞUL: Açıklamada en az 1 adet 3+ kelimelik doğal arama ifadesi
+         bulunur. Bu ifade kullanıcının arama çubuğuna yazacağı
+         formatta olmalıdır.
+  TEST:  3+ kelimelik, arama sorgusu gibi okunan ifade var mı?
+  ✅ GEÇER:  "...günlük kullanıma uygun erkek deri cüzdan..."
+  ❌ KALMAZ: "...kaliteli, dayanıklı, şık..." → Sıfat listesi
+
+A3.2 — Terim Tutarlılığı (+5 Puan)
+  KOŞUL: Başlıktaki ana ürün terimi (ör: "bluetooth kulaklık")
+         açıklamanın ilk paragrafında AYNI veya çok yakın eşanlamlısı
+         olarak geçmelidir.
+  TEST:  Başlıktaki ana ürün terimini tespit et. Açıklamanın
+         ilk paragrafında aynı terim veya birebir eşanlamlısı var mı?
+  ✅ GEÇER:  Başlık: "Bluetooth Kulaklık..." →
+             Açıklama: "Bu bluetooth kulaklık..."
+  ❌ KALMAZ: Başlık: "Bluetooth Kulaklık..." →
+             Açıklama: "Bu ses cihazı..." (farklı terim)
+
+
+── A4. ÜRÜN ÖZELLİKLERİ / TEKNİK BİLGİLER (Maks. 10 Puan) ─
+
+A4.1 — Sayısal Teknik Veri (+5 Puan)
+  KOŞUL: Açıklamada en az 1 adet SAYISAL teknik bilgi bulunur.
+         Sayısal bilgi = [rakam] + [birim veya yüzde]
+         Örnekler: "500ml", "25cm", "1.2kg", "3000mAh", "%100 pamuk"
+  TEST:  Açıklamada rakam+birim formatında en az 1 veri var mı?
+  ✅ GEÇER:  "500ml kapasiteli"
+  ❌ KALMAZ: "Büyük kapasiteli" → Sayı yok
+
+A4.2 — Tamamlayıcı Karar Bilgisi (+5 Puan)
+  KOŞUL: Açıklamada şu 6 konudan EN AZ 1'i hakkında bilgi verilmiştir:
+         [Garanti | İade koşulu | Kargo bilgisi | Bakım talimatı |
+          Uyumluluk | Paket içeriği]
+  TEST:  Yukarıdaki 6 konudan herhangi biri metinde geçiyor mu?
+  ✅ GEÇER:  "2 yıl garanti kapsamındadır"
+  ❌ KALMAZ: Hiçbir karar bilgisi yok
+
+
+── A5. TUTARLILIK (Maks. 6 Puan) ─────────────────────────────
+
+A5.1 — Başlık-Açıklama Tutarlılığı (+6 Puan)
+  KOŞUL: Başlıkta geçen ürün adı, marka, renk, beden, model
+         bilgisi açıklamadaki bilgilerle ÇELİŞMEZ.
+  TEST:  Başlıktan çıkan bilgileri (marka, model, renk, beden)
+         listele. Açıklamada bunlardan herhangi biriyle çelişen
+         bilgi var mı? Çelişki yoksa → SAĞLANDI. Varsa → 0 puan.
+  ✅ GEÇER:  Başlık: "Nike Siyah..." + Açıklama: "...Nike siyah..."
+  ❌ KALMAZ: Başlık: "Nike Siyah..." + Açıklama: "...Adidas beyaz..."
+
+
+════════════════════════════════════════════════════════════════
+BÖLÜM B — AEO / AI OKUNABİLİRLİK VE YORUM KULLANIMI (50 Puan)
+════════════════════════════════════════════════════════════════
+
+── B6. CEVAP-ÖNCELİKLİ ÜRÜN TANIMI (Maks. 10 Puan) ─────────
+
+B6.1 — AI-Çekilebilir Tanım Cümlesi (+5 Puan)
+  KOŞUL: Açıklamanın ilk 2 cümlesinden en az biri şu yapıdadır:
+         "[Ürün adı], [ne olduğu] + [1-2 temel özellik]"
+         Cümle NESNEL olmalıdır (subjektif sıfat değil).
+         Bir AI asistanın "Bu ürün nedir?" sorusuna doğrudan
+         yapıştırabileceği formatta olmalıdır.
+  TEST:  İlk 2 cümleyi izole et. Bunlardan biri nesnel bir
+         ürün tanımı mı?
+  SINIR: "Harika termos" → ❌ (subjektif)
+         "500ml paslanmaz çelik vakumlu termos" → ✅ (nesnel)
+  ✅ GEÇER:  "Nike Air Max 270, hafif taban yapısına sahip erkek
+             koşu ayakkabısıdır."
+  ❌ KALMAZ: "Çok beğenilen ve trend olan ayakkabı!"
+
+B6.2 — Hedef Kitle / Fayda Beyanı (+5 Puan)
+  KOŞUL: Açıklamada ürünün KİM İÇİN olduğu veya HANGİ SORUNU/
+         İHTİYACI çözdüğü en az 1 cümleyle belirtilmiştir.
+  TEST:  "[hedef kitle] için" veya "[sorun/ihtiyaç] çözer/karşılar"
+         yapısında bir cümle var mı?
+  ✅ GEÇER:  "Sporcular ve outdoor tutkunları için idealdir"
+  ❌ KALMAZ: "Herkes kullanabilir" → Somut hedef kitle yok
+
+
+── B7. YAPILANDIRILMIŞ BİLGİ DÜZENİ (Maks. 10 Puan) ────────
+
+B7.1 — Madde İmleri Kullanımı (+5 Puan)
+  KOŞUL: Açıklamada özellikler/faydalar madde imleri (•, -, *, ✓
+         veya numaralı liste) ile EN AZ 3 madde halinde sıralanmıştır.
+  TEST:  Madde imi formatında en az 3 satır var mı?
+  ✅ GEÇER:  "• Paslanmaz çelik \n• 500ml \n• Çift cidarlı" (3 madde)
+  ❌ KALMAZ: Düz paragraf, liste yok
+
+B7.2 — Bilgi Gruplama (+5 Puan)
+  KOŞUL: Farklı türdeki bilgiler (teknik özellik / fayda / kullanım /
+         paket içeriği) EN AZ 2 ayrı grup halinde sunulmuştur.
+         Gruplama: alt başlık, boş satır veya ayrı liste bloğu ile
+         belirgindir.
+  TEST:  Birbirinden ayrılmış en az 2 bilgi grubu var mı?
+  ✅ GEÇER:  "Özellikler: ... \n Kullanım: ..." (2 grup)
+  ❌ KALMAZ: Tek uzun madde listesi, gruplama yok
+
+
+── B8. SSS / SORU-CEVAP FORMATI (Maks. 8 Puan) ─────────────
+
+B8.1 — SSS Bölümü Varlığı (+8 Puan)
+  KOŞUL: Açıklamada "SSS", "Sıkça Sorulan Sorular" başlığı altında
+         VEYA "S: ... C: ..." formatında EN AZ 2 adet soru-cevap
+         çifti bulunmalıdır.
+  TEST:  Soru-cevap formatında en az 2 çift var mı?
+         Sadece soru sorulup cevap verilmemişse → 0 puan.
+  ✅ GEÇER:  "S: Makinede yıkanabilir mi? C: Evet, 30°C'de..."
+             + 1 soru-cevap daha (toplam ≥2)
+  ❌ KALMAZ: SSS bölümü yok veya sadece 1 soru-cevap var
+
+
+── B9. YORUM İÇGÖRÜLERİ VE SORUN ÇÖZÜMÜ (Maks. 10 Puan) ───
+
+B9.1 — Sorun Tespiti + Proaktif Çözüm (+10 Puan)
+  KOŞUL: Açıklamada müşterilerin yaşayabileceği bilinen bir sorun
+         (beden farkı, renk farkı, kurulum zorluğu vb.) belirtilmiş
+         ve yanında çözüm/uyarı sunulmuştur.
+  TEST:  "[olası sorun] + [çözüm/tavsiye]" yapısında en az 1 cümle
+         var mı?
+  İSTİSNA: Yorum/geri bildirim verisi YOKSA ve ürünün doğasında
+           bilinen bir sorun da yoksa → DEĞERLENDİRME DIŞI →
+           10 puan otomatik verilir, gerekçeye "D.DIŞI" yazılır.
+           Ancak bilinen sorunlar varken (ör: kıyafetlerde kalıp)
+           hiç değinilmemişse → 0 puan.
+  ✅ GEÇER:  "Kalıplar dardır, bir beden büyük tercih ediniz."
+  ❌ KALMAZ: Bilinen kalıp sorunu olan kıyafet, uyarı yok
+
+
+── B10. VARLIK VE KAVRAM TUTARLILIĞI (Maks. 7 Puan) ─────────
+
+B10.1 — Tek İsim Kuralı (+7 Puan)
+  KOŞUL: Metin boyunca ürüne AYNI ana isimle atıfta bulunulmuştur.
+         3 veya daha fazla FARKLI isim kullanılmışsa → 0 puan.
+  TEST:  Ürüne atıfta bulunan tüm isimleri listele.
+         Farklı isim sayısı ≤2 → SAĞLANDI. ≥3 → 0 puan.
+         NOT: "termos" ve "bu termos" = AYNI isim.
+              "termos" ve "matara" = FARKLI isim.
+  ✅ GEÇER:  "termos" ve "çelik termos" → 2 varyant
+  ❌ KALMAZ: "termos", "matara", "şişe", "kupa" → 4 farklı isim
+
+
+── B11. UYDURMA RİSKİNİN DÜŞÜKLÜĞÜ (Maks. 5 Puan) ─────────
+
+B11.1 — Abartı ve Kanıtlanamaz İddia Yokluğu (+5 Puan)
+  KOŞUL: Açıklamada aşağıdakilerden HİÇBİRİ bulunmamalıdır:
+         a) Üstünlük: "en iyi", "1 numara", "piyasadaki en...",
+            "rakipsiz", "emsalsiz"
+         b) Kanıtlanamaz: "%100 memnuniyet", "ömür boyu dayanır",
+            "kesinlikle kırılmaz", "mucizevi"
+         c) Uydurma: Metinde verilmeyen fiyat, stok, rating,
+            sertifika, menşei bilgisinin iddia edilmesi
+  TEST:  (a), (b), (c) maddelerini kontrol et.
+         Herhangi biri varsa → 0 puan.
+  ✅ GEÇER:  "Dayanıklı paslanmaz çelik gövde"
+  ❌ KALMAZ: "Piyasadaki en iyi termos, %100 memnuniyet garantili"
+
+
+════════════════════════════════════════════════════════════════
+ÇIKTI FORMATI (DEĞERLENDİRME SONUCU NASIL YAZILIR)
+════════════════════════════════════════════════════════════════
+
+Her kriter için şu satırı yaz:
+[Kriter No] — [SAĞLANDI ✅ / SAĞLANMADI ❌] — [Kanıt: metinden kısa alıntı veya "bulunamadı"] — [+X / +0]
+
+Sonra toplam skoru yaz:
+TOPLAM SKOR: XX / 100
+
+Puan kırılan kriterlerin kısa özeti:
+• [Kriter No]: [1 cümle neden] (−X puan)
+
+════════════════════════════════════════════════════════════════
+TUTARLILIK KURALLARI
+════════════════════════════════════════════════════════════════
+
+1. Aynı metni farklı sohbetlerde analiz ettiğinde sonuç
+   ±0 puan sapma göstermelidir.
+2. Şüpheli durumda → her zaman 0 puan ver (SAĞLANMADI).
+3. "Bence", "hissiyatım", "yaklaşık" gibi göreceli ifadeler
+   KULLANMA. Sadece TEST satırındaki somut koşulu uygula.
+4. DEĞERLENDİRME DIŞI bırakılan kriterlerde tam puan otomatik
+   verilir ve gerekçeye "D.DIŞI" yazılır.

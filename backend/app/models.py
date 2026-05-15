@@ -105,6 +105,15 @@ class ImageEditPrompt:
 
 
 @dataclass
+class ImageEditTask:
+    """Yapay zekanın kendi belirlediği kaynak görsel üzerinden oluşturacağı görev."""
+
+    source_image: ProductImage
+    concept_name: str
+    prompt: str
+
+
+@dataclass
 class ImageAnalysis:
     """Tek bir görselin analiz sonucu ve düzenleme promptları."""
 
@@ -115,6 +124,7 @@ class ImageAnalysis:
     issues: dict             # Tespit edilen sorunlar (aydınlatma, netlik vb.)
     has_text: bool
     edit_prompts: list[ImageEditPrompt] = field(default_factory=list)
+    edit_tasks: list[ImageEditTask] = field(default_factory=list)
 
 
 @dataclass
