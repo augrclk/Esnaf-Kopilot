@@ -197,10 +197,28 @@ def phase_images(req: PhaseRequest):
                 print(f"  ✗ Konsept {idx} başarısız: {e}")
                 return None
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            results = list(executor.map(_process_task, enumerate(analysis.edit_tasks, 1)))
+        TASK_TIMEOUT = 120  # saniye — 1 konsept için maksimum süre
 
-        enhanced = [r for r in results if r]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Tüm task'ları aynı anda başlat
+            future_to_idx = {
+                executor.submit(_process_task, (idx, task)): idx
+                for idx, task in enumerate(analysis.edit_tasks, 1)
+            }
+            results_map = {}
+            for future in concurrent.futures.as_completed(future_to_idx, timeout=TASK_TIMEOUT * len(analysis.edit_tasks)):
+                idx = future_to_idx[future]
+                try:
+                    results_map[idx] = future.result(timeout=TASK_TIMEOUT)
+                except concurrent.futures.TimeoutError:
+                    print(f"  ✗ Konsept {idx} timeout ({TASK_TIMEOUT}s) — atlandı")
+                    results_map[idx] = None
+                except Exception as e:
+                    print(f"  ✗ Konsept {idx} hata: {e}")
+                    results_map[idx] = None
+
+        # Sıralı şekilde filtrele
+        enhanced = [results_map[i] for i in sorted(results_map) if results_map.get(i)]
 
         return {
             "status": "success",
