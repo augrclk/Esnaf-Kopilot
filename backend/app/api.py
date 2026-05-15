@@ -10,6 +10,8 @@ Mimari Notlar:
 """
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+import json
 from pydantic import BaseModel
 import asyncio
 import os
@@ -201,106 +203,129 @@ async def phase_analyze(req: PhaseRequest):
 @router.post("/phase/images")
 async def phase_images(req: PhaseRequest):
     """
-    FAZ 3 — Görsel İndirme + AI Üretim.
+    FAZ 3 — SSE Streaming görsel üretim.
 
-    Akış:
-      1. Görselleri indir (asyncio.to_thread)
-      2. AI strateji planla (asyncio.to_thread)
-      3. Her konsepti asyncio.gather ile PARALEL enhance et
-         — her biri bağımsız asyncio.to_thread görevi
-         — timeout: her görev için 120s, aşarsa atlanır
+    Her görsel tamamlanır tamamlanmaz `data:` eventi olarak gönderilir.
+    Frontend hepsini beklemeden anında gösterir.
+
+    Events:
+      {type: 'start',    total: N, strategy_note: '...'}
+      {type: 'image',    data: {concept, path}}   ← her görsel hazır olunca
+      {type: 'retry',    idx: N, concept: '...'}  ← retry başladığında
+      {type: 'done',     count: N, total: N}
+      {type: 'error',    message: '...'}
     """
-    out_dir = req.output_dir or f"outputs/api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    os.makedirs(out_dir, exist_ok=True)
+    def _sse(event: dict) -> str:
+        return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
-    try:
-        scraped = _get_cached_scrape(req.url, req.max_review_pages)  # instant
+    async def _stream():
+        out_dir = req.output_dir or f"outputs/api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        os.makedirs(out_dir, exist_ok=True)
 
-        # ── 1. Görselleri indir ───────────────────────────────────────────────
-        downloaded   = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
-        valid_images = [img for img in downloaded if img.local_path]
+        try:
+            scraped      = _get_cached_scrape(req.url, req.max_review_pages)
+            downloaded   = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
+            valid_images = [img for img in downloaded if img.local_path]
 
-        if not valid_images:
-            return {"status": "success", "data": {"images": []}}
+            if not valid_images:
+                yield _sse({"type": "done", "count": 0, "total": 0})
+                return
 
-        # ── 2. AI strateji planla ─────────────────────────────────────────────
-        analysis      = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
-        strategy_note = analysis.issues.get("analysis_note", "")
-        total         = len(analysis.edit_tasks)
-        print(f"[Phase/Images] Strateji: {total} konsept — 1. tur paralel başlıyor")
+            analysis      = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
+            strategy_note = analysis.issues.get("analysis_note", "")
+            total         = len(analysis.edit_tasks)
+            print(f"[Phase/Images] {total} konsept — SSE stream başlıyor")
 
-        # ── 3a. Yardımcı: tek konsept üret ───────────────────────────────────
-        TASK_TIMEOUT = 150  # saniye — retry turunda daha geniş
+            # Strateji hazır — frontend bölümü açabilir
+            yield _sse({"type": "start", "total": total, "strategy_note": strategy_note})
 
-        async def _enhance_task(idx: int, task, timeout: int = TASK_TIMEOUT) -> dict | None:
-            base      = os.path.basename(task.source_image.local_path).split('.')[0]
-            ext       = os.path.basename(task.source_image.local_path).split('.')[-1]
-            safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
-            out_path  = os.path.join(out_dir, f"{base}_KONSEPT_{idx}_{safe_name}.{ext}")
-            try:
-                dummy_prompt = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
-                enhanced = await asyncio.wait_for(
-                    asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy_prompt, out_path),
-                    timeout=timeout
-                )
-                print(f"  ✓ Konsept {idx}: {task.concept_name}")
-                return {"concept": task.concept_name, "path": enhanced.local_path}
-            except asyncio.TimeoutError:
-                print(f"  ✗ Konsept {idx} timeout ({timeout}s)")
-                return None
-            except Exception as e:
-                print(f"  ✗ Konsept {idx} hata: {e}")
-                return None
+            TASK_TIMEOUT = 150
 
-        # ── 3b. TUR 1 — Tümü paralel ─────────────────────────────────────────
-        round1_results = await asyncio.gather(*[
-            _enhance_task(idx, task)
-            for idx, task in enumerate(analysis.edit_tasks, 1)
-        ])
+            async def _enhance_task(idx: int, task, timeout: int = TASK_TIMEOUT) -> dict | None:
+                base      = os.path.basename(task.source_image.local_path).split('.')[0]
+                ext       = os.path.basename(task.source_image.local_path).split('.')[-1]
+                safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
+                out_path  = os.path.join(out_dir, f"{base}_KONSEPT_{idx}_{safe_name}.{ext}")
+                try:
+                    dummy = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
+                    enhanced = await asyncio.wait_for(
+                        asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
+                        timeout=timeout
+                    )
+                    print(f"  ✓ Konsept {idx}: {task.concept_name}")
+                    return {"idx": idx, "concept": task.concept_name, "path": enhanced.local_path}
+                except asyncio.TimeoutError:
+                    print(f"  ✗ Konsept {idx} timeout ({timeout}s)")
+                    return None
+                except Exception as e:
+                    print(f"  ✗ Konsept {idx} hata: {e}")
+                    return None
 
-        # Başarılı ve başarısız görevleri ayır
-        enhanced    = [r for r in round1_results if r]
-        failed_idx  = [i + 1 for i, r in enumerate(round1_results) if r is None]
+            # ── TUR 1 — Queue ile paralel, her biten anında stream'e gönder ──
+            queue        = asyncio.Queue()
+            failed_tasks = []  # (idx, task) tuple
+            count        = 0
 
-        if failed_idx:
-            print(f"[Phase/Images] Tur 1 bitti: {len(enhanced)}/{total} başarılı. "
-                  f"Başarısızlar: {failed_idx} — 15s bekleyip retry yapılıyor...")
-            await asyncio.sleep(15)  # API'nin nefes alması için kısa bekleme
+            async def _run_and_enqueue(idx, task):
+                result = await _enhance_task(idx, task)
+                await queue.put((idx, task, result))
 
-            # ── 3c. TUR 2 — Başarısızları sırayla yeniden dene ───────────────
-            for idx in failed_idx:
-                task = analysis.edit_tasks[idx - 1]
-                print(f"  ↺ Retry: Konsept {idx}: {task.concept_name}")
-                result = await _enhance_task(idx, task, timeout=180)  # Daha uzun timeout
+            # Tüm görevleri başlat
+            futures = [
+                asyncio.ensure_future(_run_and_enqueue(idx, task))
+                for idx, task in enumerate(analysis.edit_tasks, 1)
+            ]
+
+            # Her biten görsel anında gönderilir
+            for _ in range(total):
+                idx, task, result = await queue.get()
                 if result:
-                    enhanced.append(result)
+                    count += 1
+                    yield _sse({"type": "image", "data": result})
                 else:
-                    # Son bir deneme daha — 20s sonra
-                    print(f"  ↺ Son deneme: Konsept {idx}")
-                    await asyncio.sleep(20)
+                    failed_tasks.append((idx, task))
+
+            await asyncio.gather(*futures)  # cleanup
+
+            # ── TUR 2 — Başarısızlar sırayla retry ───────────────────────────
+            if failed_tasks:
+                print(f"[Phase/Images] Tur 1: {count}/{total} — {len(failed_tasks)} retry")
+                await asyncio.sleep(15)
+
+                for idx, task in failed_tasks:
+                    yield _sse({"type": "retry", "idx": idx, "concept": task.concept_name})
+                    print(f"  ↺ Retry: Konsept {idx}: {task.concept_name}")
+
                     result = await _enhance_task(idx, task, timeout=180)
                     if result:
-                        enhanced.append(result)
+                        count += 1
+                        yield _sse({"type": "image", "data": result})
                     else:
-                        print(f"  ✗ Konsept {idx} tüm denemeler sonrası üretilemedi.")
-                # Sıradaki retry'dan önce kısa bekleme (API kısılmasını engelle)
-                await asyncio.sleep(5)
+                        await asyncio.sleep(20)
+                        result = await _enhance_task(idx, task, timeout=180)
+                        if result:
+                            count += 1
+                            yield _sse({"type": "image", "data": result})
+                        else:
+                            print(f"  ✗ Konsept {idx} tüm denemeler sonrası üretilemedi.")
+                    await asyncio.sleep(5)
 
-        print(f"[Phase/Images] Tamamlandı: {len(enhanced)}/{total} görsel üretildi.")
+            print(f"[Phase/Images] Tamamlandı: {count}/{total} görsel")
+            yield _sse({"type": "done", "count": count, "total": total})
 
-        return {
-            "status": "success",
-            "data": {
-                "images": [{
-                    "strategy_note":  strategy_note,
-                    "enhanced":       enhanced,
-                    "original_local": valid_images[0].local_path if valid_images else "",
-                }]
-            }
+        except Exception as e:
+            print(f"[Phase/Images] HATA: {e}")
+            yield _sse({"type": "error", "message": str(e)})
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection":    "keep-alive",
+            "X-Accel-Buffering": "no",   # nginx buffering'i kapat
         }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    )
 
 
 
