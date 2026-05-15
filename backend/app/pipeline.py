@@ -13,7 +13,9 @@ from app.scraper.trendyol import TrendyolScraper
 from app.analyzer.gemini_client import GeminiClient
 from app.analyzer.content import ContentAnalyzer
 from app.analyzer.image import ImageAnalyzer
+from app.analyzer.review import ReviewAnalyzer
 from app.models import Product, ScrapedProduct, ContentResult, ImageAnalysis, GeneratedImage
+
 
 
 class EsnafKopilotPipeline:
@@ -28,6 +30,7 @@ class EsnafKopilotPipeline:
         self.gemini = GeminiClient()
         self.content_analyzer = ContentAnalyzer(self.gemini)
         self.image_analyzer = ImageAnalyzer(self.gemini)
+        self.review_analyzer = ReviewAnalyzer(self.gemini)
 
     def run(self, url: str, max_review_pages: int = 5, output_dir: str = "outputs") -> dict:
         """
@@ -40,11 +43,15 @@ class EsnafKopilotPipeline:
         scraped = self.scraper.scrape(url, max_review_pages=max_review_pages)
         print(f"[Pipeline] -> Baslik: {scraped.product.title}, Yorum: {len(scraped.reviews)}, Gorsel: {len(scraped.images)}")
 
-        # 2. İçerik Analizi (SEO / AEO)
-        print("[Pipeline] 2. Metin Analizi basliyor...")
+        # 2. İçerik Analizi (SEO / AEO) + Yorum Analizi (paralel)
+        print("[Pipeline] 2. Metin Analizi ve Yorum Analizi basliyor...")
         score_result = self.content_analyzer.score(scraped.product, scraped.reviews)
         new_content = self.content_analyzer.generate(scraped.product, scraped.reviews, score_result.total_score)
         print(f"[Pipeline] -> Puan: {score_result.total_score}/100, Yeni Baslik: {new_content.new_title}")
+
+        print("[Pipeline] 2b. Yorum Analizi basliyor...")
+        review_analysis = self.review_analyzer.analyze(scraped.product, scraped.reviews)
+        print(f"[Pipeline] -> Yorum Analizi tamamlandi. Begenilen: {len(review_analysis.get('positives', []))}, Sorun: {len(review_analysis.get('negatives', []))}")
 
         # 3. Görselleri İndirme
         print("[Pipeline] 3. Gorseller indiriliyor...")
@@ -120,14 +127,21 @@ class EsnafKopilotPipeline:
                 "id": scraped.product.product_id,
                 "original_title": scraped.product.title,
                 "original_description": scraped.product.description,
+                "url": scraped.product.url,
             },
             "content_analysis": {
                 "score": score_result.total_score,
                 "score_summary": score_result.summary,
+                "categories": [
+                    {"name": c.name, "score": c.score, "max_score": c.max_score, "notes": c.notes}
+                    for c in score_result.categories
+                ],
                 "new_title": new_content.new_title,
                 "new_description": new_content.new_description,
                 "faq": new_content.faq,
-                "keywords": new_content.suggested_keywords
+                "keywords": new_content.suggested_keywords,
+                "notes": new_content.notes,
             },
+            "review_analysis": review_analysis,
             "images": image_results
         }
