@@ -52,53 +52,51 @@ class EsnafKopilotPipeline:
         valid_images = [img for img in downloaded_images if img.local_path]
         print(f"[Pipeline] -> {len(valid_images)} gorsel basariyla indirildi.")
 
-        # 4. Ana Görsel Analizi ve 7 Konsept Düzenlemesi
-        print("[Pipeline] 4. Ana gorsel analizi ve 7 konsept uretimi basliyor...")
+        # 4. Görsellerin Analizi ve Yapay Zeka Stratejisinin (Skill) Çalıştırılması
+        print("[Pipeline] 4. Sanat Yönetmeni (AI Skill) görsel stratejisi planlıyor...")
         
         image_results = []
         
         if not valid_images:
             print("[Pipeline] -> [HATA] İndirilmiş geçerli görsel bulunamadı.")
         else:
-            main_image = valid_images[0]  # Kullanıcının yüklediği/seçtiği 1 Ana Görsel
-            print(f"  -> Ana Gorsel Secildi: {main_image.local_path}")
-            
             try:
-                # 4.1. Analiz (Gemini Text/Vision ile 7 prompt üretimi)
-                analysis = self.image_analyzer.analyze(scraped.product, main_image)
-                print(f"  -> Uretilen Prompt Sayisi: {len(analysis.edit_prompts)}")
+                # 4.1. Analiz (Gemini ile dinamik strateji kurulumu)
+                analysis = self.image_analyzer.plan_strategy(scraped.product, valid_images)
+                print(f"  -> Uretilecek Toplam Konsept Sayisi: {len(analysis.edit_tasks)}")
                 if "analysis_note" in analysis.issues:
                     print(f"  -> Strateji Notu: {analysis.issues['analysis_note']}")
                 
                 # 4.2. Düzenleme (Gemini Image API ile PARALEL üretim)
                 enhanced_images = []
                 
-                def _process_image_concept(args):
-                    p_idx, prompt = args
-                    print(f"    [{p_idx}/{len(analysis.edit_prompts)}] Duzenleniyor ({prompt.concept_name})...")
+                def _process_image_task(args):
+                    p_idx, task = args
+                    print(f"    [{p_idx}/{len(analysis.edit_tasks)}] Duzenleniyor ({task.concept_name}) - Kaynak Görsel {task.source_image.position}...")
                     
-                    base_name = os.path.basename(main_image.local_path).split('.')[0]
-                    ext = os.path.basename(main_image.local_path).split('.')[-1]
-                    concept_safe = "".join(c if c.isalnum() else "_" for c in prompt.concept_name)
+                    base_name = os.path.basename(task.source_image.local_path).split('.')[0]
+                    ext = os.path.basename(task.source_image.local_path).split('.')[-1]
+                    concept_safe = "".join(c if c.isalnum() else "_" for c in task.concept_name)
                     out_path = os.path.join(output_dir, f"{base_name}_KONSEPT_{p_idx}_{concept_safe}.{ext}")
                     
                     try:
-                        enhanced = self.image_analyzer.enhance(main_image, prompt, out_path)
+                        from app.models import ImageEditPrompt
+                        # enhance metodunu bozmamak icin gecici ImageEditPrompt objesi
+                        dummy_prompt = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
+                        enhanced = self.image_analyzer.enhance(task.source_image, dummy_prompt, out_path)
                         print(f"      -> Basarili: {enhanced.local_path}")
                         return {
-                            "concept": prompt.concept_name,
+                            "concept": task.concept_name,
                             "path": enhanced.local_path
                         }
                     except Exception as e:
-                        print(f"      -> [HATA] Duzenleme basarisiz ({prompt.concept_name}): {e}")
+                        print(f"      -> [HATA] Duzenleme basarisiz ({task.concept_name}): {e}")
                         return None
                         
                 import concurrent.futures
                 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-                    # Görevleri hazırla
-                    args_list = [(p_idx, prompt) for p_idx, prompt in enumerate(analysis.edit_prompts, 1)]
-                    # Eşzamanlı çalıştır ve sıralamayı (1'den 8'e) koruyarak sonuçları al
-                    results = list(executor.map(_process_image_concept, args_list))
+                    args_list = [(p_idx, task) for p_idx, task in enumerate(analysis.edit_tasks, 1)]
+                    results = list(executor.map(_process_image_task, args_list))
                     
                 # Başarılı olanları listeye ekle
                 for res in results:
@@ -106,15 +104,15 @@ class EsnafKopilotPipeline:
                         enhanced_images.append(res)
                 
                 image_results.append({
-                    "original_url": main_image.url,
-                    "original_local": main_image.local_path,
-                    "type": "ANA_GORSEL",
+                    "original_url": valid_images[0].url, # Eski formata uygunluk icin
+                    "original_local": valid_images[0].local_path,
+                    "type": "DINAMIK_STRATEJI",
                     "strategy_note": analysis.issues.get("analysis_note", ""),
                     "enhanced": enhanced_images
                 })
                 
             except Exception as e:
-                print(f"  -> [HATA] Ana gorsel islenirken hata: {e}")
+                print(f"  -> [HATA] Görsel stratejisi islenirken hata: {e}")
 
         # 5. Sonuç Dönüşü
         return {

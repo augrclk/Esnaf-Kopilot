@@ -104,3 +104,16 @@ Faz 7: Test Frontend. Geliştirilen bu API'yi görselleştirecek ve test edilmes
 
 ### Bir Sonraki Adım
 Faz 8: Kullanıcı Testi ve Optimizasyonlar. Projenin ana iskeleti %100 tamamlandı. Sistem aktif olarak test edildikten sonra çıkacak olası edge-case'ler ve müşteri talepleri değerlendirilip ek iyileştirmeler (bug-fix) yapılacak.
+
+---
+
+## 2026-05-15 12:35 — Otonom AI Skill Mimarisi ve Dinamik Prompt Sistemi (Faz 8 İyileştirmeleri)
+
+### Yapılan İş
+- **"Skill" Tabanlı Görsel Planlama:** Sistem şablon tabanlı (statik 8 görsel) yapıdan **otonom Sanat Yönetmeni (AI Skill)** yapısına geçirildi. `app/analyzer/image.py` baştan yazılarak yapay zekaya "ürünün türüne göre kaç görsel üretilmesi gerektiği ve hangi orijinal kaynak görsellerin kullanılması gerektiği" konusunda tam özgürlük verildi.
+- **İngilizce Profesyonel Promptlar:** Görsel üretimi için kullanılan Gemini promptları en üst düzey fotoğrafçılık terimleriyle ("cinematic composition", "85mm lens" vb.) İngilizceye çevrildi. Infografik üzerindeki metinlerin Türkçe olması kuralı katılaştırıldı.
+- **Dinamik txt Okuma (Hot-Reload):** `Skor-kriter.txt` ve `Cıktı-Formati.txt` dosyalarının içeriği kod içine hardcode edilmekten kurtarıldı. `app/analyzer/prompts.py` güncellenerek, yapay zekanın her analizde bu `.txt` dosyalarını canlı (runtime) okuması sağlandı. Frontend çökmemesi için JSON çıktısını zorlayan güvenli system komutları kod bloklarına eklendi.
+- **Model ve Hız Optimizasyonları:** Metin analiz modeli `gemini-2.5-flash`'a düşürülerek `503 Unavailable` hatası engellendi ve yorum tarama sayısı 5 sayfaya düşürülerek API/Scraper darboğazları aşıldı. Görsel üretim API model sırası `gemini-3.1-flash-image-preview` -> `gemini-3-pro-image-preview` olarak ayarlandı.
+
+### Bir Sonraki Adım
+Sistemin farklı e-ticaret kategorileri (tekstil, elektronik, kozmetik vb.) ile geniş çaplı son kullanıcı testlerinin yapılması.
