@@ -217,48 +217,76 @@ async def phase_images(req: PhaseRequest):
         scraped = _get_cached_scrape(req.url, req.max_review_pages)  # instant
 
         # ── 1. Görselleri indir ───────────────────────────────────────────────
-        downloaded  = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
+        downloaded   = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
         valid_images = [img for img in downloaded if img.local_path]
 
         if not valid_images:
             return {"status": "success", "data": {"images": []}}
 
         # ── 2. AI strateji planla ─────────────────────────────────────────────
-        analysis     = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
+        analysis      = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
         strategy_note = analysis.issues.get("analysis_note", "")
-        print(f"[Phase/Images] Strateji: {len(analysis.edit_tasks)} konsept — paralel üretiliyor")
+        total         = len(analysis.edit_tasks)
+        print(f"[Phase/Images] Strateji: {total} konsept — 1. tur paralel başlıyor")
 
-        # ── 3. Her konsepti bağımsız async görev olarak başlat ────────────────
-        TASK_TIMEOUT = 120  # saniye
+        # ── 3a. Yardımcı: tek konsept üret ───────────────────────────────────
+        TASK_TIMEOUT = 150  # saniye — retry turunda daha geniş
 
-        async def _enhance_task(idx: int, task) -> dict | None:
+        async def _enhance_task(idx: int, task, timeout: int = TASK_TIMEOUT) -> dict | None:
             base      = os.path.basename(task.source_image.local_path).split('.')[0]
             ext       = os.path.basename(task.source_image.local_path).split('.')[-1]
             safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
             out_path  = os.path.join(out_dir, f"{base}_KONSEPT_{idx}_{safe_name}.{ext}")
             try:
                 dummy_prompt = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
-                # Bloke eden enhance() → thread pool'a gönder
                 enhanced = await asyncio.wait_for(
                     asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy_prompt, out_path),
-                    timeout=TASK_TIMEOUT
+                    timeout=timeout
                 )
                 print(f"  ✓ Konsept {idx}: {task.concept_name}")
                 return {"concept": task.concept_name, "path": enhanced.local_path}
             except asyncio.TimeoutError:
-                print(f"  ✗ Konsept {idx} timeout ({TASK_TIMEOUT}s) — atlandı")
+                print(f"  ✗ Konsept {idx} timeout ({timeout}s)")
                 return None
             except Exception as e:
                 print(f"  ✗ Konsept {idx} hata: {e}")
                 return None
 
-        # Tüm task'lar asyncio.gather ile eş zamanlı başlatılır
-        tasks = [
+        # ── 3b. TUR 1 — Tümü paralel ─────────────────────────────────────────
+        round1_results = await asyncio.gather(*[
             _enhance_task(idx, task)
             for idx, task in enumerate(analysis.edit_tasks, 1)
-        ]
-        results  = await asyncio.gather(*tasks)
-        enhanced = [r for r in results if r]
+        ])
+
+        # Başarılı ve başarısız görevleri ayır
+        enhanced    = [r for r in round1_results if r]
+        failed_idx  = [i + 1 for i, r in enumerate(round1_results) if r is None]
+
+        if failed_idx:
+            print(f"[Phase/Images] Tur 1 bitti: {len(enhanced)}/{total} başarılı. "
+                  f"Başarısızlar: {failed_idx} — 15s bekleyip retry yapılıyor...")
+            await asyncio.sleep(15)  # API'nin nefes alması için kısa bekleme
+
+            # ── 3c. TUR 2 — Başarısızları sırayla yeniden dene ───────────────
+            for idx in failed_idx:
+                task = analysis.edit_tasks[idx - 1]
+                print(f"  ↺ Retry: Konsept {idx}: {task.concept_name}")
+                result = await _enhance_task(idx, task, timeout=180)  # Daha uzun timeout
+                if result:
+                    enhanced.append(result)
+                else:
+                    # Son bir deneme daha — 20s sonra
+                    print(f"  ↺ Son deneme: Konsept {idx}")
+                    await asyncio.sleep(20)
+                    result = await _enhance_task(idx, task, timeout=180)
+                    if result:
+                        enhanced.append(result)
+                    else:
+                        print(f"  ✗ Konsept {idx} tüm denemeler sonrası üretilemedi.")
+                # Sıradaki retry'dan önce kısa bekleme (API kısılmasını engelle)
+                await asyncio.sleep(5)
+
+        print(f"[Phase/Images] Tamamlandı: {len(enhanced)}/{total} görsel üretildi.")
 
         return {
             "status": "success",
@@ -273,6 +301,7 @@ async def phase_images(req: PhaseRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # ── AI Chat ──────────────────────────────────────────────────────────────────
