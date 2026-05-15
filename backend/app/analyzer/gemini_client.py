@@ -95,8 +95,9 @@ class GeminiClient:
         image_bytes = Path(image_path).read_bytes()
         mime = _mime_type(image_path)
 
-        # Kullanıcının belirlediği sırayla kullanılacak image-to-image modelleri
+        # Görsel üretim model öncelik sırası
         models_to_try = [
+            "gemini-2.5-flash-image",   # Test: en yeni flash
             "gemini-3.1-flash-image-preview",
             "gemini-3-pro-image-preview",
         ]
