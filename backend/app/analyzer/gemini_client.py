@@ -98,16 +98,19 @@ class GeminiClient:
         # Kullanıcının belirlediği sırayla kullanılacak image-to-image modelleri
         models_to_try = [
             "gemini-3.1-flash-image-preview",
-            "gemini-3-pro-image-preview"
+            "gemini-3-pro-image-preview",
         ]
-        
-        # Yinelenenleri sıralamayı bozmadan temizle
+
         seen = set()
         models = [x for x in models_to_try if not (x in seen or seen.add(x))]
 
         last_error = None
+        deadline = time.time() + 90  # Toplam 90 saniye hard timeout (tüm modeller için)
+
         for model_name in models:
-            for attempt in range(3):
+            for attempt in range(2):  # Her model için en fazla 2 deneme
+                if time.time() > deadline:
+                    raise GeminiError("Görsel üretim timeout aşıldı (90 saniye)")
                 try:
                     response = self._client.models.generate_content(
                         model=model_name,
@@ -119,29 +122,27 @@ class GeminiClient:
                             response_modalities=["IMAGE", "TEXT"],
                         ),
                     )
-                    
+
                     for part in response.candidates[0].content.parts:
                         if part.inline_data is not None:
                             return part.inline_data.data
-                            
+
                     raise GeminiError(f"Gemini ({model_name}) görsel üretemedi — yanıtta inline_data yok")
-                
+
                 except Exception as exc:
                     err_str = str(exc)
-                    # Eger yogunluk veya kota hatasiysa biraz bekle ve tekrar dene
                     if "503" in err_str or "429" in err_str or "high demand" in err_str.lower():
-                        if attempt < 2:
-                            wait_time = 15 * (attempt + 1)
-                            print(f"[API MESGUL] {model_name} yogun. {wait_time} saniye bekleniyor... (Deneme {attempt+1}/3)")
-                            import time
+                        if attempt < 1:  # Sadece 1 kez bekle
+                            wait_time = 10
+                            print(f"[API MESGUL] {model_name} yogun. {wait_time} saniye bekleniyor... (Deneme {attempt+1}/2)")
                             time.sleep(wait_time)
                             continue
-                        
                     last_error = exc
-                    print(f"[UYARI] {model_name} modeli başarisiz oldu, diğer modele geçiliyor... Hata: {exc}")
-                    break # Bu modelden umudu kes, digerine gec
+                    print(f"[UYARI] {model_name} basarisiz, diger modele geciliyor... Hata: {exc}")
+                    break  # Bu modelden umudu kes
 
-        raise GeminiError(f"Görsel düzenleme başarısız oldu. Tüm alternatif modeller denendi. Son hata: {last_error}") from last_error
+        raise GeminiError(f"Görsel düzenleme başarısız. Son hata: {last_error}") from last_error
+
 
     # ------------------------------------------------------------------
     # Dahili API çağrıları

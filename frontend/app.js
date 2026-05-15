@@ -99,7 +99,7 @@ function clearStatus() {
 }
 
 async function apiFetch(path, body) {
-    const res = await fetch('http://localhost:8000/api' + path, {
+    const res = await fetch('http://localhost:8000' + path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -299,7 +299,7 @@ async function sendChat() {
     const typingId = appendTyping(messagesEl);
 
     try {
-        const res  = await apiFetch('/chat', { message, analysis_context: analysisContext });
+        const res  = await apiFetch('/api/chat', { message, analysis_context: analysisContext });
         removeTyping(messagesEl, typingId);
         appendMessage(messagesEl, 'ai', res.answer || 'Yanıt alınamadı.');
     } catch (err) {
