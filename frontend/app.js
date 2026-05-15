@@ -19,12 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ── Ana Akış: Aşamalı Analiz ─────────────────────────────────────────────────
+// ── Ana Akış: Aşamalı Analiz (Phase 2 & 3 paralel) ──────────────────────────
 async function startProgressiveAnalysis() {
     const url = document.getElementById('urlInput').value.trim();
     if (!url) { alert('Lütfen bir Trendyol linki girin!'); return; }
 
-    // Temizle
     resetUI();
     analysisContext = null;
     currentOutputDir = '';
@@ -35,28 +34,34 @@ async function startProgressiveAnalysis() {
 
     try {
         // ─── FAZ 1: Scraping ─────────────────────────────────────────────────
-        setStatus('🔍 Ürün sayfası çekiliyor...', 1);
+        setStatus('🔍 Ürün sayfası çekiliyor...', [1]);
         const scrapeRes = await apiFetch('/api/phase/scrape', { url, max_review_pages: 5 });
         renderScrapePhase(scrapeRes.data);
 
-        // ─── FAZ 2: İçerik + Yorum Analizi ──────────────────────────────────
-        setStatus('🤖 İçerik analiz ediliyor, yeni başlık ve açıklama oluşturuluyor...', 2);
-        const analyzeRes = await apiFetch('/api/phase/analyze', { url, max_review_pages: 5 });
-        currentOutputDir = analyzeRes.output_dir || '';
-        renderAnalyzePhase(analyzeRes.data);
+        // ─── FAZ 2 + FAZ 3: PARALEL başlat ──────────────────────────────────
+        // İkisi de sadece scrape cache'ine ihtiyaç duyuyor → aynı anda çalışabilir
+        setStatus('🤖 İçerik analizi + 🎨 Görsel üretim — paralel çalışıyor...', [2, 3]);
 
-        // Analiz bitti → chat için context güncelle
-        analysisContext = analyzeRes.data;
+        const analyzePromise = apiFetch('/api/phase/analyze', { url, max_review_pages: 5 })
+            .then(res => {
+                currentOutputDir = res.output_dir || '';
+                analysisContext = res.data;
+                renderAnalyzePhase(res.data);
+                setStepDone(2);
+            });
 
-        // ─── FAZ 3: Görsel Üretim ────────────────────────────────────────────
-        setStatus('🎨 Görseller analiz ediliyor ve yeni versiyonları oluşturuluyor...', 3);
-        const imagesRes = await apiFetch('/api/phase/images', {
+        const imagesPromise = apiFetch('/api/phase/images', {
             url,
-            output_dir: currentOutputDir,
+            output_dir: '',       // Phase 3 kendi output_dir'ini oluşturur
             max_review_pages: 5
-        });
-        renderImagesPhase(imagesRes.data);
+        })
+            .then(res => {
+                renderImagesPhase(res.data);
+                setStepDone(3);
+            });
 
+        // İkisi de bitince status temizle
+        await Promise.allSettled([analyzePromise, imagesPromise]);
         clearStatus();
 
     } catch (err) {
@@ -81,21 +86,39 @@ function resetUI() {
     document.getElementById('chatMessages').innerHTML = '';
 }
 
-function setStatus(msg, phase) {
-    const bar = document.getElementById('statusBar');
+function setStatus(msg, activePhases) {
+    const bar  = document.getElementById('statusBar');
     const text = document.getElementById('statusText');
-    const steps = document.querySelectorAll('.phase-step');
     bar.style.display = 'flex';
-    text.textContent = msg;
-    steps.forEach((s, i) => {
-        s.classList.toggle('active', i + 1 === phase);
-        s.classList.toggle('done', i + 1 < phase);
+    text.textContent  = msg;
+
+    // activePhases: number veya number[] — her ikisini de kabul et
+    const active = Array.isArray(activePhases) ? activePhases : [activePhases];
+
+    document.querySelectorAll('.phase-step').forEach((s, i) => {
+        const phaseNum = i + 1;
+        const isDone   = !active.includes(phaseNum) && Math.min(...active) > phaseNum;
+        const isActive = active.includes(phaseNum);
+        s.classList.toggle('active', isActive);
+        s.classList.toggle('done',   isDone);
     });
+}
+
+function setStepDone(phaseNum) {
+    const steps = document.querySelectorAll('.phase-step');
+    const step  = steps[phaseNum - 1];
+    if (step) {
+        step.classList.remove('active');
+        step.classList.add('done');
+    }
 }
 
 function clearStatus() {
     document.getElementById('statusBar').style.display = 'none';
-    document.querySelectorAll('.phase-step').forEach(s => s.classList.add('done'));
+    document.querySelectorAll('.phase-step').forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('done');
+    });
 }
 
 async function apiFetch(path, body) {
