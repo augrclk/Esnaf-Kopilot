@@ -117,3 +117,18 @@ Faz 8: Kullanıcı Testi ve Optimizasyonlar. Projenin ana iskeleti %100 tamamlan
 
 ### Bir Sonraki Adım
 Sistemin farklı e-ticaret kategorileri (tekstil, elektronik, kozmetik vb.) ile geniş çaplı son kullanıcı testlerinin yapılması.
+
+---
+
+## 2026-05-15 12:45 — Yorum Analizi ve Ürün Odaklı AI Chat Eklendi
+
+### Yapılan İş
+- **Yeni Modül — `analyzer/review.py`:** Ürün yorumlarını analiz eden bağımsız `ReviewAnalyzer` sınıfı yazıldı. Çekilen yorumları özetleyerek beğenilen noktalar, dikkat edilmesi gereken sorunlar ve cevaplanmamış müşteri soruları formatında yapılandırılmış JSON çıktı üretiyor.
+- **Yeni API — `POST /api/chat`:** Ürün odaklı AI sohbet endpoint'i eklendi. Analiz sonucunun tamamını (SEO skoru, yeni başlık, yorum analizi) context olarak alır; genel sohbet yerine yalnızca söz konusu ürün hakkında yanıt verir. `GeminiClient`'a JSON parse gerektirmeyen `chat_text()` metodu eklendi.
+- **Pipeline Güncellemesi:** `pipeline.py` güncellenerek yorum analizi pipeline'a eklendi. Artık `/api/analyze` yanıtı `review_analysis` alanını da içeriyor. Skor kategorileri (`categories`) ve content `notes` alanı da yanıta dahil edildi.
+- **Frontend Güncellemesi:**
+  - `Müşteri Yorum Analizi` kartı: Ortalama puan, beğenilen noktalar, sorunlar ve cevaplanmamış sorular iki sütunlu grid ile gösteriliyor.
+  - `AI Chat` bölümü: "Bu ürün hakkında asistana sor" başlığıyla 6 hazır örnek soru ve serbest metin girişi ile chat arayüzü eklendi. Yazıyor animasyonu ve tam responsive tasarım mevcut.
+
+### Bir Sonraki Adım
+Farklı ürün kategorileriyle test; gerekirse chat context'ine SSS ve görsel strateji bilgisi de eklenebilir.

@@ -147,6 +147,20 @@ class GeminiClient:
     # Dahili API çağrıları
     # ------------------------------------------------------------------
 
+    def chat_text(self, system_prompt: str, user_message: str) -> str:
+        """
+        Sohbet tarzı soru için ham metin yanıtı döner (JSON parse edilmez).
+
+        Args:
+            system_prompt: Asistan rolü ve bağlam
+            user_message: Kullanıcının sorusu
+
+        Returns:
+            Gemini'nin düz metin yanıtı
+        """
+        full_prompt = f"{system_prompt}\n\nKullanıcı: {user_message}"
+        return self._call_text_api(full_prompt)
+
     def _call_text_api(self, prompt: str, retry: int = 2) -> str:
         """Metin promptu ile Gemini'yi çağırır, ham metin yanıtı döner."""
         last_error: Exception | None = None
