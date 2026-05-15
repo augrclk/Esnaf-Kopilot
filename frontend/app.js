@@ -50,15 +50,7 @@ async function startProgressiveAnalysis() {
                 setStepDone(2);
             });
 
-        const imagesPromise = apiFetch('/api/phase/images', {
-            url,
-            output_dir: '',       // Phase 3 kendi output_dir'ini oluşturur
-            max_review_pages: 5
-        })
-            .then(res => {
-                renderImagesPhase(res.data);
-                setStepDone(3);
-            });
+        const imagesPromise = streamImages(url);
 
         // İkisi de bitince status temizle
         await Promise.allSettled([analyzePromise, imagesPromise]);
@@ -203,39 +195,103 @@ function renderAnalyzePhase(data) {
     document.getElementById('phaseChatSection').style.display = 'block';
 }
 
-// ── FAZ 3 RENDER: Görseller ───────────────────────────────────────────────────
-function renderImagesPhase(data) {
-    document.getElementById('phaseImages').style.display = 'block';
 
-    const imgData = data.images && data.images.length > 0 ? data.images[0] : null;
-    const strategyEl = document.getElementById('strategyNote');
-    strategyEl.textContent = imgData ? (imgData.strategy_note || 'Strateji notu yok.') : 'Görsel üretilemedi.';
+// ── FAZ 3: SSE stream ile anlık görsel ekleme ────────────────────────────────
 
-    const gallery = document.getElementById('imageGallery');
-    gallery.innerHTML = '';
-    if (imgData && imgData.enhanced) {
-        imgData.enhanced.forEach((img, i) => {
-            const imgUrl = 'http://localhost:8000/' + img.path;
-            const card = document.createElement('div');
-            card.className = 'concept-card fade-in';
-            card.innerHTML = `
-                <div class="concept-img-wrapper">
-                    <img src="${imgUrl}" alt="Konsept ${i + 1}"
-                         onerror="this.src='https://placehold.co/400x400/1a1a2e/6c63ff?text=Üretiliyor...'">
-                </div>
-                <div class="concept-info">
-                    <span class="concept-tag">Konsept ${i + 1}</span>
-                    <h4 class="concept-name">${escHtml(img.concept)}</h4>
-                </div>
-            `;
-            gallery.appendChild(card);
-        });
-    } else {
-        gallery.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Görsel üretilemedi veya API kotası doldu.</p>';
+async function streamImages(url) {
+    const res = await fetch('http://localhost:8000/api/phase/images', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ url, output_dir: '', max_review_pages: 5 })
+    });
+    if (!res.ok) { console.error('Images stream error:', res.status); return; }
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try { handleImageEvent(JSON.parse(line.slice(6))); } catch (_) {}
+        }
     }
-
-    document.getElementById('phaseImages').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+function handleImageEvent(event) {
+    switch (event.type) {
+        case 'start':  _initImagesSection(event.strategy_note, event.total); break;
+        case 'image':  _appendImageCard(event.data);                         break;
+        case 'retry': {
+            const b = document.getElementById('imagesRetryBadge');
+            if (b) b.style.display = 'flex';
+            break;
+        }
+        case 'done':
+            setStepDone(3);
+            _finalizeImagesSection(event.count);
+            break;
+        case 'error':
+            console.error('[Images]', event.message);
+            break;
+    }
+}
+
+function _initImagesSection(strategyNote, total) {
+    const section = document.getElementById('phaseImages');
+    section.style.display = 'block';
+    const strategyEl = document.getElementById('strategyNote');
+    if (strategyEl) strategyEl.textContent = strategyNote || 'Strateji oluşturuluyor...';
+
+    // Retry badge — gizli başlar
+    if (!document.getElementById('imagesRetryBadge')) {
+        const badge = document.createElement('div');
+        badge.id        = 'imagesRetryBadge';
+        badge.className = 'analyzing-tag';
+        badge.style.cssText = 'display:none; margin-top:0.5rem;';
+        badge.innerHTML = `<span class="loader-pulse"></span> Bazı görseller yeniden deneniyor...`;
+        strategyEl?.parentElement?.appendChild(badge);
+    }
+    const gallery = document.getElementById('imageGallery');
+    if (gallery) gallery.innerHTML = '';
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+let _imgN = 0;
+function _appendImageCard(img) {
+    const gallery = document.getElementById('imageGallery');
+    if (!gallery) return;
+    _imgN++;
+    const card = document.createElement('div');
+    card.className = 'concept-card fade-in';
+    card.innerHTML = `
+        <div class="concept-img-wrapper">
+            <img src="http://localhost:8000/${img.path}" alt="${escHtml(img.concept)}"
+                 onerror="this.src='https://placehold.co/400x400/1a1a2e/6c63ff?text=Y%C3%BCkleniyor...'">
+        </div>
+        <div class="concept-info">
+            <span class="concept-tag">Konsept ${_imgN}</span>
+            <h4 class="concept-name">${escHtml(img.concept)}</h4>
+        </div>
+    `;
+    gallery.appendChild(card);
+}
+
+function _finalizeImagesSection(count) {
+    const b = document.getElementById('imagesRetryBadge');
+    if (b) b.style.display = 'none';
+    if (count === 0) {
+        const g = document.getElementById('imageGallery');
+        if (g) g.innerHTML = '<p style="color:var(--text-muted);text-align:center">Görsel üretilemedi veya API kotası doldu.</p>';
+    }
+    _imgN = 0;
+}
+
 
 // ── Animasyonlu Skor Halkası ─────────────────────────────────────────────────
 function animateScoreRing(numberId, ringId, targetScore, isAfter) {
