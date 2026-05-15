@@ -53,15 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Context'i sakla (chat için)
             analysisContext = data;
 
-            // ── Temel Bilgiler ──────────────────────────────────────
-            origTitle.textContent = data.product.original_title;
-            seoScore.textContent = data.content_analysis.score;
-            newTitle.textContent = data.content_analysis.new_title;
-            if (newDescription) {
-                newDescription.textContent = data.content_analysis.new_description;
-            }
+            // ── Önce / Sonra Karşılaştırma ──────────────────────────────
+            const currentScore = data.content_analysis.score;
+            const projectedScore = Math.min(100, currentScore + Math.round((100 - currentScore) * 0.72));
 
-            // ── Anahtar Kelimeler ───────────────────────────────────
+            document.getElementById('origTitle').textContent = data.product.original_title;
+            document.getElementById('newTitle').textContent = data.content_analysis.new_title;
+            document.getElementById('origDescription').textContent =
+                data.product.original_description || '(Açıklama bulunamadı)';
+            document.getElementById('newDescription').textContent =
+                data.content_analysis.new_description;
+
+            // Animasyonlu skor halkaları
+            animateScoreRing('scoreBefore', 'ringFillBefore', currentScore, false);
+            animateScoreRing('scoreAfter', 'ringFillAfter', projectedScore, true);
+
+            // ── Anahtar Kelimeler ──────────────────────────────────────
             keywordList.innerHTML = '';
             (data.content_analysis.keywords || []).forEach(kw => {
                 const span = document.createElement('span');
@@ -111,6 +118,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// ── Animasyonlu Skor Halkası ──────────────────────────────────────────────
+
+function animateScoreRing(numberId, ringId, targetScore, isAfter) {
+    const numberEl = document.getElementById(numberId);
+    const ringEl = document.getElementById(ringId);
+    if (!numberEl || !ringEl) return;
+
+    const circumference = 2 * Math.PI * 32; // r=32
+    ringEl.style.strokeDasharray = circumference;
+    ringEl.style.strokeDashoffset = circumference;
+
+    let current = 0;
+    const duration = 1200;
+    const startTime = performance.now();
+
+    function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        current = Math.round(targetScore * eased);
+        numberEl.textContent = current;
+        const offset = circumference - (current / 100) * circumference;
+        ringEl.style.strokeDashoffset = offset;
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+}
 
 // ── Yorum Analizi Render ────────────────────────────────────────────────────
 
