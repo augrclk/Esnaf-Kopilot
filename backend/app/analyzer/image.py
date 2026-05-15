@@ -14,46 +14,35 @@ from app.models import (
     GeneratedImage,
 )
 
-_IMAGE_EVAL_SYSTEM = """
-You are an elite E-commerce Art Director, Creative Strategist, and Master Advertising Photographer.
-You will be provided with detailed product information (title, description) and all available original images of the product (indexed from 1 to N).
+from pathlib import Path
 
-YOUR MISSION: Deeply understand the product and devise the ultimate IMAGE SET (portfolio) strategy to maximize conversion rates and e-commerce sales.
-You are NOT bound by templates. Every product has unique needs:
-- A perfume might require 8 different lifestyle and ambient shots derived from a single bottle image.
-- A technical gadget or power tool might only need 4-5 highly focused images using 3 different original source angles.
+# Skill dosyası proje kökünden dinamik okunur (Skor-kriter.txt mantığıyla aynı)
+# backend/app/analyzer/image.py → backend/app/analyzer → backend/app → backend → Esnaf-Kopilot
+_BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
-DECISIONS YOU MUST MAKE AUTONOMOUSLY:
-1. QUANTITY: Decide exactly how many final images need to be generated (Minimum 3, Maximum 8). Scale this based on what the product genuinely needs to sell.
-2. SOURCE MAPPING: For every concept you create, choose exactly WHICH original image index (source_image_index) should be used as the base.
-3. THE RULE OF THE FIRST: The first image (Concept 1) MUST always be a "Platform Standard White" — a flawless, pure white background studio shot suitable for primary marketplace listings (Trendyol/Amazon).
-4. CREATIVE FREEDOM: For the remaining images, the background does NOT need to be white. Design creative, thematic, lifestyle, contextual, or feature-infographic scenes that will make the customer say "WOW".
+_SKILL_FILE = _BASE_DIR / "esnaf-kopilot-gorsel-analiz-skill-v2.txt"
 
-IMAGE-TO-IMAGE RULES:
-- These prompts will be fed into the Gemini Image API.
-- The core structure, shape, and packaging of the product in the chosen source image MUST NEVER be altered.
-- Only the environment, background, lighting, scene, and composition should change.
-- Write highly detailed, professional photography prompts in ENGLISH (e.g., 85mm lens, volumetric lighting, hyper-realistic, bokeh, cinematic composition).
-- IMPORTANT LANGUAGE EXCEPTION: If you design a "Feature Infographic" concept that includes text directly on the image, you MUST explicitly state in the prompt that the typography/text must be written in TURKISH.
+def _load_image_skill() -> str:
+    """Görsel analiz skill prompt'unu txt dosyasından yükler."""
+    if _SKILL_FILE.exists():
+        content = _SKILL_FILE.read_text(encoding="utf-8").strip()
+        print(f"[ImageAnalyzer] Skill yüklendi: {_SKILL_FILE.name} ({len(content)} karakter)")
+        return content
+    # Fallback — dosya yoksa minimal prompt
+    print(f"[ImageAnalyzer] UYARI: {_SKILL_FILE.name} bulunamadı, varsayılan prompt kullanılıyor.")
+    return """You are an elite E-commerce Art Director.
+Analyze the product and create a safe, conversion-focused image set strategy.
+Concept 1 must always be 'Platform Standard White'.
+Return valid JSON only:
+{"best_image_analysis": "<Turkish>", "edit_tasks": [{"source_image_index": 1, "concept_name": "<English>", "prompt": "<English>"}]}"""
 
-OUTPUT FORMAT (Respond ONLY with the following JSON structure):
-{
-  "best_image_analysis": "<Briefly explain your strategy in Turkish: Why did you choose these specific source images and concepts? What is the creative direction?>",
-  "edit_tasks": [
-    {
-      "source_image_index": <Integer from 1 to N indicating the chosen original image>,
-      "concept_name": "<Creative Concept Name in English (e.g., Platform Standard White, Tropical Splash)>",
-      "prompt": "<Highly detailed image-to-image prompt in English. If it contains text, request the text explicitly in Turkish>"
-    }
-  ]
-}
-"""
 
 class ImageAnalyzer:
     """Görsel analiz ve strateji servisi."""
 
     def __init__(self, client: GeminiClient) -> None:
         self._client = client
+        self._system_prompt = _load_image_skill()  # Sunucu başlarken bir kez yüklenir
 
     def plan_strategy(self, product: Product, images: list[ProductImage]) -> ImageAnalysis:
         """
@@ -76,7 +65,7 @@ MEVCUT ORİJİNAL GÖRSELLER (Aşağıdaki dosyalar sırasıyla 1'den {len(valid
         user_prompt += "\nLütfen ürünün doğasına en uygun görsel stratejini belirle ve JSON döndür."
         
         image_paths = [img.local_path for img in valid_images]
-        raw = self._client.analyze_image(_IMAGE_EVAL_SYSTEM, user_prompt, image_paths)
+        raw = self._client.analyze_image(self._system_prompt, user_prompt, image_paths)
         
         return self._parse_analysis_result(raw, valid_images)
 

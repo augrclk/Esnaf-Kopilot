@@ -97,8 +97,8 @@ class GeminiClient:
 
         # Görsel üretim model öncelik sırası
         models_to_try = [
-            "gemini-2.5-flash-image",   # Test: en yeni flash
             "gemini-3.1-flash-image-preview",
+            "gemini-2.5-flash-image",   # Test: en yeni flash
             "gemini-3-pro-image-preview",
         ]
 
