@@ -39,38 +39,86 @@
         </section>
 
         <section id="resultsSection" class="results-section" style="display: none;">
-            
-            <!-- Ürün Özeti + SEO Skoru -->
-            <div class="dashboard-grid">
-                <div class="glass-panel info-card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-box-open"></i>
-                        <h2>Orijinal Ürün</h2>
+
+            <!-- Önce / Sonra Karşılaştırma -->
+            <div class="compare-section glass-panel">
+                <div class="card-header" style="margin-bottom: 1.8rem;">
+                    <i class="fa-solid fa-code-compare"></i>
+                    <h2>Önce / Sonra Karşılaştırma</h2>
+                </div>
+
+                <!-- Skor Karşılaştırma -->
+                <div class="compare-scores">
+                    <div class="compare-score-card before-score">
+                        <span class="compare-label">Mevcut Skor</span>
+                        <div class="score-ring" id="scoreRingBefore">
+                            <svg viewBox="0 0 80 80">
+                                <circle cx="40" cy="40" r="32" class="ring-bg"/>
+                                <circle cx="40" cy="40" r="32" class="ring-fill ring-before" id="ringFillBefore"/>
+                            </svg>
+                            <span class="score-number" id="scoreBefore">—</span>
+                        </div>
+                        <span class="score-sub">/ 100</span>
                     </div>
-                    <h3 id="origTitle" class="orig-title">Yükleniyor...</h3>
-                    <div class="score-badge">
-                        <span id="seoScore">0</span>/100 SEO Skoru
+
+                    <div class="compare-arrow">
+                        <i class="fa-solid fa-arrow-right-long"></i>
+                        <span>AI İyileştirmesi</span>
+                    </div>
+
+                    <div class="compare-score-card after-score">
+                        <span class="compare-label">Hedef Skor</span>
+                        <div class="score-ring" id="scoreRingAfter">
+                            <svg viewBox="0 0 80 80">
+                                <circle cx="40" cy="40" r="32" class="ring-bg"/>
+                                <circle cx="40" cy="40" r="32" class="ring-fill ring-after" id="ringFillAfter"/>
+                            </svg>
+                            <span class="score-number after-score-num" id="scoreAfter">—</span>
+                        </div>
+                        <span class="score-sub">/ 100</span>
                     </div>
                 </div>
 
-                <div class="glass-panel ai-card">
-                    <div class="card-header highlight">
-                        <i class="fa-solid fa-bolt"></i>
-                        <h2>Yapay Zeka Önerisi</h2>
+                <!-- Başlık Karşılaştırma -->
+                <div class="compare-row" id="compareRow">
+                    <div class="compare-col compare-before">
+                        <div class="compare-col-label">
+                            <i class="fa-solid fa-circle-xmark"></i> Mevcut Başlık
+                        </div>
+                        <p id="origTitle" class="compare-text compare-text-before">Yükleniyor...</p>
                     </div>
-                    <h3 id="newTitle" class="new-title">Yükleniyor...</h3>
+                    <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
+                    <div class="compare-col compare-after">
+                        <div class="compare-col-label">
+                            <i class="fa-solid fa-circle-check"></i> Yeni Başlık
+                        </div>
+                        <p id="newTitle" class="compare-text compare-text-after">Yükleniyor...</p>
+                    </div>
+                </div>
+
+                <!-- Açıklama Karşılaştırma -->
+                <div class="compare-row compare-row-desc">
+                    <div class="compare-col compare-before">
+                        <div class="compare-col-label">
+                            <i class="fa-solid fa-circle-xmark"></i> Mevcut Açıklama
+                        </div>
+                        <div id="origDescription" class="compare-text compare-desc-text compare-text-before">Yükleniyor...</div>
+                    </div>
+                    <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
+                    <div class="compare-col compare-after">
+                        <div class="compare-col-label">
+                            <i class="fa-solid fa-circle-check"></i> Yeni Açıklama
+                        </div>
+                        <div id="newDescription" class="compare-text compare-desc-text compare-text-after">Yükleniyor...</div>
+                    </div>
+                </div>
+
+                <!-- Anahtar Kelimeler -->
+                <div style="margin-top: 1.5rem;">
+                    <div class="compare-col-label" style="margin-bottom: 0.7rem; color: var(--primary);">
+                        <i class="fa-solid fa-tags"></i> Önerilen Anahtar Kelimeler
+                    </div>
                     <div class="keywords" id="keywordList"></div>
-                </div>
-            </div>
-
-            <!-- Yeni Ürün Açıklaması -->
-            <div class="glass-panel mt-2">
-                <div class="card-header highlight">
-                    <i class="fa-solid fa-align-left"></i>
-                    <h2>Satış Garantili Ürün Açıklaması (SEO & AEO)</h2>
-                </div>
-                <div id="newDescription" class="description-text strategy-text" style="white-space: pre-line; border-left-color: var(--secondary);">
-                    Yükleniyor...
                 </div>
             </div>
 

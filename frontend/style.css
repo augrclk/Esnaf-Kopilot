@@ -271,6 +271,157 @@ input[type="text"]:focus {
 }
 .concept-name { font-size: 1.1rem; font-weight: 600; }
 
+/* ── Önce / Sonra Karşılaştırma ──────────────────────────────── */
+.compare-section { margin-bottom: 0; }
+
+.compare-scores {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.compare-score-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.compare-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.score-ring {
+    position: relative;
+    width: 90px;
+    height: 90px;
+}
+
+.score-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.06);
+    stroke-width: 6;
+}
+
+.ring-fill {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.05s linear;
+}
+
+.ring-before { stroke: #f87171; }
+.ring-after  { stroke: var(--success); }
+
+.score-number {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.after-score-num { color: var(--success); }
+
+.score-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.compare-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.compare-arrow i { font-size: 1.4rem; }
+
+/* Yan yana satırlar */
+.compare-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1.2rem;
+    border: 1px solid var(--glass-border);
+}
+
+.compare-col {
+    padding: 1.3rem 1.5rem;
+}
+
+.compare-before { background: rgba(248, 113, 113, 0.05); }
+.compare-after  { background: rgba(16, 185, 129, 0.05); }
+
+.compare-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.03);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    border-left: 1px solid var(--glass-border);
+    border-right: 1px solid var(--glass-border);
+}
+
+.compare-col-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.7rem;
+}
+
+.compare-before .compare-col-label { color: #f87171; }
+.compare-after  .compare-col-label { color: var(--success); }
+
+.compare-text {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    font-weight: 600;
+    margin: 0;
+}
+
+.compare-text-before { color: #cbd5e1; }
+.compare-text-after  { color: #f0fdf4; }
+
+.compare-desc-text {
+    font-size: 0.88rem;
+    font-weight: 400;
+    line-height: 1.65;
+    white-space: pre-line;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) transparent;
+}
+
+.compare-row-desc .compare-before { border-top: 1px solid var(--glass-border); }
+.compare-row-desc .compare-after  { border-top: 1px solid var(--glass-border); }
+
 /* ── Yorum Analizi ────────────────────────────────────────────── */
 .review-count-badge {
     margin-left: auto;
