@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     # Gemini model isimleri
     gemini_text_model: str = "gemini-3-flash-preview"
-    gemini_image_model: str = "gemini-3.1-flash-image-preview"
+    gemini_image_model: str = "gemini-2.5-flash-image"
 
     # Scraper ayarları
     scraper_timeout: float = 20.0
