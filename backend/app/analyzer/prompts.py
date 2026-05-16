@@ -92,12 +92,14 @@ def build_content_prompt(
     product: Product,
     reviews: list[Review],
     current_score: int,
+    review_analysis: dict | None = None,
 ) -> tuple[str, str]:
     content_rules = _read_file_safe("Cıktı-Formati.txt")
     system_prompt = f"Sen bir e-ticaret içerik uzmanısın.\n\n{content_rules}\n{_CONTENT_JSON_INSTRUCTION}"
 
     review_sample = _format_reviews(reviews, max_count=40)
     review_insights = _extract_review_insights(reviews)
+    analysis_block = _format_review_analysis(review_analysis) if review_analysis else ""
 
     user_prompt = f"""
 Aşağıdaki ürün için optimize edilmiş içerik üret:
@@ -112,7 +114,7 @@ MEVCUT PUAN: {current_score}/100
 
 YORUM İÇGÖRÜLERİ:
 {review_insights}
-
+{analysis_block}
 KULLANICI YORUMLARI ({len(reviews)} yorumdan seçilmiş {min(40, len(reviews))} tanesi):
 {review_sample}
 
@@ -137,6 +139,45 @@ def _format_reviews(reviews: list[Review], max_count: int) -> str:
         lines.append(f"{i}. [{rating}] {r.text}")
 
     return "\n".join(lines)
+
+
+def _format_review_analysis(ra: dict) -> str:
+    """ReviewAnalyzer çıktısını içerik üretim prompt'una entegre eder."""
+    if not ra or ra.get("total_reviews", 0) == 0:
+        return ""
+
+    lines = ["\nMÜŞTERİ ANALİZİ SONUÇLARI (ZORUNLU ENTEGRASYON):"]
+
+    negatives = ra.get("negatives", [])
+    if negatives:
+        lines.append("\n⚠️ SORUNLAR — Yeni açıklamada bu sorunlara PROAKTİF ÇÖZÜM sun:")
+        for n in negatives[:5]:
+            sev = n.get("severity", "")
+            lines.append(f"  - [{sev}] {n.get('title', '')}: {n.get('detail', '')}")
+
+    content_sugg = ra.get("content_suggestions", [])
+    if content_sugg:
+        lines.append("\n📝 İÇERİK ÖNERİLERİ — Yeni açıklamada MUTLAKA değin:")
+        for s in content_sugg[:5]:
+            lines.append(f"  - {s}")
+
+    questions = ra.get("unanswered_questions", [])
+    if questions:
+        lines.append("\n❓ CEVAPLANMAMIŞ SORULAR — SSS bölümünde bunları cevapla:")
+        for q in questions[:5]:
+            lines.append(f"  - {q}")
+
+    positives = ra.get("positives", [])
+    if positives:
+        lines.append("\n✅ BEĞENİLEN NOKTALAR — Yeni açıklamada bunları ÖNE ÇIKAR:")
+        for p in positives[:5]:
+            lines.append(f"  - {p.get('title', '')}: {p.get('detail', '')}")
+
+    drivers = ra.get("purchase_drivers", [])
+    if drivers:
+        lines.append(f"\n🎯 SATIN ALMA FAKTÖRLERİ: {', '.join(drivers[:5])}")
+
+    return "\n".join(lines) + "\n"
 
 
 def _extract_review_insights(reviews: list[Review]) -> str:

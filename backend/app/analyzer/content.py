@@ -48,6 +48,7 @@ class ContentAnalyzer:
         product: Product,
         reviews: list[Review],
         current_score: int,
+        review_analysis: dict | None = None,
     ) -> ContentResult:
         """
         Optimize edilmiş başlık, açıklama, SSS ve anahtar kelimeler üretir.
@@ -56,11 +57,14 @@ class ContentAnalyzer:
             product: Mevcut ürün bilgisi
             reviews: Kullanıcı yorumları
             current_score: score() metodundan gelen mevcut puan
+            review_analysis: ReviewAnalyzer çıktısı (opsiyonel — varsa içeriğe entegre edilir)
 
         Returns:
             ContentResult: Yeni başlık, açıklama, SSS, anahtar kelimeler
         """
-        system_prompt, user_prompt = build_content_prompt(product, reviews, current_score)
+        system_prompt, user_prompt = build_content_prompt(
+            product, reviews, current_score, review_analysis,
+        )
         raw = self._client.analyze_text(system_prompt, user_prompt)
         return _parse_content_result(raw)
 

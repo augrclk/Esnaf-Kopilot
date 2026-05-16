@@ -12,29 +12,58 @@ from app.models import Product, Review
 
 
 _REVIEW_ANALYSIS_SYSTEM = """
-Sen bir müşteri deneyimi analistisin. Sana bir e-ticaret ürününün kullanıcı yorumları verilecek.
-Bu yorumları analiz ederek satıcıya pratik ve dürüst içgörüler sun.
+Sen deneyimli bir müşteri içgörü analistisin. Sana bir e-ticaret ürününün kullanıcı yorumları verilecek.
+Bu yorumları analiz ederek satıcıya SOMUT ve UYGULANABILIR içgörüler sun.
 
-KURALI ASLA ÇIĞNEME:
+KURALLAR:
 - Sadece yorumlarda gerçekten yazana dayan. Uydurma.
-- "Genel olarak iyi" gibi belirsiz ifade kullanma. Somut al.
+- "Genel olarak iyi" gibi belirsiz ifade kullanma. Somut ol.
 - Yorumlarda hiç bahsedilmemişse o konuya giriş yapma.
+- Her tespit için kaç yorumda geçtiğini tahmin et (tekil mi, yaygın mı).
 
 ÇIKTI FORMATI — sadece JSON ver:
 {
   "avg_rating": <float, yorumların ortalama puanı>,
   "total_reviews": <int, analiz edilen yorum sayısı>,
+  "confidence": "<LOW (1-10 yorum) | MEDIUM (11-50 yorum) | HIGH (50+ yorum)>",
   "positives": [
-    {"title": "<kısa başlık>", "detail": "<müşterilerin tam olarak ne söylediği, varsa örnek alıntı>"}
+    {
+      "title": "<kısa başlık>",
+      "detail": "<müşterilerin tam olarak ne söylediği, varsa örnek alıntı>",
+      "frequency": "<RARE | COMMON | VERY_COMMON>"
+    }
   ],
   "negatives": [
-    {"title": "<kısa başlık>", "detail": "<müşterilerin tam olarak ne söylediği, varsa örnek alıntı>"}
+    {
+      "title": "<kısa başlık>",
+      "detail": "<müşterilerin tam olarak ne söylediği, varsa örnek alıntı>",
+      "frequency": "<RARE | COMMON | VERY_COMMON>",
+      "severity": "<LOW | MEDIUM | HIGH | CRITICAL>"
+    }
+  ],
+  "purchase_drivers": [
+    "<satın alma kararını en çok etkileyen faktörler: fiyat/performans, kalite, hızlı kargo, vb.>"
+  ],
+  "visual_insights": [
+    "<görsel stratejiye girdi olacak tespitler: 'boyutu küçük', 'rengi farklı', 'ambalaj güzel', 'kaliteli görünüyor' vb.>"
   ],
   "unanswered_questions": [
     "<yorumlarda belirsiz kalan veya tekrar eden ama cevaplanmamış müşteri sorusu>"
   ],
+  "content_suggestions": [
+    "<açıklamada mutlaka değinilmesi gereken konular — yorum verilerine dayanarak>"
+  ],
   "sentiment_summary": "<2-3 cümle: genel müşteri duygu durumu ve en kritik mesaj>"
 }
+
+SEVERITY rehberi:
+- CRITICAL: Ürün arızalı/hasarlı, sağlık riski, tamamen yanlış ürün gönderimi
+- HIGH: Beklentiden çok farklı (boyut, renk, performans), iade düşündüren sorunlar
+- MEDIUM: Küçük rahatsızlıklar ama ürün kullanılabilir (ambalaj ezik, koku geçici)
+- LOW: Tercih meselesi, kişisel beklenti farkı
+
+visual_insights alanı ZORUNLUDUR — bu veri görsel üretim stratejisine doğrudan girdi olacak.
+content_suggestions alanı ZORUNLUDUR — bu veri yeni açıklama üretiminde kullanılacak.
 """
 
 
@@ -61,10 +90,14 @@ class ReviewAnalyzer:
             return {
                 "avg_rating": 0.0,
                 "total_reviews": 0,
+                "confidence": "LOW",
                 "positives": [],
                 "negatives": [],
+                "purchase_drivers": [],
+                "visual_insights": [],
                 "unanswered_questions": [],
-                "sentiment_summary": "Analiz edilecek yorum bulunamadı."
+                "content_suggestions": [],
+                "sentiment_summary": "Analiz edilecek yorum bulunamadı.",
             }
 
         user_prompt = self._build_prompt(product, reviews)
