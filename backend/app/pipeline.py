@@ -43,15 +43,16 @@ class EsnafKopilotPipeline:
         scraped = self.scraper.scrape(url, max_review_pages=max_review_pages)
         print(f"[Pipeline] -> Baslik: {scraped.product.title}, Yorum: {len(scraped.reviews)}, Gorsel: {len(scraped.images)}")
 
-        # 2. İçerik Analizi (SEO / AEO) + Yorum Analizi (paralel)
-        print("[Pipeline] 2. Metin Analizi ve Yorum Analizi basliyor...")
+        # 2. Puanlama + Yorum Analizi
+        print("[Pipeline] 2. Puanlama ve Yorum Analizi basliyor...")
         score_result = self.content_analyzer.score(scraped.product, scraped.reviews)
-        new_content = self.content_analyzer.generate(scraped.product, scraped.reviews, score_result.total_score)
-        print(f"[Pipeline] -> Puan: {score_result.total_score}/100, Yeni Baslik: {new_content.new_title}")
-
-        print("[Pipeline] 2b. Yorum Analizi basliyor...")
         review_analysis = self.review_analyzer.analyze(scraped.product, scraped.reviews)
-        print(f"[Pipeline] -> Yorum Analizi tamamlandi. Begenilen: {len(review_analysis.get('positives', []))}, Sorun: {len(review_analysis.get('negatives', []))}")
+        print(f"[Pipeline] -> Puan: {score_result.total_score}/100, Begenilen: {len(review_analysis.get('positives', []))}, Sorun: {len(review_analysis.get('negatives', []))}")
+
+        # 2b. İçerik üretimi (score + review_analysis sonuçlarına bağlı)
+        print("[Pipeline] 2b. Yeni içerik üretiliyor...")
+        new_content = self.content_analyzer.generate(scraped.product, scraped.reviews, score_result.total_score, review_analysis)
+        print(f"[Pipeline] -> Yeni Baslik: {new_content.new_title}")
 
         # 3. Görselleri İndirme
         print("[Pipeline] 3. Gorseller indiriliyor...")
