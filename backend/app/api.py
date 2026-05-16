@@ -49,7 +49,7 @@ _CACHE_TTL = 7200  # 2 saat
 # ── Görsel üretimde eş zamanlı Gemini çağrısı limiti ─────────────────────────
 # Tüm task'lar aynı anda başlarsa API rate limit (429) baskısı artar.
 # Semaphore ile max 3 paralel image API çağrısına kısıtlanır.
-_IMAGE_SEM = asyncio.Semaphore(3)
+_IMAGE_SEM = asyncio.Semaphore(2)
 
 
 async def _do_scrape(url: str, max_review_pages: int):
@@ -295,7 +295,7 @@ async def phase_images(req: PhaseRequest):
             # Strateji hazır — frontend bölümü açabilir
             yield _sse({"type": "start", "total": total, "strategy_note": strategy_note})
 
-            TASK_TIMEOUT = 150
+            TASK_TIMEOUT = 200
 
             async def _enhance_task(idx: int, task, timeout: int = TASK_TIMEOUT) -> dict | None:
                 base      = os.path.basename(task.source_image.local_path).split('.')[0]
@@ -353,13 +353,13 @@ async def phase_images(req: PhaseRequest):
                     yield _sse({"type": "retry", "idx": idx, "concept": task.concept_name})
                     log.info("  ↺ Retry: Konsept %d: %s", idx, task.concept_name)
 
-                    result = await _enhance_task(idx, task, timeout=180)
+                    result = await _enhance_task(idx, task, timeout=240)
                     if result:
                         count += 1
                         yield _sse({"type": "image", "data": result})
                     else:
                         await asyncio.sleep(20)
-                        result = await _enhance_task(idx, task, timeout=180)
+                        result = await _enhance_task(idx, task, timeout=240)
                         if result:
                             count += 1
                             yield _sse({"type": "image", "data": result})
