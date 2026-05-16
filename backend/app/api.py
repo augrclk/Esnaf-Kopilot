@@ -39,29 +39,53 @@ pipeline         = EsnafKopilotPipeline()
 
 # ── Scrape Cache (URL → (ScrapedProduct, timestamp)) ─────────────────────────
 # Phase 1 → Phase 2 → Phase 3 arasında verinin yaşaması için TTL'li async cache.
+# _scrape_tasks: aynı URL için eş zamanlı ikinci istek gelirse tekrar scrape etmez,
+#                devam eden Task'a attach olur → thundering herd önlenir.
 _scrape_cache: dict = {}
+_scrape_tasks: dict[str, asyncio.Task] = {}
 _cache_lock = asyncio.Lock()
 _CACHE_TTL = 7200  # 2 saat
+
+# ── Görsel üretimde eş zamanlı Gemini çağrısı limiti ─────────────────────────
+# Tüm task'lar aynı anda başlarsa API rate limit (429) baskısı artar.
+# Semaphore ile max 3 paralel image API çağrısına kısıtlanır.
+_IMAGE_SEM = asyncio.Semaphore(3)
+
+
+async def _do_scrape(url: str, max_review_pages: int):
+    """Bloklayan scrape işlemini thread pool'da çalıştırır, sonucu cache'e yazar."""
+    scraped = await asyncio.to_thread(scraper.scrape, url, max_review_pages)
+    async with _cache_lock:
+        _scrape_cache[url] = (scraped, monotonic())
+    return scraped
 
 
 async def _get_or_scrape(url: str, max_review_pages: int = 5):
     """
-    TTL'li async scrape cache.
-    Cache hit → anında döner. Miss → to_thread ile scrape, cache'e yazar.
+    TTL'li async scrape cache — thundering herd korumalı.
+
+    Cache hit  → anında döner.
+    Scrape devam ediyor → aynı Task'a attach olur, iki kez scrape etmez.
+    Cache miss → yeni Task başlatır, cache'e yazar.
     """
     async with _cache_lock:
+        # 1. Geçerli cache var mı?
         entry = _scrape_cache.get(url)
         if entry:
             scraped, ts = entry
             if monotonic() - ts < _CACHE_TTL:
                 return scraped
 
-    scraped = await asyncio.to_thread(scraper.scrape, url, max_review_pages)
+        # 2. Zaten devam eden scrape var mı?
+        existing = _scrape_tasks.get(url)
+        if existing and not existing.done():
+            task = existing
+        else:
+            # 3. Yeni scrape başlat
+            task = asyncio.create_task(_do_scrape(url, max_review_pages))
+            _scrape_tasks[url] = task
 
-    async with _cache_lock:
-        _scrape_cache[url] = (scraped, monotonic())
-
-    return scraped
+    return await task
 
 
 def _validate_url(url: str) -> None:
@@ -280,10 +304,11 @@ async def phase_images(req: PhaseRequest):
                 out_path  = os.path.join(out_dir, f"{base}_KONSEPT_{idx}_{safe_name}.{ext}")
                 try:
                     dummy = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
-                    enhanced = await asyncio.wait_for(
-                        asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
-                        timeout=timeout
-                    )
+                    async with _IMAGE_SEM:  # max 3 eş zamanlı Gemini image çağrısı
+                        enhanced = await asyncio.wait_for(
+                            asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
+                            timeout=timeout
+                        )
                     log.info("  ✓ Konsept %d: %s", idx, task.concept_name)
                     return {"idx": idx, "concept": task.concept_name, "path": enhanced.local_path}
                 except asyncio.TimeoutError:

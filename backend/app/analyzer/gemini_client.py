@@ -99,6 +99,7 @@ class GeminiClient:
         mime = _mime_type(image_path)
 
         # Config'den gelen model önce, ardından fallback'ler
+        # Gerçek timeout asyncio.wait_for ile api.py katmanında yönetilir.
         models_to_try = [
             self._image_model,
             "gemini-2.5-flash-image",
@@ -108,12 +109,9 @@ class GeminiClient:
         models = [x for x in models_to_try if not (x in seen or seen.add(x))]
 
         last_error = None
-        deadline = time.time() + 90  # Toplam 90 saniye hard timeout (tüm modeller için)
 
         for model_name in models:
             for attempt in range(2):  # Her model için en fazla 2 deneme
-                if time.time() > deadline:
-                    raise GeminiError("Görsel üretim timeout aşıldı (90 saniye)")
                 try:
                     response = self._client.models.generate_content(
                         model=model_name,
@@ -130,7 +128,7 @@ class GeminiClient:
                         if part.inline_data is not None:
                             return part.inline_data.data
 
-                    raise GeminiError(f"Gemini ({model_name}) görsel üretemedi — yanıtta inline_data yok")
+                    raise GeminiError(f"Gemini ({model_name}) gorsel uretemedi — yanıtta inline_data yok")
 
                 except Exception as exc:
                     err_str = str(exc)
@@ -143,7 +141,7 @@ class GeminiClient:
                     log.warning("[UYARI] %s basarisiz, diger modele geciliyor. Hata: %s", model_name, exc)
                     break
 
-        raise GeminiError(f"Görsel düzenleme başarısız. Son hata: {last_error}") from last_error
+        raise GeminiError(f"Gorsel duzenleme basarisiz. Son hata: {last_error}") from last_error
 
 
     # ------------------------------------------------------------------
@@ -165,40 +163,66 @@ class GeminiClient:
         return self._call_text_api(full_prompt)
 
     def _call_text_api(self, prompt: str, retry: int = 2) -> str:
-        """Metin promptu ile Gemini'yi çağırır, ham metin yanıtı döner."""
+        """Metin promptu ile Gemini'yi çağırır. Model başarısız → fallback sırasını dener."""
+        models_to_try = [self._text_model, "gemini-2.5-flash", "gemini-2.5-pro"]
+        seen: set[str] = set()
+        models = [m for m in models_to_try if not (m in seen or seen.add(m))]
+
         last_error: Exception | None = None
 
-        for attempt in range(retry + 1):
-            try:
-                response = self._client.models.generate_content(
-                    model=self._text_model,
-                    contents=prompt,
-                )
-                return response.text or ""
-            except Exception as exc:
-                last_error = exc
-                if attempt < retry:
-                    time.sleep(2 ** attempt)  # 1s, 2s, ...
+        for model_name in models:
+            for attempt in range(retry + 1):
+                try:
+                    response = self._client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                    )
+                    return response.text or ""
+                except Exception as exc:
+                    last_error = exc
+                    err_str = str(exc)
+                    if ("503" in err_str or "429" in err_str or "high demand" in err_str.lower()):
+                        if attempt < retry:
+                            wait = 2 ** attempt
+                            log.warning("[API MESGUL] %s yogun. %ds bekleniyor... (%d/%d)",
+                                        model_name, wait, attempt + 1, retry + 1)
+                            time.sleep(wait)
+                            continue
+                    log.warning("[UYARI] %s basarisiz, fallback'e geciliyor. Hata: %s", model_name, exc)
+                    break
 
-        raise GeminiError(f"Text API çağrısı başarısız: {last_error}") from last_error
+        raise GeminiError(f"Text API tum modeller basarisiz. Son hata: {last_error}") from last_error
 
     def _call_text_api_with_parts(self, parts: list, retry: int = 2) -> str:
-        """Çok parçalı (metin + görsel) promptla Gemini'yi çağırır."""
+        """Çok parçalı (metin + görsel) promptla Gemini'yi çağırır. Fallback destekli."""
+        models_to_try = [self._text_model, "gemini-2.5-flash", "gemini-2.5-pro"]
+        seen: set[str] = set()
+        models = [m for m in models_to_try if not (m in seen or seen.add(m))]
+
         last_error: Exception | None = None
 
-        for attempt in range(retry + 1):
-            try:
-                response = self._client.models.generate_content(
-                    model=self._text_model,
-                    contents=parts,
-                )
-                return response.text or ""
-            except Exception as exc:
-                last_error = exc
-                if attempt < retry:
-                    time.sleep(2 ** attempt)
+        for model_name in models:
+            for attempt in range(retry + 1):
+                try:
+                    response = self._client.models.generate_content(
+                        model=model_name,
+                        contents=parts,
+                    )
+                    return response.text or ""
+                except Exception as exc:
+                    last_error = exc
+                    err_str = str(exc)
+                    if ("503" in err_str or "429" in err_str or "high demand" in err_str.lower()):
+                        if attempt < retry:
+                            wait = 2 ** attempt
+                            log.warning("[API MESGUL] %s yogun. %ds bekleniyor... (%d/%d)",
+                                        model_name, wait, attempt + 1, retry + 1)
+                            time.sleep(wait)
+                            continue
+                    log.warning("[UYARI] %s basarisiz, fallback'e geciliyor. Hata: %s", model_name, exc)
+                    break
 
-        raise GeminiError(f"Multimodal API çağrısı başarısız: {last_error}") from last_error
+        raise GeminiError(f"Multimodal API tum modeller basarisiz. Son hata: {last_error}") from last_error
 
 
 # ---------------------------------------------------------------------------
