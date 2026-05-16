@@ -1,21 +1,14 @@
-"""
-API Katmanı — FastAPI endpoint'leri.
-
-Mimari Notlar:
-- Tüm endpoint'ler `async def` — FastAPI event loop'u bloke etmez
-- Bloke eden Gemini çağrıları `asyncio.to_thread()` ile thread pool'a alınır
-- Phase 2 içinde score() ve review.analyze() asyncio.gather() ile PARALEL çalışır
-- Phase 3 içinde her görsel enhance görevi asyncio.gather() ile PARALEL çalışır
-- ThreadPoolExecutor tamamen kaldırıldı → asyncio native parallelism
-"""
+"""API Katmanı — FastAPI endpoint'leri."""
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import json
 from pydantic import BaseModel
 import asyncio
+import logging
 import os
 from datetime import datetime
+from time import monotonic
 
 from app.pipeline import EsnafKopilotPipeline
 from app.scraper.http_client import HttpClient
@@ -24,27 +17,60 @@ from app.analyzer.gemini_client import GeminiClient
 from app.analyzer.content import ContentAnalyzer
 from app.analyzer.image import ImageAnalyzer
 from app.analyzer.review import ReviewAnalyzer
-from app.models import ImageEditPrompt
+from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatformError
+from app.config import settings
+
+log = logging.getLogger(__name__)
 
 router = APIRouter()
 
 # ── Servisler (singleton) ────────────────────────────────────────────────────
-http_client = HttpClient()
-scraper     = TrendyolScraper(http_client)
-gemini      = GeminiClient()
+http_client = HttpClient(
+    timeout=settings.scraper_timeout,
+    rate_limit=settings.scraper_rate_limit,
+    retry_count=settings.scraper_retry_count,
+)
+scraper          = TrendyolScraper(http_client)
+gemini           = GeminiClient()
 content_analyzer = ContentAnalyzer(gemini)
 image_analyzer   = ImageAnalyzer(gemini)
 review_analyzer  = ReviewAnalyzer(gemini)
 pipeline         = EsnafKopilotPipeline()
 
-# ── Scrape Cache (URL → ScrapedProduct) ─────────────────────────────────────
+# ── Scrape Cache (URL → (ScrapedProduct, timestamp)) ─────────────────────────
+# Phase 1 → Phase 2 → Phase 3 arasında verinin yaşaması için TTL'li async cache.
 _scrape_cache: dict = {}
+_cache_lock = asyncio.Lock()
+_CACHE_TTL = 7200  # 2 saat
 
-def _get_cached_scrape(url: str, max_review_pages: int = 5):
-    """Senkron cache lookup — Phase 1 sonrası sadece dict okuma yapılır."""
-    if url not in _scrape_cache:
-        _scrape_cache[url] = scraper.scrape(url, max_review_pages=max_review_pages)
-    return _scrape_cache[url]
+
+async def _get_or_scrape(url: str, max_review_pages: int = 5):
+    """
+    TTL'li async scrape cache.
+    Cache hit → anında döner. Miss → to_thread ile scrape, cache'e yazar.
+    """
+    async with _cache_lock:
+        entry = _scrape_cache.get(url)
+        if entry:
+            scraped, ts = entry
+            if monotonic() - ts < _CACHE_TTL:
+                return scraped
+
+    scraped = await asyncio.to_thread(scraper.scrape, url, max_review_pages)
+
+    async with _cache_lock:
+        _scrape_cache[url] = (scraped, monotonic())
+
+    return scraped
+
+
+def _validate_url(url: str) -> None:
+    """URL Trendyol domain'ine ait değilse 422 fırlatır."""
+    if not TrendyolScraper.supports(url):
+        raise HTTPException(
+            status_code=422,
+            detail="Sadece trendyol.com URL'leri destekleniyor.",
+        )
 
 
 # ── Request Modelleri ────────────────────────────────────────────────────────
@@ -75,6 +101,7 @@ async def health_check():
 # ── Tam pipeline (geriye uyumluluk) ─────────────────────────────────────────
 @router.post("/analyze")
 async def analyze_full_pipeline(req: AnalyzeRequest):
+    _validate_url(req.url)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir   = f"outputs/api_{timestamp}"
     os.makedirs(out_dir, exist_ok=True)
@@ -83,7 +110,12 @@ async def analyze_full_pipeline(req: AnalyzeRequest):
             pipeline.run, req.url, req.max_review_pages, out_dir
         )
         return {"status": "success", "data": results, "output_dir": out_dir}
+    except HTTPException:
+        raise
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        log.error("analyze error for %s: %s", req.url, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -93,15 +125,10 @@ async def analyze_full_pipeline(req: AnalyzeRequest):
 
 @router.post("/phase/scrape")
 async def phase_scrape(req: PhaseRequest):
-    """
-    FAZ 1 — Senkron scraping (network I/O).
-    asyncio.to_thread ile thread pool'a alınır, event loop bloke olmaz.
-    Sonuç cache'lenir → diğer fazlar tekrar çekmez.
-    """
+    """FAZ 1 — Scraping. Sonuç TTL cache'e alınır → Phase 2/3 tekrar çekmez."""
+    _validate_url(req.url)
     try:
-        scraped = await asyncio.to_thread(
-            _get_cached_scrape, req.url, req.max_review_pages
-        )
+        scraped = await _get_or_scrape(req.url, req.max_review_pages)
 
         review_sample = [
             {
@@ -126,31 +153,28 @@ async def phase_scrape(req: PhaseRequest):
                 "original_image_urls": [img.url for img in scraped.images[:3]],
             }
         }
+    except HTTPException:
+        raise
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        log.error("phase_scrape error for %s: %s", req.url, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/phase/analyze")
 async def phase_analyze(req: PhaseRequest):
     """
-    FAZ 2 — İçerik + Yorum Analizi.
-
-    Paralel çalışan Gemini metin çağrıları:
-      ┌──────────────────────┐  ┌──────────────────────┐
-      │  content_analyzer    │  │  review_analyzer     │
-      │  .score()   ~15-20s  │  │  .analyze()  ~15-25s │
-      └──────────────────────┘  └──────────────────────┘
-              │ asyncio.gather() ile aynı anda başlar
-              ▼
-      score_result + review_analysis hazır olunca:
-      └─► content_analyzer.generate()  ~20-30s
+    FAZ 2 — İçerik + Yorum Analizi (paralel Gemini çağrıları).
+    score() + review.analyze() asyncio.gather() ile aynı anda → ardından generate().
     """
+    _validate_url(req.url)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir   = req.output_dir or f"outputs/api_{timestamp}"
     os.makedirs(out_dir, exist_ok=True)
 
     try:
-        scraped = _get_cached_scrape(req.url, req.max_review_pages)  # cache lookup — instant
+        scraped = await _get_or_scrape(req.url, req.max_review_pages)
 
         # ── PARALEL: Puanlama + Yorum Analizi aynı anda ──────────────────────
         score_result, ra = await asyncio.gather(
@@ -196,7 +220,12 @@ async def phase_analyze(req: PhaseRequest):
                 "review_analysis": ra,
             }
         }
+    except HTTPException:
+        raise
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        log.error("phase_analyze error for %s: %s", req.url, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -215,6 +244,8 @@ async def phase_images(req: PhaseRequest):
       {type: 'done',     count: N, total: N}
       {type: 'error',    message: '...'}
     """
+    _validate_url(req.url)
+
     def _sse(event: dict) -> str:
         return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
@@ -223,7 +254,7 @@ async def phase_images(req: PhaseRequest):
         os.makedirs(out_dir, exist_ok=True)
 
         try:
-            scraped      = _get_cached_scrape(req.url, req.max_review_pages)
+            scraped = await _get_or_scrape(req.url, req.max_review_pages)
             downloaded   = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
             valid_images = [img for img in downloaded if img.local_path]
 
@@ -234,7 +265,7 @@ async def phase_images(req: PhaseRequest):
             analysis      = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
             strategy_note = analysis.issues.get("analysis_note", "")
             total         = len(analysis.edit_tasks)
-            print(f"[Phase/Images] {total} konsept — SSE stream başlıyor")
+            log.info("[Phase/Images] %d konsept — SSE stream başlıyor", total)
 
             # Strateji hazır — frontend bölümü açabilir
             yield _sse({"type": "start", "total": total, "strategy_note": strategy_note})
@@ -252,13 +283,13 @@ async def phase_images(req: PhaseRequest):
                         asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
                         timeout=timeout
                     )
-                    print(f"  ✓ Konsept {idx}: {task.concept_name}")
+                    log.info("  ✓ Konsept %d: %s", idx, task.concept_name)
                     return {"idx": idx, "concept": task.concept_name, "path": enhanced.local_path}
                 except asyncio.TimeoutError:
-                    print(f"  ✗ Konsept {idx} timeout ({timeout}s)")
+                    log.warning("Konsept %d timeout (%ds)", idx, timeout)
                     return None
                 except Exception as e:
-                    print(f"  ✗ Konsept {idx} hata: {e}")
+                    log.error("Konsept %d hata: %s", idx, e)
                     return None
 
             # ── TUR 1 — Queue ile paralel, her biten anında stream'e gönder ──
@@ -272,7 +303,7 @@ async def phase_images(req: PhaseRequest):
 
             # Tüm görevleri başlat
             futures = [
-                asyncio.ensure_future(_run_and_enqueue(idx, task))
+                asyncio.create_task(_run_and_enqueue(idx, task))
                 for idx, task in enumerate(analysis.edit_tasks, 1)
             ]
 
@@ -289,12 +320,12 @@ async def phase_images(req: PhaseRequest):
 
             # ── TUR 2 — Başarısızlar sırayla retry ───────────────────────────
             if failed_tasks:
-                print(f"[Phase/Images] Tur 1: {count}/{total} — {len(failed_tasks)} retry")
+                log.info("[Phase/Images] Tur 1: %d/%d — %d retry", count, total, len(failed_tasks))
                 await asyncio.sleep(15)
 
                 for idx, task in failed_tasks:
                     yield _sse({"type": "retry", "idx": idx, "concept": task.concept_name})
-                    print(f"  ↺ Retry: Konsept {idx}: {task.concept_name}")
+                    log.info("  ↺ Retry: Konsept %d: %s", idx, task.concept_name)
 
                     result = await _enhance_task(idx, task, timeout=180)
                     if result:
@@ -307,14 +338,14 @@ async def phase_images(req: PhaseRequest):
                             count += 1
                             yield _sse({"type": "image", "data": result})
                         else:
-                            print(f"  ✗ Konsept {idx} tüm denemeler sonrası üretilemedi.")
+                            log.warning("Konsept %d tüm denemeler sonrası üretilemedi.", idx)
                     await asyncio.sleep(5)
 
-            print(f"[Phase/Images] Tamamlandı: {count}/{total} görsel")
+            log.info("[Phase/Images] Tamamlandı: %d/%d görsel", count, total)
             yield _sse({"type": "done", "count": count, "total": total})
 
         except Exception as e:
-            print(f"[Phase/Images] HATA: {e}")
+            log.error("[Phase/Images] HATA: %s", e, exc_info=True)
             yield _sse({"type": "error", "message": str(e)})
 
     return StreamingResponse(
@@ -391,10 +422,9 @@ Genel Duygu: {review.get("sentiment_summary", "")}
 # ── Eski scrape endpoint (geriye uyumluluk) ──────────────────────────────────
 @router.post("/scrape")
 async def scrape_only(req: ScrapeRequest):
+    _validate_url(req.url)
     try:
-        scraped = await asyncio.to_thread(
-            scraper.scrape, req.url, max_review_pages=req.max_review_pages
-        )
+        scraped = await _get_or_scrape(req.url, req.max_review_pages)
         return {
             "status": "success",
             "data": {
@@ -403,5 +433,10 @@ async def scrape_only(req: ScrapeRequest):
                 "images":        scraped.images
             }
         }
+    except HTTPException:
+        raise
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        log.error("scrape_only error for %s: %s", req.url, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
