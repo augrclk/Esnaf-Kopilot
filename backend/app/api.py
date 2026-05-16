@@ -187,7 +187,8 @@ async def phase_analyze(req: PhaseRequest):
             content_analyzer.generate,
             scraped.product,
             scraped.reviews,
-            score_result.total_score
+            score_result.total_score,
+            ra,
         )
 
         return {
