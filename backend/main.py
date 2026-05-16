@@ -2,9 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+import logging
 import os
 
 from app.api import router
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+)
 
 app = FastAPI(
     title="Esnaf Kopilot API",
@@ -12,13 +18,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS ayarları (Frontend'in her porttan erişebilmesi için)
+# allow_credentials=True ile allow_origins="*" kombinasyonu CORS spec'e göre geçersiz.
+# credentials gerekmediği için False bırakıldı.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 # Rotaları ekle

@@ -10,6 +10,7 @@ Iki ana kullanım:
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from pathlib import Path
@@ -19,6 +20,8 @@ from google.genai import types
 
 from app.config import settings
 from app.models import GeminiError
+
+log = logging.getLogger(__name__)
 
 
 class GeminiClient:
@@ -95,14 +98,13 @@ class GeminiClient:
         image_bytes = Path(image_path).read_bytes()
         mime = _mime_type(image_path)
 
-        # Görsel üretim model öncelik sırası
+        # Config'den gelen model önce, ardından fallback'ler
         models_to_try = [
-            "gemini-3.1-flash-image-preview",
-            "gemini-2.5-flash-image",   # Test: en yeni flash
+            self._image_model,
+            "gemini-2.5-flash-image",
             "gemini-3-pro-image-preview",
         ]
-
-        seen = set()
+        seen: set[str] = set()
         models = [x for x in models_to_try if not (x in seen or seen.add(x))]
 
         last_error = None
@@ -133,14 +135,13 @@ class GeminiClient:
                 except Exception as exc:
                     err_str = str(exc)
                     if "503" in err_str or "429" in err_str or "high demand" in err_str.lower():
-                        if attempt < 1:  # Sadece 1 kez bekle
-                            wait_time = 10
-                            print(f"[API MESGUL] {model_name} yogun. {wait_time} saniye bekleniyor... (Deneme {attempt+1}/2)")
-                            time.sleep(wait_time)
+                        if attempt < 1:
+                            log.warning("[API MESGUL] %s yogun. 10s bekleniyor... (Deneme %d/2)", model_name, attempt + 1)
+                            time.sleep(10)
                             continue
                     last_error = exc
-                    print(f"[UYARI] {model_name} basarisiz, diger modele geciliyor... Hata: {exc}")
-                    break  # Bu modelden umudu kes
+                    log.warning("[UYARI] %s basarisiz, diger modele geciliyor. Hata: %s", model_name, exc)
+                    break
 
         raise GeminiError(f"Görsel düzenleme başarısız. Son hata: {last_error}") from last_error
 

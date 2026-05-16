@@ -1,12 +1,10 @@
-"""
-Esnaf Kopilot — Ana Orkestratör (Pipeline)
-Tüm süreci yöneten ana servis.
-"""
+"""Esnaf Kopilot — Ana Orkestratör (Pipeline)"""
 
 from __future__ import annotations
 
+import logging
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 from app.scraper.http_client import HttpClient
 from app.scraper.trendyol import TrendyolScraper
@@ -14,7 +12,9 @@ from app.analyzer.gemini_client import GeminiClient
 from app.analyzer.content import ContentAnalyzer
 from app.analyzer.image import ImageAnalyzer
 from app.analyzer.review import ReviewAnalyzer
-from app.models import Product, ScrapedProduct, ContentResult, ImageAnalysis, GeneratedImage
+from app.models import ImageEditPrompt
+
+log = logging.getLogger(__name__)
 
 
 
@@ -39,47 +39,50 @@ class EsnafKopilotPipeline:
         os.makedirs(output_dir, exist_ok=True)
         
         # 1. Scraping
-        print(f"[Pipeline] 1. Scraping basliyor: {url}")
+        log.info("[Pipeline] 1. Scraping basliyor: %s", url)
         scraped = self.scraper.scrape(url, max_review_pages=max_review_pages)
-        print(f"[Pipeline] -> Baslik: {scraped.product.title}, Yorum: {len(scraped.reviews)}, Gorsel: {len(scraped.images)}")
+        log.info("[Pipeline] -> Baslik: %s, Yorum: %d, Gorsel: %d",
+                 scraped.product.title, len(scraped.reviews), len(scraped.images))
 
         # 2. İçerik Analizi (SEO / AEO) + Yorum Analizi (paralel)
-        print("[Pipeline] 2. Metin Analizi ve Yorum Analizi basliyor...")
+        log.info("[Pipeline] 2. Metin Analizi ve Yorum Analizi basliyor...")
         score_result = self.content_analyzer.score(scraped.product, scraped.reviews)
         new_content = self.content_analyzer.generate(scraped.product, scraped.reviews, score_result.total_score)
-        print(f"[Pipeline] -> Puan: {score_result.total_score}/100, Yeni Baslik: {new_content.new_title}")
+        log.info("[Pipeline] -> Puan: %d/100, Yeni Baslik: %s", score_result.total_score, new_content.new_title)
 
-        print("[Pipeline] 2b. Yorum Analizi basliyor...")
+        log.info("[Pipeline] 2b. Yorum Analizi basliyor...")
         review_analysis = self.review_analyzer.analyze(scraped.product, scraped.reviews)
-        print(f"[Pipeline] -> Yorum Analizi tamamlandi. Begenilen: {len(review_analysis.get('positives', []))}, Sorun: {len(review_analysis.get('negatives', []))}")
+        log.info("[Pipeline] -> Yorum Analizi tamamlandi. Begenilen: %d, Sorun: %d",
+                 len(review_analysis.get('positives', [])), len(review_analysis.get('negatives', [])))
 
         # 3. Görselleri İndirme
-        print("[Pipeline] 3. Gorseller indiriliyor...")
+        log.info("[Pipeline] 3. Gorseller indiriliyor...")
         downloaded_images = self.scraper.download_images(scraped.images, output_dir)
         valid_images = [img for img in downloaded_images if img.local_path]
-        print(f"[Pipeline] -> {len(valid_images)} gorsel basariyla indirildi.")
+        log.info("[Pipeline] -> %d gorsel basariyla indirildi.", len(valid_images))
 
         # 4. Görsellerin Analizi ve Yapay Zeka Stratejisinin (Skill) Çalıştırılması
-        print("[Pipeline] 4. Sanat Yönetmeni (AI Skill) görsel stratejisi planlıyor...")
+        log.info("[Pipeline] 4. Sanat Yönetmeni (AI Skill) görsel stratejisi planlıyor...")
         
         image_results = []
         
         if not valid_images:
-            print("[Pipeline] -> [HATA] İndirilmiş geçerli görsel bulunamadı.")
+            log.warning("[Pipeline] -> İndirilmiş geçerli görsel bulunamadı.")
         else:
             try:
                 # 4.1. Analiz (Gemini ile dinamik strateji kurulumu)
                 analysis = self.image_analyzer.plan_strategy(scraped.product, valid_images)
-                print(f"  -> Uretilecek Toplam Konsept Sayisi: {len(analysis.edit_tasks)}")
+                log.info("  -> Uretilecek Toplam Konsept Sayisi: %d", len(analysis.edit_tasks))
                 if "analysis_note" in analysis.issues:
-                    print(f"  -> Strateji Notu: {analysis.issues['analysis_note']}")
-                
+                    log.info("  -> Strateji Notu: %s", analysis.issues['analysis_note'])
+
                 # 4.2. Düzenleme (Gemini Image API ile PARALEL üretim)
                 enhanced_images = []
-                
+
                 def _process_image_task(args):
                     p_idx, task = args
-                    print(f"    [{p_idx}/{len(analysis.edit_tasks)}] Duzenleniyor ({task.concept_name}) - Kaynak Görsel {task.source_image.position}...")
+                    log.info("    [%d/%d] Duzenleniyor (%s) - Kaynak Görsel %d...",
+                             p_idx, len(analysis.edit_tasks), task.concept_name, task.source_image.position)
                     
                     base_name = os.path.basename(task.source_image.local_path).split('.')[0]
                     ext = os.path.basename(task.source_image.local_path).split('.')[-1]
@@ -87,21 +90,18 @@ class EsnafKopilotPipeline:
                     out_path = os.path.join(output_dir, f"{base_name}_KONSEPT_{p_idx}_{concept_safe}.{ext}")
                     
                     try:
-                        from app.models import ImageEditPrompt
-                        # enhance metodunu bozmamak icin gecici ImageEditPrompt objesi
                         dummy_prompt = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
                         enhanced = self.image_analyzer.enhance(task.source_image, dummy_prompt, out_path)
-                        print(f"      -> Basarili: {enhanced.local_path}")
+                        log.info("      -> Basarili: %s", enhanced.local_path)
                         return {
                             "concept": task.concept_name,
                             "path": enhanced.local_path
                         }
                     except Exception as e:
-                        print(f"      -> [HATA] Duzenleme basarisiz ({task.concept_name}): {e}")
+                        log.error("      -> Duzenleme basarisiz (%s): %s", task.concept_name, e)
                         return None
-                        
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+
+                with ThreadPoolExecutor(max_workers=8) as executor:
                     args_list = [(p_idx, task) for p_idx, task in enumerate(analysis.edit_tasks, 1)]
                     results = list(executor.map(_process_image_task, args_list))
                     
@@ -119,7 +119,7 @@ class EsnafKopilotPipeline:
                 })
                 
             except Exception as e:
-                print(f"  -> [HATA] Görsel stratejisi islenirken hata: {e}")
+                log.error("  -> Görsel stratejisi islenirken hata: %s", e, exc_info=True)
 
         # 5. Sonuç Dönüşü
         return {
