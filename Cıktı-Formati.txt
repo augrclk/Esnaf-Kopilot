@@ -1,6 +1,6 @@
 ════════════════════════════════════════════════════════════════
-ESNAF KOPİLOT — ÇIKTI FORMATI V3
-YENİ İÇERİK ÜRETİM ŞABLONU
+ESNAF KOPİLOT — ÇIKTI FORMATI V4
+KATEGORİ-UYARLANIR İÇERİK ÜRETİM ŞABLONU
 ════════════════════════════════════════════════════════════════
 
 Bu dosya SADECE yeni başlık, açıklama, SSS ve anahtar kelime
@@ -9,8 +9,9 @@ Bu dosya SADECE yeni başlık, açıklama, SSS ve anahtar kelime
 ┌─────────────────────────────────────────────────────────────┐
 │ LLM İÇİN ZORUNLU TALİMATLAR                                │
 ├─────────────────────────────────────────────────────────────┤
-│ 1. Aşağıdaki şablonu BİREBİR kullan. Bölüm ekleme/çıkarma │
-│    yapma. Sırayı değiştirme.                                │
+│ 1. Aşağıdaki şablonu UYARLAYARAK kullan. Bölüm sırasını    │
+│    değiştirme, ancak içerik ürün kategorisine göre ADAPTE   │
+│    edilmelidir.                                             │
 │ 2. Her [...] alanını ürüne özel bilgiyle doldur.           │
 │ 3. Gereksiz sohbet cümlesi ("Tabii ki!") EKLEME.          │
 │    Direkt şablonla başla.                                   │
@@ -20,26 +21,64 @@ Bu dosya SADECE yeni başlık, açıklama, SSS ve anahtar kelime
 │    Bilinmiyorsa o alanı "[Satıcı tarafından belirtilmeli]"  │
 │    olarak işaretle.                                         │
 │ 6. Abartı, promosyon ve kanıtlanamaz ifade KULLANMA.        │
+│ 7. MÜŞTERİ ANALİZİ verilmişse bu veri ZORUNLU girdidir.   │
+│    Negatifler → ÖNEMLİ BİLGİ bölümüne, Sorular → SSS'ye,  │
+│    Pozitifler → öne çıkan özelliklere entegre edilmelidir.  │
 └─────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════
+KATEGORİ TESPİTİ VE ADAPTASYON
+════════════════════════════════════════════════════════════════
+
+Önce ürün kategorisini tespit et. Kategori, açıklamanın
+TONUNU ve ÖNCELİKLERİNİ belirler:
+
+GIDA / İÇECEK:
+  Ton: Lezzetli, doğal, güvenilir. İştah açıcı dil.
+  Öncelik: İçindekiler, gramaj, saklama, son tüketim, alerjen.
+  SSS odak: Saklama, alerjen, orijinallik, tat profili.
+
+KOZMETİK / KİŞİSEL BAKIM:
+  Ton: Bakımlı, güvenilir, bilimsel ama sade.
+  Öncelik: İçerik listesi, cilt tipi, kullanım sıklığı, ml/gr.
+  SSS odak: Cilt uyumu, alerji, kullanım sırası, etki süresi.
+
+ELEKTRONİK / TEKNOLOJİ:
+  Ton: Net, teknik ama anlaşılır. Jargonsuz spec.
+  Öncelik: Teknik spec, uyumluluk, garanti, kutu içeriği.
+  SSS odak: Uyumluluk, pil/şarj, bağlantı, güncelleme.
+
+GİYİM / AKSESUAR:
+  Ton: Stil odaklı ama bilgilendirici.
+  Öncelik: Kumaş karışımı, kalıp bilgisi, beden rehberi, yıkama.
+  SSS odak: Beden uyumu, kalıp, yıkama/bakım, renk doğruluğu.
+
+EV / YAŞAM:
+  Ton: Sıcak, pratik, "evime yakışır" hissi.
+  Öncelik: Boyut (cm), malzeme, montaj, ağırlık, bakım.
+  SSS odak: Montaj, boyut doğrulama, bakım, dayanıklılık.
+
+SAĞLIK / TAKVİYE:
+  Ton: Güvenilir, bilgilendirici, iddiacı olmayan.
+  Öncelik: İçerik, doz, kullanım talimatı, uyarılar.
+  SSS odak: Kullanım, etkileşim, saklama, güvenlik.
+
+BEBEK / ÇOCUK:
+  Ton: Güven veren, yumuşak, ebeveyn odaklı.
+  Öncelik: Güvenlik sertifikaları, malzeme, yaş uyumu.
+  SSS odak: Güvenlik, yıkama, yaş aralığı, malzeme.
+
+GENEL / DİĞER:
+  En yakın kategorinin mantığını uygula.
 
 
 ═══════════════════════════════════════════════════════════════
 📝 BÖLÜM 1: BAŞLIK
 ═══════════════════════════════════════════════════════════════
 
-ESKİ BAŞLIK:
-"[Mevcut başlık birebir kopyalanır]"
-→ Karakter sayısı: [X]
-→ Sorunlar: [Kısa, kriter numaralarıyla — ör: A1.1 ❌ ana terim başta değil, A1.3 ❌ ayırt edici özellik eksik]
-
 YENİ BAŞLIK:
 "[Optimize edilmiş yeni başlık]"
-→ Karakter sayısı: [X]
-→ Yapılan iyileştirmeler:
-  • [Ör: Ana ürün terimi başa taşındı (A1.1)]
-  • [Ör: Renk ve beden eklendi (A1.3)]
-  • [Ör: "SÜPER FIRSAT" ifadesi kaldırıldı (A1.4)]
-                                                     [Kopyala]
 
 BAŞLIK YAZIM KURALLARI:
 - İlk 3 kelimede ürünün ne olduğu anlaşılmalı (A1.1)
@@ -53,57 +92,64 @@ BAŞLIK YAZIM KURALLARI:
 📄 BÖLÜM 2: AÇIKLAMA
 ═══════════════════════════════════════════════════════════════
 
-ESKİ AÇIKLAMA:
-"[Mevcut açıklama — ilk 150 karakter + ...]"
-→ Sorunlar: [Kısa, kriter numaralarıyla]
-
 YENİ AÇIKLAMA:
 
-[PARAGRAF 1 — AI TANIM CÜMLESİ (B6.1 + A2.1 için)]
+[PARAGRAF 1 — AI TANIM CÜMLESİ (B6.1 + A2.1)]
 [Ürün adı], [ne olduğunun nesnel tanımı] + [1-2 temel özellik].
 Bu cümle tek başına "Bu ürün nedir?" sorusunu cevaplamalıdır.
 İkinci cümle: Bu ürün [hedef kitle] için [hangi ihtiyacı karşılar] (B6.2).
 
 ÖNE ÇIKAN ÖZELLİKLER (B7.1 — en az 3 madde):
-• [Özellik 1 — Sayısal/ölçülebilir teknik bilgi, ör: "500ml kapasite" (A4.1)]
-• [Özellik 2 — Materyal veya bileşen bilgisi, ör: "304 paslanmaz çelik" (A2.3)]
-• [Özellik 3 — Boyut, ağırlık veya kapasite (A2.3)]
-• [Özellik 4 — Kullanım senaryosu veya uyumluluk]
-• [Özellik 5 — Paket içeriği veya ek aksesuar]
+• [KATEGORİYE GÖRE EN ÖNEMLİ teknik bilgi — A4.1]
+• [Materyal veya bileşen bilgisi — A2.3]
+• [Boyut, ağırlık veya kapasite — A2.3]
+• [Kullanım senaryosu veya uyumluluk]
+• [Paket içeriği veya ek aksesuar]
+NOT: Müşteri analizinde "pozitif" olarak çıkan noktaları burada
+     doğal şekilde vurgula. Ör: "12 saat sıcak tutma" beğenilmişse
+     bunu özellik olarak öne çıkar.
 
 KULLANIM VE BAKIM (B7.2 — ikinci bilgi grubu):
-• [Bakım talimatı veya yıkama bilgisi (A4.2)]
+• [Bakım/yıkama bilgisi — kategoriye uygun (A4.2)]
 • [Garanti veya iade koşulu (A4.2)]
 • [Uyumluluk veya kurulum bilgisi]
 
 ⚠️ ÖNEMLİ BİLGİ (B9.1 — sorun + çözüm):
-[Müşteri yorumlarından veya ürün kategorisinin doğasından
-tespit edilen olası sorun + proaktif çözüm tavsiyesi]
-(Ör: "Kalıplar standart bedenden dardır, bir beden büyük tercih ediniz.")
-(Eğer bilinen sorun yoksa: "Bu ürün için bilinen bir sorun tespit edilmemiştir.")
+MÜŞTERİ ANALİZİ VERİLMİŞSE:
+  Analiz sonuçlarındaki "negatives" (özellikle severity HIGH/CRITICAL)
+  burada proaktif çözüm olarak sunulmalıdır.
+  Format: "[Sorun tespiti] → [Çözüm/tavsiye]"
+  Ör: "Bazı müşteriler beden kalıbının dar olduğunu belirtmiştir →
+       Normal kalıp tercih edenler bir beden büyük sipariş verebilir."
+VERİLMEMİŞSE:
+  Ürün kategorisinin doğasından bilinen sorunları belirt.
+  (Giyim: kalıp, Elektronik: uyumluluk, Gıda: saklama, vb.)
+  Bilinen sorun yoksa: "Bu ürün için bilinen bir sorun tespit edilmemiştir."
 
-[KAPANIŞ — 1 cümle: Hedef kitleye yönelik, güven veren, harekete geçirici ifade.
+[KAPANIŞ — 1 cümle: Hedef kitleye yönelik, güven veren ifade.
 Abartı ve kanıtlanamaz iddia OLMAMALI (B11.1).]
-                                                     [Kopyala]
-Kelime sayısı: [X] (en az 50 kelime olmalı — A2.2)
 
 AÇIKLAMA YAZIM KURALLARI:
 - Açıklama boyunca ürüne en fazla 2 farklı isimle atıfta bulun (B10.1)
-- Long-tail arama terimi doğal şekilde geç (A3.1, ör: "erkek deri cüzdan")
+- Long-tail arama terimi doğal şekilde geç (A3.1)
 - Başlıktaki ana ürün terimi ilk paragrafta tekrar kullanılmalı (A3.2)
 - Başlıkla çelişen bilgi OLMAMALI (A5.1)
+- En az 50 kelime (A2.2)
 
 
 ═══════════════════════════════════════════════════════════════
 ❓ BÖLÜM 3: SIKÇA SORULAN SORULAR (SSS)
 ═══════════════════════════════════════════════════════════════
 
-Not: Bu bölüm B8.1 kriterini karşılar. EN AZ 3 soru-cevap çifti.
-Sorular müşteri yorumlarından, ürün kategorisinin doğasından
-veya satın alma kararını etkileyen konulardan türetilmelidir.
+EN AZ 3 soru-cevap çifti (B8.1).
 
-S1: [Yorumlarda/geri bildirimlerde en çok merak edilen veya
-    şikayet edilen konu ile ilgili soru]
+SSS KAYNAKLARI (öncelik sırasıyla):
+1. Müşteri analizindeki "unanswered_questions" → DOĞRUDAN SSS'ye al
+2. Müşteri analizindeki "negatives" → Soru formatına çevir
+3. Ürün kategorisinin doğal soruları (yukarıdaki kategori rehberine bak)
+4. Genel satın alma kararı soruları (kargo, iade, garanti)
+
+S1: [Müşteri analizinden veya ürün doğasından en kritik soru]
 C1: [İlk cümle DOĞRUDAN cevap. Gerekirse 1 cümle ek detay.]
 
 S2: [Ürün boyutu, malzemesi veya uyumu hakkında soru]
@@ -112,17 +158,13 @@ C2: [İlk cümle doğrudan cevap.]
 S3: [Bakım, yıkama veya dayanıklılık hakkında soru]
 C3: [İlk cümle doğrudan cevap.]
 
-S4: [Kargo, teslimat veya paket içeriği hakkında soru]
-C4: [İlk cümle doğrudan cevap.]
-
-S5: [İade veya garanti hakkında soru]
-C5: [İlk cümle doğrudan cevap.]
-                                                     [Kopyala]
+[Ek sorular gerekiyorsa eklenebilir — max 5-6 soru]
 
 SSS YAZIM KURALLARI:
 - Cevaplar nesnel ve somut olmalı, abartı OLMAMALI (B11.1)
 - Bilinmeyen bilgi uydurulamaz — "[Satıcı tarafından belirtilmeli]"
 - Her cevabın ilk cümlesi soruyu doğrudan cevaplamalı
+- Müşteri analizindeki gerçek sorular öncelikli
 
 
 ═══════════════════════════════════════════════════════════════
@@ -134,6 +176,5 @@ Long-tail Keyword:  [3-5 kelimelik niş arama terimi (A3.1 desteği)]
 AEO Soru Fırsatı:  [Kullanıcıların AI'a sorabileceği soru kalıbı]
                     (Ör: "en iyi erkek koşu ayakkabısı hangisi?")
 Fırsat Keyword:     [Rakiplerin az kullandığı düşük rekabetli terim]
-                                                     [Kopyala]
 
 ═══════════════════════════════════════════════════════════════
