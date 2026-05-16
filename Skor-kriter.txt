@@ -113,6 +113,13 @@ A2.3 — Somut Bilgi İçeriği (+3 Puan)
   TEST:  Açıklamayı tara, kaç kategori somut bilgi içeriyor?
          ≥2 → SAĞLANDI. <2 → 0 puan.
          "Kaliteli malzeme" somut DEĞİLDİR. "Paslanmaz çelik" somuttur.
+  KATEGORİ REHBERİ (somut bilgi ne demek?):
+         Gıda/İçecek: İçindekiler, gramaj, raf ömrü, saklama koşulu
+         Kozmetik: İçerik listesi, ml/gr, cilt tipi uyumu, kullanım sıklığı
+         Elektronik: Teknik spec (mAh, GHz, çözünürlük, port tipi)
+         Giyim: Kumaş karışımı (%, ör: %100 pamuk), beden tablosu, kalıp bilgisi
+         Ev/Yaşam: Boyut (cm), ağırlık (kg), malzeme, montaj bilgisi
+         Sağlık/Takviye: İçerik, doz, kullanım talimatı
   ✅ GEÇER:  "Paslanmaz çelik gövde (materyal) + 500ml kapasite"
   ❌ KALMAZ: "Çok kaliteli ve dayanıklı bir ürün" → Somut bilgi yok
 
@@ -249,6 +256,13 @@ B9.1 — Sorun Tespiti + Proaktif Çözüm (+10 Puan)
          ve yanında çözüm/uyarı sunulmuştur.
   TEST:  "[olası sorun] + [çözüm/tavsiye]" yapısında en az 1 cümle
          var mı?
+  KATEGORİYE GÖRE BİLİNEN SORUNLAR:
+         Giyim/Ayakkabı: Kalıp/beden farkı, kumaş dokusu, renk tonu
+         Gıda: Saklama koşulları, son tüketim, alerjen uyarısı
+         Kozmetik: Cilt uyumu, alerji riski, koku yoğunluğu
+         Elektronik: Uyumluluk, şarj süresi, bağlantı sorunu
+         Ev/Yaşam: Montaj zorluğu, boyut algısı, kırılganlık
+         Genel: Ambalaj hasarı, kargo süreci
   İSTİSNA: Yorum/geri bildirim verisi YOKSA ve ürünün doğasında
            bilinen bir sorun da yoksa → DEĞERLENDİRME DIŞI →
            10 puan otomatik verilir, gerekçeye "D.DIŞI" yazılır.
