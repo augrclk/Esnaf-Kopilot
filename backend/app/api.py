@@ -17,6 +17,7 @@ from app.analyzer.gemini_client import GeminiClient
 from app.analyzer.content import ContentAnalyzer
 from app.analyzer.image import ImageAnalyzer
 from app.analyzer.review import ReviewAnalyzer
+from app.analyzer.gift import GiftAdvisor
 from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatformError
 from app.config import settings
 
@@ -35,6 +36,7 @@ gemini           = GeminiClient()
 content_analyzer = ContentAnalyzer(gemini)
 image_analyzer   = ImageAnalyzer(gemini)
 review_analyzer  = ReviewAnalyzer(gemini)
+gift_advisor     = GiftAdvisor(gemini)
 pipeline         = EsnafKopilotPipeline()
 
 # ── Scrape Cache (URL → (ScrapedProduct, timestamp)) ─────────────────────────
@@ -206,13 +208,16 @@ async def phase_analyze(req: PhaseRequest):
             asyncio.to_thread(review_analyzer.analyze, scraped.product, scraped.reviews),
         )
 
-        # ── Ardından: Yeni içerik üretimi (score sonucuna bağlı) ─────────────
-        new_content = await asyncio.to_thread(
-            content_analyzer.generate,
-            scraped.product,
-            scraped.reviews,
-            score_result.total_score,
-            ra,
+        # ── PARALEL: İçerik üretimi + Hediye önerisi (ikisi de ra'ya bağlı) ──
+        new_content, gift_suggestions = await asyncio.gather(
+            asyncio.to_thread(
+                content_analyzer.generate,
+                scraped.product, scraped.reviews, score_result.total_score, ra,
+            ),
+            asyncio.to_thread(
+                gift_advisor.suggest,
+                scraped.product, ra,
+            ),
         )
 
         return {
@@ -243,6 +248,7 @@ async def phase_analyze(req: PhaseRequest):
                     "notes":           new_content.notes,
                 },
                 "review_analysis": ra,
+                "gift_suggestions": gift_suggestions,
             }
         }
     except HTTPException:
