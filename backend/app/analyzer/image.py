@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 # backend/app/analyzer/image.py → backend/app/analyzer → backend/app → backend → Esnaf-Kopilot
 _BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
-_SKILL_FILE = _BASE_DIR / "esnaf-kopilot-gorsel-analiz-skill-v2.txt"
+_SKILL_FILE = _BASE_DIR / "esnaf-kopilot-gorsel-analiz-skill-v3.txt"
 
 def _load_image_skill() -> str:
     """Görsel analiz skill prompt'unu txt dosyasından yükler."""
@@ -73,14 +73,20 @@ MEVCUT ORİJİNAL GÖRSELLER (Aşağıdaki dosyalar sırasıyla 1'den {len(valid
         
         return self._parse_analysis_result(raw, valid_images)
 
+    _PRESERVATION_PREFIX = (
+        "Use the exact same product from the reference image. "
+        "Preserve the same visible angle, silhouette, proportions, colors, "
+        "logo placement, label design, materials, texture, and all visible details. "
+        "Do not rotate, redesign, reconstruct, reinterpret, or invent unseen parts. "
+    )
+
     def enhance(self, original_image: ProductImage, prompt: ImageEditPrompt, output_path: str) -> GeneratedImage:
-        """
-        Gemini Image API ile görseli iyileştirir ve kaydeder.
-        """
+        """Gemini Image API ile görseli iyileştirir ve kaydeder."""
         if not original_image.local_path:
             raise ValueError("Orijinal görsel local_path eksik.")
 
-        new_image_bytes = self._client.edit_image(prompt.prompt, original_image.local_path)
+        full_prompt = self._PRESERVATION_PREFIX + prompt.prompt
+        new_image_bytes = self._client.edit_image(full_prompt, original_image.local_path)
         
         with open(output_path, "wb") as f:
             f.write(new_image_bytes)
