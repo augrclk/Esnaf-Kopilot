@@ -40,7 +40,12 @@ content_analyzer = ContentAnalyzer(gemini)
 image_analyzer   = ImageAnalyzer(gemini)
 review_analyzer  = ReviewAnalyzer(gemini)
 gift_advisor     = GiftAdvisor(gemini)
-pipeline         = EsnafKopilotPipeline()
+pipeline         = EsnafKopilotPipeline(
+    scraper=scraper,
+    content_analyzer=content_analyzer,
+    image_analyzer=image_analyzer,
+    review_analyzer=review_analyzer,
+)
 
 # ── Scrape Cache (URL → (ScrapedProduct, timestamp)) ─────────────────────────
 # Phase 1 → Phase 2 → Phase 3 arasında verinin yaşaması için TTL'li async cache.
@@ -58,6 +63,7 @@ _CACHE_TTL = 7200  # 2 saat
 _IMAGE_SEM = asyncio.Semaphore(1)
 _IMAGE_MIN_INTERVAL = 15.0  # saniye
 _image_last_call: float = 0.0
+_image_lock = asyncio.Lock()   # _image_last_call erişimi için
 
 
 async def _do_scrape(url: str, max_review_pages: int):
@@ -77,11 +83,18 @@ async def _get_or_scrape(url: str, max_review_pages: int = 5):
     Cache miss → yeni Task başlatır, cache'e yazar.
     """
     async with _cache_lock:
+        # Expired entry'leri temizle (memory leak önleme)
+        now = monotonic()
+        expired = [k for k, (_, ts) in _scrape_cache.items() if now - ts >= _CACHE_TTL]
+        for k in expired:
+            del _scrape_cache[k]
+            _scrape_tasks.pop(k, None)
+
         # 1. Geçerli cache var mı?
         entry = _scrape_cache.get(url)
         if entry:
             scraped, ts = entry
-            if monotonic() - ts < _CACHE_TTL:
+            if now - ts < _CACHE_TTL:
                 return scraped
 
         # 2. Zaten devam eden scrape var mı?
@@ -144,7 +157,10 @@ async def health_check():
 
 # ── Tam pipeline (geriye uyumluluk) ─────────────────────────────────────────
 @router.post("/analyze")
-async def analyze_full_pipeline(req: AnalyzeRequest):
+async def analyze_full_pipeline(
+    req: AnalyzeRequest,
+    user: AuthUser = Depends(get_current_user),
+):
     _validate_url(req.url)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir   = f"outputs/api_{timestamp}"
@@ -366,11 +382,12 @@ async def phase_images(
                     try:
                         async with _IMAGE_SEM:
                             # İstekler arası minimum bekleme — 429 baskısını önler
-                            global _image_last_call
-                            elapsed = asyncio.get_running_loop().time() - _image_last_call
-                            if elapsed < _IMAGE_MIN_INTERVAL:
-                                await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
-                            _image_last_call = asyncio.get_running_loop().time()
+                            async with _image_lock:
+                                global _image_last_call
+                                elapsed = asyncio.get_running_loop().time() - _image_last_call
+                                if elapsed < _IMAGE_MIN_INTERVAL:
+                                    await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
+                                _image_last_call = asyncio.get_running_loop().time()
 
                             enhanced = await asyncio.wait_for(
                                 asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
@@ -400,8 +417,13 @@ async def phase_images(
             count   = 0
 
             async def _run_and_enqueue(idx, task):
-                result = await _enhance_task(idx, task)
-                await queue.put((idx, result))
+                try:
+                    result = await _enhance_task(idx, task)
+                except Exception as exc:
+                    log.error("Konsept %d beklenmeyen hata: %s", idx, exc)
+                    result = None
+                finally:
+                    await queue.put((idx, result))
 
             futures = [
                 asyncio.create_task(_run_and_enqueue(idx, task))
@@ -414,8 +436,8 @@ async def phase_images(
                     count += 1
                     try:
                         await asyncio.to_thread(db.increment_usage, user.uid, "image")
-                    except Exception:
-                        pass
+                    except Exception as db_err:
+                        log.warning("[DB] Görsel usage artırma başarısız: %s", db_err)
                     yield _sse({"type": "image", "data": result})
 
             await asyncio.gather(*futures)
@@ -516,12 +538,13 @@ Genel Duygu: {review.get("sentiment_summary", "")}
             out_path    = os.path.join(out_dir, f"chat_gorsel_{safe_name}.jpg")
             prompt_obj  = ImageEditPrompt(concept_name="Özel Görsel", prompt=req.message)
 
-            global _image_last_call
             async with _IMAGE_SEM:
-                elapsed = asyncio.get_running_loop().time() - _image_last_call
-                if elapsed < _IMAGE_MIN_INTERVAL:
-                    await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
-                _image_last_call = asyncio.get_running_loop().time()
+                async with _image_lock:
+                    global _image_last_call
+                    elapsed = asyncio.get_running_loop().time() - _image_last_call
+                    if elapsed < _IMAGE_MIN_INTERVAL:
+                        await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
+                    _image_last_call = asyncio.get_running_loop().time()
                 result = await asyncio.wait_for(
                     asyncio.to_thread(image_analyzer.enhance, source_img, prompt_obj, out_path),
                     timeout=150,
@@ -529,8 +552,8 @@ Genel Duygu: {review.get("sentiment_summary", "")}
 
             try:
                 await asyncio.to_thread(db.increment_usage, user.uid, "image")
-            except Exception:
-                pass
+            except Exception as db_err:
+                log.warning("[DB] Chat görsel usage artırma başarısız: %s", db_err)
 
             return {
                 "status": "success",
@@ -592,7 +615,7 @@ class SetTierRequest(BaseModel):
 
 def _require_admin(user: AuthUser) -> None:
     """Kullanıcı admin değilse 403 fırlatır."""
-    profile = db._db().collection("users").document(user.uid).get().to_dict() or {}
+    profile = db.get_or_create_user(user.uid, user.email)
     if profile.get("tier") != "admin":
         raise HTTPException(status_code=403, detail="Admin yetkisi gerekli.")
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 
 from app.analyzer.gemini_client import GeminiClient
@@ -81,15 +82,23 @@ MEVCUT ORİJİNAL GÖRSELLER (Aşağıdaki dosyalar sırasıyla 1'den {len(valid
     )
 
     def enhance(self, original_image: ProductImage, prompt: ImageEditPrompt, output_path: str) -> GeneratedImage:
-        """Gemini Image API ile görseli iyileştirir ve kaydeder."""
+        """Gemini Image API ile görseli iyileştirir ve kaydeder (atomic write)."""
         if not original_image.local_path:
             raise ValueError("Orijinal görsel local_path eksik.")
 
         full_prompt = self._PRESERVATION_PREFIX + prompt.prompt
         new_image_bytes = self._client.edit_image(full_prompt, original_image.local_path)
-        
-        with open(output_path, "wb") as f:
-            f.write(new_image_bytes)
+
+        # Atomic write: temp dosyaya yaz, sonra rename — disk dolarsa truncated file kalmaz
+        tmp_path = output_path + ".tmp"
+        try:
+            with open(tmp_path, "wb") as f:
+                f.write(new_image_bytes)
+            os.replace(tmp_path, output_path)   # atomic on POSIX
+        except Exception:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
 
         return GeneratedImage(
             original_image=original_image,

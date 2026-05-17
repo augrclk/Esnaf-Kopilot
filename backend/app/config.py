@@ -7,8 +7,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     # Gemini API — Vertex AI (ADC auth, API key not needed)
+    # vertex_project env variable'dan okunur: VERTEX_PROJECT=...
     gemini_api_key: str = ""
-    vertex_project: str = "gen-lang-client-0328351111"
+    vertex_project: str = ""   # .env veya ortam değişkeninden okunmalı
     vertex_location: str = "us-central1"
     vertex_image_location: str = "global"
 
