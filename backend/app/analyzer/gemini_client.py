@@ -32,7 +32,12 @@ class GeminiClient:
     """
 
     def __init__(self) -> None:
-        self._client = genai.Client(api_key=settings.gemini_api_key)
+        self._client = genai.Client(
+            vertexai=True,
+            api_key=settings.gemini_api_key,
+            project=settings.vertex_project,
+            location=settings.vertex_location,
+        )
         self._text_model = settings.gemini_text_model
         self._image_model = settings.gemini_image_model
 
