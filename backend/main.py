@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 import logging
+import os
 
 from app.api import router
 
@@ -29,7 +31,10 @@ app.add_middleware(
 # Rotaları ekle
 app.include_router(router, prefix="/api")
 
-# Görseller artık Firebase Storage'dan sunuluyor — StaticFiles mount gereksiz.
+# outputs/ klasörünü static olarak sun
+_OUTPUTS = os.path.join(os.path.dirname(__file__), "outputs")
+os.makedirs(_OUTPUTS, exist_ok=True)
+app.mount("/outputs", StaticFiles(directory=_OUTPUTS), name="outputs")
 
 if __name__ == "__main__":
     print("🚀 Esnaf Kopilot API baslatiliyor... (http://localhost:8000)")

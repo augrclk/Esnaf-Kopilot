@@ -23,10 +23,6 @@ from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatfor
 from app.config import settings
 from app.auth import get_current_user, AuthUser
 from app import db
-from app import storage as cloud_storage
-import tempfile
-import shutil
-import uuid
 
 log = logging.getLogger(__name__)
 
@@ -122,21 +118,15 @@ def _validate_url(url: str) -> None:
         )
 
 
-def _make_temp_dir() -> str:
-    """Geçici çalışma dizini oluşturur. İşlem bitince shutil.rmtree ile temizlenir."""
-    return tempfile.mkdtemp(prefix="ek_")
+_OUTPUTS_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "outputs"))
 
 
-def _storage_path(uid: str, filename: str) -> str:
-    """Firebase Storage'daki hedef yolu oluşturur."""
-    return f"users/{uid}/images/{filename}"
-
-
-def _upload_and_cleanup(local_path: str, uid: str) -> str:
-    """Yerel dosyayı Firebase Storage'a yükler, public URL döner."""
-    filename = os.path.basename(local_path)
-    remote = _storage_path(uid, filename)
-    return cloud_storage.upload_image(local_path, remote)
+def _make_output_dir(uid: str) -> str:
+    """Kullanıcıya özel çıktı dizini oluşturur."""
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = os.path.join(_OUTPUTS_DIR, uid, ts)
+    os.makedirs(path, exist_ok=True)
+    return path
 
 
 from pydantic import Field
@@ -183,10 +173,10 @@ async def analyze_full_pipeline(
     user: AuthUser = Depends(get_current_user),
 ):
     _validate_url(req.url)
-    tmp_dir = _make_temp_dir()
+    out_dir = _make_output_dir(user.uid)
     try:
         results = await asyncio.to_thread(
-            pipeline.run, req.url, req.max_review_pages, tmp_dir
+            pipeline.run, req.url, req.max_review_pages, out_dir
         )
         return {"status": "success", "data": results}
     except HTTPException:
@@ -196,8 +186,6 @@ async def analyze_full_pipeline(
     except Exception as e:
         log.error("analyze error for %s: %s", req.url, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -363,14 +351,14 @@ async def phase_images(
         return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
     async def _stream():
-        tmp_dir = _make_temp_dir()
+        out_dir = _make_output_dir(user.uid)
 
         try:
             # Kota kontrolü (stream başında)
             await asyncio.to_thread(db.check_quota, user.uid, "image")
 
             scraped = await _get_or_scrape(req.url, req.max_review_pages)
-            downloaded   = await asyncio.to_thread(scraper.download_images, scraped.images, tmp_dir)
+            downloaded   = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
             valid_images = [img for img in downloaded if img.local_path]
 
             if not valid_images:
@@ -393,7 +381,7 @@ async def phase_images(
                 base      = os.path.basename(task.source_image.local_path).split('.')[0]
                 ext       = os.path.basename(task.source_image.local_path).split('.')[-1]
                 safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
-                out_path  = os.path.join(tmp_dir, f"{base}_KONSEPT_{idx}_{safe_name}.{ext}")
+                out_path  = os.path.join(out_dir, f"{base}_KONSEPT_{idx}_{safe_name}.{ext}")
                 dummy     = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
 
                 for attempt in range(MAX_ATTEMPTS):
@@ -411,11 +399,8 @@ async def phase_images(
                                 timeout=TASK_TIMEOUT
                             )
                         log.info("  ✓ Konsept %d: %s", idx, task.concept_name)
-                        # Firebase Storage'a yükle
-                        url = await asyncio.to_thread(
-                            _upload_and_cleanup, enhanced.local_path, user.uid
-                        )
-                        return {"idx": idx, "concept": task.concept_name, "url": url}
+                        rel_path = os.path.relpath(enhanced.local_path, _OUTPUTS_DIR)
+                        return {"idx": idx, "concept": task.concept_name, "path": rel_path}
                     except asyncio.TimeoutError:
                         log.warning("Konsept %d timeout (%ds)", idx, TASK_TIMEOUT)
                     except Exception as e:
@@ -469,9 +454,6 @@ async def phase_images(
         except Exception as e:
             log.error("[Phase/Images] HATA: %s", e, exc_info=True)
             yield _sse({"type": "error", "message": str(e)})
-        finally:
-            # Geçici dizini temizle
-            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return StreamingResponse(
         _stream(),
@@ -547,49 +529,43 @@ Genel Duygu: {review.get("sentiment_summary", "")}
                 answer = await asyncio.to_thread(gemini.chat_text, system_prompt, req.message)
                 return {"status": "success", "answer": answer}
 
-            tmp_dir = _make_temp_dir()
-            try:
-                scraped     = await _get_or_scrape(product_url)
-                downloaded  = await asyncio.to_thread(scraper.download_images, scraped.images, tmp_dir)
-                valid_imgs  = [img for img in downloaded if img.local_path]
+            out_dir = _make_output_dir(user.uid)
+            scraped     = await _get_or_scrape(product_url)
+            downloaded  = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
+            valid_imgs  = [img for img in downloaded if img.local_path]
 
-                if not valid_imgs:
-                    return {"status": "success", "answer": "Ürüne ait indirilebilir görsel bulunamadı."}
+            if not valid_imgs:
+                return {"status": "success", "answer": "Ürüne ait indirilebilir görsel bulunamadı."}
 
-                source_img  = valid_imgs[0]
-                safe_name   = "".join(c if c.isalnum() else "_" for c in req.message[:40])
-                out_path    = os.path.join(tmp_dir, f"chat_gorsel_{safe_name}.jpg")
-                prompt_obj  = ImageEditPrompt(concept_name="Özel Görsel", prompt=req.message)
+            source_img  = valid_imgs[0]
+            safe_name   = "".join(c if c.isalnum() else "_" for c in req.message[:40])
+            out_path    = os.path.join(out_dir, f"chat_gorsel_{safe_name}.jpg")
+            prompt_obj  = ImageEditPrompt(concept_name="Özel Görsel", prompt=req.message)
 
-                async with _IMAGE_SEM:
-                    async with _image_lock:
-                        global _image_last_call
-                        elapsed = asyncio.get_running_loop().time() - _image_last_call
-                        if elapsed < _IMAGE_MIN_INTERVAL:
-                            await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
-                        _image_last_call = asyncio.get_running_loop().time()
-                    result = await asyncio.wait_for(
-                        asyncio.to_thread(image_analyzer.enhance, source_img, prompt_obj, out_path),
-                        timeout=150,
-                    )
-
-                # Firebase Storage'a yükle
-                url = await asyncio.to_thread(
-                    _upload_and_cleanup, result.local_path, user.uid
+            async with _IMAGE_SEM:
+                async with _image_lock:
+                    global _image_last_call
+                    elapsed = asyncio.get_running_loop().time() - _image_last_call
+                    if elapsed < _IMAGE_MIN_INTERVAL:
+                        await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
+                    _image_last_call = asyncio.get_running_loop().time()
+                result = await asyncio.wait_for(
+                    asyncio.to_thread(image_analyzer.enhance, source_img, prompt_obj, out_path),
+                    timeout=150,
                 )
 
-                try:
-                    await asyncio.to_thread(db.increment_usage, user.uid, "image")
-                except Exception as db_err:
-                    log.warning("[DB] Chat görsel usage artırma başarısız: %s", db_err)
+            rel_path = os.path.relpath(result.local_path, _OUTPUTS_DIR)
 
-                return {
-                    "status": "success",
-                    "answer": "Görsel oluşturuldu!",
-                    "image_url": url,
-                }
-            finally:
-                shutil.rmtree(tmp_dir, ignore_errors=True)
+            try:
+                await asyncio.to_thread(db.increment_usage, user.uid, "image")
+            except Exception as db_err:
+                log.warning("[DB] Chat görsel usage artırma başarısız: %s", db_err)
+
+            return {
+                "status": "success",
+                "answer": "Görsel oluşturuldu!",
+                "image_path": rel_path,
+            }
 
         answer = await asyncio.to_thread(gemini.chat_text, system_prompt, req.message)
         return {"status": "success", "answer": answer}
