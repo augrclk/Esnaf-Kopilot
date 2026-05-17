@@ -1,6 +1,6 @@
 """API Katmanı — FastAPI endpoint'leri."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 import json
 import re
@@ -118,19 +118,43 @@ def _validate_url(url: str) -> None:
         )
 
 
+def _safe_output_dir(user_dir: str) -> str:
+    """
+    output_dir path traversal koruması.
+    Kullanıcıdan gelen dizin adını 'outputs/' altına kilitler.
+    """
+    if not user_dir:
+        return f"outputs/api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    # ".." ve mutlak path'leri engelle
+    base = os.path.basename(user_dir.rstrip("/"))
+    if not base or base.startswith("."):
+        base = f"api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    safe = os.path.join("outputs", base)
+    # Resolve sonrası outputs/ içinde olduğunu doğrula
+    resolved = os.path.realpath(safe)
+    outputs_root = os.path.realpath("outputs")
+    if not resolved.startswith(outputs_root):
+        raise HTTPException(status_code=422, detail="Geçersiz output_dir.")
+    return safe
+
+
+from pydantic import Field
+
 # ── Request Modelleri ────────────────────────────────────────────────────────
 class AnalyzeRequest(BaseModel):
     url: str
-    max_review_pages: int = 5
+    max_review_pages: int = Field(default=5, ge=1, le=50)
 
 class ScrapeRequest(BaseModel):
     url: str
-    max_review_pages: int = 2
+    max_review_pages: int = Field(default=2, ge=1, le=50)
 
 class PhaseRequest(BaseModel):
     url: str
     output_dir: str = ""
-    max_review_pages: int = 5
+    max_review_pages: int = Field(default=5, ge=1, le=50)
 
 class ChatRequest(BaseModel):
     message: str
@@ -184,7 +208,10 @@ async def analyze_full_pipeline(
 # ════════════════════════════════════════════════════════════════════════════
 
 @router.post("/phase/scrape")
-async def phase_scrape(req: PhaseRequest):
+async def phase_scrape(
+    req: PhaseRequest,
+    user: AuthUser = Depends(get_current_user),
+):
     """FAZ 1 — Scraping. Sonuç TTL cache'e alınır → Phase 2/3 tekrar çekmez."""
     _validate_url(req.url)
     try:
@@ -237,8 +264,7 @@ async def phase_analyze(
     await asyncio.to_thread(db.check_quota, user.uid, "analysis")
     await asyncio.to_thread(db.get_or_create_user, user.uid, user.email)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir   = req.output_dir or f"outputs/api_{timestamp}"
+    out_dir = _safe_output_dir(req.output_dir)
     os.makedirs(out_dir, exist_ok=True)
 
     try:
@@ -344,7 +370,7 @@ async def phase_images(
         return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
     async def _stream():
-        out_dir = req.output_dir or f"outputs/api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        out_dir = _safe_output_dir(req.output_dir)
         os.makedirs(out_dir, exist_ok=True)
 
         try:
@@ -523,7 +549,7 @@ Genel Duygu: {review.get("sentiment_summary", "")}
                 answer = await asyncio.to_thread(gemini.chat_text, system_prompt, req.message)
                 return {"status": "success", "answer": answer}
 
-            out_dir = req.output_dir or f"outputs/api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            out_dir = _safe_output_dir(req.output_dir)
             os.makedirs(out_dir, exist_ok=True)
 
             scraped     = await _get_or_scrape(product_url)
@@ -586,7 +612,7 @@ async def get_usage(user: AuthUser = Depends(get_current_user)):
 
 @router.get("/user/results")
 async def list_results(
-    limit: int = 20,
+    limit: int = Query(default=20, ge=1, le=100),
     user: AuthUser = Depends(get_current_user),
 ):
     """Kullanıcının geçmiş analizleri (data hariç)."""
@@ -659,7 +685,10 @@ async def admin_list_users(
 
 # ── Eski scrape endpoint (geriye uyumluluk) ──────────────────────────────────
 @router.post("/scrape")
-async def scrape_only(req: ScrapeRequest):
+async def scrape_only(
+    req: ScrapeRequest,
+    user: AuthUser = Depends(get_current_user),
+):
     _validate_url(req.url)
     try:
         scraped = await _get_or_scrape(req.url, req.max_review_pages)
