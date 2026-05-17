@@ -1,12 +1,42 @@
 // ── Global State ─────────────────────────────────────────────────────────────
-let analysisContext = null;  // Chat için
-let currentOutputDir = '';   // Phase 2'den Phase 3'e aktarılır
+let analysisContext  = null;
+let currentOutputDir = '';
+let _currentUser     = null;   // Firebase User
+
+// ── Firebase Auth ─────────────────────────────────────────────────────────────
+const _auth = firebase.auth();
+
+async function _getToken() {
+    if (!_currentUser) throw new Error('Oturum açılmamış.');
+    return _currentUser.getIdToken(/* forceRefresh= */ false);
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    // Auth state listener — show/hide login overlay
+    _auth.onAuthStateChanged(user => {
+        _currentUser = user;
+        if (user) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainApp').style.display      = '';
+            document.getElementById('userEmail').textContent       = user.email;
+        } else {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('mainApp').style.display      = 'none';
+        }
+    });
+
+    // Login form
+    document.getElementById('loginBtn').addEventListener('click', _handleLogin);
+    document.getElementById('loginPassword').addEventListener('keydown', e => {
+        if (e.key === 'Enter') _handleLogin();
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => _auth.signOut());
+
     const analyzeBtn = document.getElementById('analyzeBtn');
     const urlInput   = document.getElementById('urlInput');
-
     urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') analyzeBtn.click(); });
     analyzeBtn.addEventListener('click', () => startProgressiveAnalysis());
 
@@ -18,6 +48,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+async function _handleLogin() {
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl    = document.getElementById('loginError');
+    const btn      = document.getElementById('loginBtn');
+
+    if (!email || !password) { _showLoginError('E-posta ve şifre gerekli.'); return; }
+
+    btn.disabled = true;
+    errEl.style.display = 'none';
+
+    try {
+        await _auth.signInWithEmailAndPassword(email, password);
+    } catch (err) {
+        const msg = {
+            'auth/user-not-found':  'Bu e-posta kayıtlı değil.',
+            'auth/wrong-password':  'Şifre hatalı.',
+            'auth/invalid-email':   'Geçersiz e-posta formatı.',
+            'auth/too-many-requests': 'Çok fazla deneme. Biraz bekleyin.',
+            'auth/invalid-credential': 'E-posta veya şifre hatalı.',
+        }[err.code] || err.message;
+        _showLoginError(msg);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function _showLoginError(msg) {
+    const el = document.getElementById('loginError');
+    el.textContent    = msg;
+    el.style.display  = 'block';
+}
 
 // ── Ana Akış: Aşamalı Analiz (Phase 2 & 3 paralel) ──────────────────────────
 async function startProgressiveAnalysis() {
@@ -113,14 +176,20 @@ function clearStatus() {
     });
 }
 
-async function apiFetch(path, body) {
-    const res = await fetch('http://localhost:8000' + path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
+async function apiFetch(path, body, method = 'POST') {
+    const token = await _getToken();
+    const opts = {
+        method,
+        headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+    };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const res = await fetch('http://localhost:8000' + path, opts);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 401) { _auth.signOut(); throw new Error('Oturum süresi doldu, lütfen tekrar giriş yapın.'); }
         throw new Error(`API Hatası (${res.status}): ${err.detail || 'Bilinmeyen hata'}`);
     }
     return res.json();
@@ -200,10 +269,14 @@ function renderAnalyzePhase(data) {
 // ── FAZ 3: SSE stream ile anlık görsel ekleme ────────────────────────────────
 
 async function streamImages(url) {
+    const token = await _getToken();
     const res = await fetch('http://localhost:8000/api/phase/images', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ url, output_dir: '', max_review_pages: 5 })
+        headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ url, output_dir: currentOutputDir || '', max_review_pages: 5 })
     });
     if (!res.ok) { console.error('Images stream error:', res.status); return; }
 
