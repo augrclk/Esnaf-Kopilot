@@ -24,7 +24,9 @@ _CRED_PATH = Path(__file__).resolve().parent.parent / "firebase_credentials.json
 
 if not firebase_admin._apps:
     cred = credentials.Certificate(str(_CRED_PATH))
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {
+        "storageBucket": "esnaf-kopilot.firebasestorage.app",
+    })
     log.info("[Auth] Firebase Admin SDK başlatıldı — proje: esnaf-kopilot")
 
 # ── Bearer token scheme ──────────────────────────────────────────────────────
