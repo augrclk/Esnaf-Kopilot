@@ -1,1 +1,18 @@
+# Secrets
 firebase_credentials.json
+.env
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.claude/
+.vscode/
+
+# Outputs
+outputs/
