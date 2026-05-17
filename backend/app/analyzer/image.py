@@ -5,16 +5,20 @@ Görsel analiz servisi — Görsel puanlama ve iyileştirme promptları üretimi
 from __future__ import annotations
 
 import json
+import logging
+from pathlib import Path
+
 from app.analyzer.gemini_client import GeminiClient
 from app.models import (
     Product,
     ProductImage,
     ImageAnalysis,
     ImageEditPrompt,
+    ImageEditTask,
     GeneratedImage,
 )
 
-from pathlib import Path
+log = logging.getLogger(__name__)
 
 # Skill dosyası proje kökünden dinamik okunur (Skor-kriter.txt mantığıyla aynı)
 # backend/app/analyzer/image.py → backend/app/analyzer → backend/app → backend → Esnaf-Kopilot
@@ -26,10 +30,10 @@ def _load_image_skill() -> str:
     """Görsel analiz skill prompt'unu txt dosyasından yükler."""
     if _SKILL_FILE.exists():
         content = _SKILL_FILE.read_text(encoding="utf-8").strip()
-        print(f"[ImageAnalyzer] Skill yüklendi: {_SKILL_FILE.name} ({len(content)} karakter)")
+        log.info("[ImageAnalyzer] Skill yüklendi: %s (%d karakter)", _SKILL_FILE.name, len(content))
         return content
     # Fallback — dosya yoksa minimal prompt
-    print(f"[ImageAnalyzer] UYARI: {_SKILL_FILE.name} bulunamadı, varsayılan prompt kullanılıyor.")
+    log.warning("[ImageAnalyzer] %s bulunamadı, varsayılan prompt kullanılıyor.", _SKILL_FILE.name)
     return """You are an elite E-commerce Art Director.
 Analyze the product and create a safe, conversion-focused image set strategy.
 Concept 1 must always be 'Platform Standard White'.
@@ -69,14 +73,20 @@ MEVCUT ORİJİNAL GÖRSELLER (Aşağıdaki dosyalar sırasıyla 1'den {len(valid
         
         return self._parse_analysis_result(raw, valid_images)
 
+    _PRESERVATION_PREFIX = (
+        "Use the exact same product from the reference image. "
+        "Preserve the same visible angle, silhouette, proportions, colors, "
+        "logo placement, label design, materials, texture, and all visible details. "
+        "Do not rotate, redesign, reconstruct, reinterpret, or invent unseen parts. "
+    )
+
     def enhance(self, original_image: ProductImage, prompt: ImageEditPrompt, output_path: str) -> GeneratedImage:
-        """
-        Gemini Image API ile görseli iyileştirir ve kaydeder.
-        """
+        """Gemini Image API ile görseli iyileştirir ve kaydeder."""
         if not original_image.local_path:
             raise ValueError("Orijinal görsel local_path eksik.")
 
-        new_image_bytes = self._client.edit_image(prompt.prompt, original_image.local_path)
+        full_prompt = self._PRESERVATION_PREFIX + prompt.prompt
+        new_image_bytes = self._client.edit_image(full_prompt, original_image.local_path)
         
         with open(output_path, "wb") as f:
             f.write(new_image_bytes)
@@ -88,22 +98,20 @@ MEVCUT ORİJİNAL GÖRSELLER (Aşağıdaki dosyalar sırasıyla 1'den {len(valid
         )
 
     def _parse_analysis_result(self, raw: dict, valid_images: list[ProductImage]) -> ImageAnalysis:
-        import app.models as models
-        
         tasks = []
         for task in raw.get("edit_tasks", []):
             idx = task.get("source_image_index", 1) - 1
             if idx < 0 or idx >= len(valid_images):
-                idx = 0  # Fallback to the first image if out of bounds
-                
-            tasks.append(models.ImageEditTask(
+                idx = 0
+
+            tasks.append(ImageEditTask(
                 source_image=valid_images[idx],
                 concept_name=str(task.get("concept_name", "")),
                 prompt=str(task.get("prompt", "")),
             ))
 
-        return models.ImageAnalysis(
-            image=valid_images[0], # Legacy, keep to avoid breaking things
+        return ImageAnalysis(
+            image=valid_images[0],
             image_type="STRATEJI",
             score=100,
             max_score=100,
