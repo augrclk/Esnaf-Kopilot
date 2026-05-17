@@ -8,19 +8,54 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card glass-panel">
+            <div class="logo" style="justify-content:center;margin-bottom:1.5rem;">
+                <i class="fa-solid fa-rocket"></i>
+                <h1>Esnaf <span>Kopilot</span></h1>
+            </div>
+            <p style="text-align:center;color:var(--text-muted);margin-bottom:1.8rem;font-size:0.95rem;">Devam etmek için giriş yapın</p>
+            <div class="login-form">
+                <div class="input-group" style="margin-bottom:1rem;">
+                    <i class="fa-solid fa-envelope input-icon"></i>
+                    <input type="email" id="loginEmail" placeholder="E-posta adresi" autocomplete="email">
+                </div>
+                <div class="input-group" style="margin-bottom:1.5rem;">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input type="password" id="loginPassword" placeholder="Şifre" autocomplete="current-password">
+                </div>
+                <button id="loginBtn" class="btn-primary" style="width:100%;justify-content:center;">
+                    <span>Giriş Yap</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <p id="loginError" style="color:#f87171;text-align:center;margin-top:1rem;font-size:0.85rem;display:none;"></p>
+            </div>
+        </div>
+    </div>
+
     <div class="glass-bg"></div>
     <div class="glow-sphere sphere-1"></div>
     <div class="glow-sphere sphere-2"></div>
 
-    <main class="container">
+    <main class="container" id="mainApp" style="display:none;">
         <header class="app-header">
             <div class="logo">
                 <i class="fa-solid fa-rocket"></i>
                 <h1>Esnaf <span>Kopilot</span></h1>
             </div>
             <p>Trendyol Ürünlerinizi Yapay Zeka ile Yeniden Tasarlayın</p>
+            <div class="user-bar" id="userBar">
+                <span class="user-email" id="userEmail"></span>
+                <button class="btn-logout" id="logoutBtn" title="Çıkış Yap">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
         </header>
 
         <!-- Input + Status -->
@@ -243,6 +278,17 @@
         </section>
     </main>
 
+    <script>
+        const firebaseConfig = {
+            apiKey:            "AIzaSyAHIyrcAcLunMuIp5uFwwvUEz5FeVwVwBY",
+            authDomain:        "esnaf-kopilot.firebaseapp.com",
+            projectId:         "esnaf-kopilot",
+            storageBucket:     "esnaf-kopilot.firebasestorage.app",
+            messagingSenderId: "173791628040",
+            appId:             "1:173791628040:web:17820e72100ebde9bdfabd",
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
     <script src="app.js"></script>
 </body>
 </html>

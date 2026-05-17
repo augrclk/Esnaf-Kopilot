@@ -1,6 +1,6 @@
 """API Katmanı — FastAPI endpoint'leri."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 import json
 import re
@@ -21,6 +21,8 @@ from app.analyzer.review import ReviewAnalyzer
 from app.analyzer.gift import GiftAdvisor
 from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatformError
 from app.config import settings
+from app.auth import get_current_user, AuthUser
+from app import db
 
 log = logging.getLogger(__name__)
 
@@ -205,12 +207,20 @@ async def phase_scrape(req: PhaseRequest):
 
 
 @router.post("/phase/analyze")
-async def phase_analyze(req: PhaseRequest):
+async def phase_analyze(
+    req: PhaseRequest,
+    user: AuthUser = Depends(get_current_user),
+):
     """
     FAZ 2 — İçerik + Yorum Analizi (paralel Gemini çağrıları).
     score() + review.analyze() asyncio.gather() ile aynı anda → ardından generate().
     """
     _validate_url(req.url)
+
+    # Kota kontrolü
+    await asyncio.to_thread(db.check_quota, user.uid, "analysis")
+    await asyncio.to_thread(db.get_or_create_user, user.uid, user.email)
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir   = req.output_dir or f"outputs/api_{timestamp}"
     os.makedirs(out_dir, exist_ok=True)
@@ -236,39 +246,57 @@ async def phase_analyze(req: PhaseRequest):
             ),
         )
 
+        result_data = {
+            "product": {
+                "original_title":       scraped.product.title,
+                "original_description": scraped.product.description,
+                "url":                  scraped.product.url,
+            },
+            "content_analysis": {
+                "score":         score_result.total_score,
+                "score_summary": score_result.summary,
+                "categories": [
+                    {
+                        "name":      c.name,
+                        "score":     c.score,
+                        "max_score": c.max_score,
+                        "notes":     c.notes,
+                    }
+                    for c in score_result.categories
+                ],
+                "new_title":       new_content.new_title,
+                "new_description": new_content.new_description,
+                "faq":             new_content.faq,
+                "keywords":        new_content.suggested_keywords,
+                "notes":           new_content.notes,
+            },
+            "review_analysis": ra,
+            "gift_suggestions": gift_suggestions,
+        }
+
+        # Kullanım say + sonucu kaydet (hata olsa bile analiz dönülsün)
+        try:
+            await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
+            await asyncio.to_thread(
+                db.save_result,
+                user.uid,
+                req.url,
+                scraped.product.title,
+                out_dir,
+                result_data,
+            )
+        except Exception as db_err:
+            log.warning("[DB] Kayıt hatası (analiz sonucu etkilenmedi): %s", db_err)
+
         return {
-            "status": "success",
+            "status":     "success",
             "output_dir": out_dir,
-            "data": {
-                "product": {
-                    "original_title":       scraped.product.title,
-                    "original_description": scraped.product.description,
-                    "url":                  scraped.product.url,
-                },
-                "content_analysis": {
-                    "score":         score_result.total_score,
-                    "score_summary": score_result.summary,
-                    "categories": [
-                        {
-                            "name":      c.name,
-                            "score":     c.score,
-                            "max_score": c.max_score,
-                            "notes":     c.notes,
-                        }
-                        for c in score_result.categories
-                    ],
-                    "new_title":       new_content.new_title,
-                    "new_description": new_content.new_description,
-                    "faq":             new_content.faq,
-                    "keywords":        new_content.suggested_keywords,
-                    "notes":           new_content.notes,
-                },
-                "review_analysis": ra,
-                "gift_suggestions": gift_suggestions,
-            }
+            "data":       result_data,
         }
     except HTTPException:
         raise
+    except PermissionError as e:
+        raise HTTPException(status_code=429, detail=str(e))
     except ProductNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -277,7 +305,10 @@ async def phase_analyze(req: PhaseRequest):
 
 
 @router.post("/phase/images")
-async def phase_images(req: PhaseRequest):
+async def phase_images(
+    req: PhaseRequest,
+    user: AuthUser = Depends(get_current_user),
+):
     """
     FAZ 3 — SSE Streaming görsel üretim.
 
@@ -301,6 +332,9 @@ async def phase_images(req: PhaseRequest):
         os.makedirs(out_dir, exist_ok=True)
 
         try:
+            # Kota kontrolü (stream başında)
+            await asyncio.to_thread(db.check_quota, user.uid, "image")
+
             scraped = await _get_or_scrape(req.url, req.max_review_pages)
             downloaded   = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
             valid_images = [img for img in downloaded if img.local_path]
@@ -333,10 +367,10 @@ async def phase_images(req: PhaseRequest):
                         async with _IMAGE_SEM:
                             # İstekler arası minimum bekleme — 429 baskısını önler
                             global _image_last_call
-                            elapsed = asyncio.get_event_loop().time() - _image_last_call
+                            elapsed = asyncio.get_running_loop().time() - _image_last_call
                             if elapsed < _IMAGE_MIN_INTERVAL:
                                 await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
-                            _image_last_call = asyncio.get_event_loop().time()
+                            _image_last_call = asyncio.get_running_loop().time()
 
                             enhanced = await asyncio.wait_for(
                                 asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
@@ -378,6 +412,10 @@ async def phase_images(req: PhaseRequest):
                 idx, result = await queue.get()
                 if result:
                     count += 1
+                    try:
+                        await asyncio.to_thread(db.increment_usage, user.uid, "image")
+                    except Exception:
+                        pass
                     yield _sse({"type": "image", "data": result})
 
             await asyncio.gather(*futures)
@@ -403,7 +441,10 @@ async def phase_images(req: PhaseRequest):
 
 # ── AI Chat ──────────────────────────────────────────────────────────────────
 @router.post("/chat")
-async def chat_with_product(req: ChatRequest):
+async def chat_with_product(
+    req: ChatRequest,
+    user: AuthUser = Depends(get_current_user),
+):
     """
     Ürün odaklı AI asistan.
     Gemini çağrısı asyncio.to_thread ile thread pool'da çalışır.
@@ -486,6 +527,11 @@ Genel Duygu: {review.get("sentiment_summary", "")}
                     timeout=150,
                 )
 
+            try:
+                await asyncio.to_thread(db.increment_usage, user.uid, "image")
+            except Exception:
+                pass
+
             return {
                 "status": "success",
                 "answer": "Görsel oluşturuldu!",
@@ -497,6 +543,44 @@ Genel Duygu: {review.get("sentiment_summary", "")}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Kullanıcı Endpoint'leri ──────────────────────────────────────────────────
+
+@router.get("/user/me")
+async def get_me(user: AuthUser = Depends(get_current_user)):
+    """Mevcut kullanıcı bilgisi + tier."""
+    profile = await asyncio.to_thread(db.get_or_create_user, user.uid, user.email)
+    return {"status": "success", "data": profile}
+
+
+@router.get("/user/usage")
+async def get_usage(user: AuthUser = Depends(get_current_user)):
+    """Mevcut ay kullanım istatistikleri + limitler."""
+    usage = await asyncio.to_thread(db.get_usage, user.uid)
+    return {"status": "success", "data": usage}
+
+
+@router.get("/user/results")
+async def list_results(
+    limit: int = 20,
+    user: AuthUser = Depends(get_current_user),
+):
+    """Kullanıcının geçmiş analizleri (data hariç)."""
+    results = await asyncio.to_thread(db.list_results, user.uid, limit)
+    return {"status": "success", "data": results}
+
+
+@router.get("/user/results/{result_id}")
+async def get_result(
+    result_id: str,
+    user: AuthUser = Depends(get_current_user),
+):
+    """Tek analiz sonucu (data dahil)."""
+    result = await asyncio.to_thread(db.get_result, user.uid, result_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Sonuç bulunamadı.")
+    return {"status": "success", "data": result}
 
 
 # ── Eski scrape endpoint (geriye uyumluluk) ──────────────────────────────────
