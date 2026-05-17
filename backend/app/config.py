@@ -6,8 +6,10 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # Gemini API
+    # Gemini API — Vertex AI
     gemini_api_key: str
+    vertex_project: str = "gen-lang-client-0328351111"
+    vertex_location: str = "us-central1"
 
     # Gemini model isimleri
     gemini_text_model: str = "gemini-3-flash-preview"
