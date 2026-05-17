@@ -37,6 +37,11 @@ class GeminiClient:
             project=settings.vertex_project,
             location=settings.vertex_location,
         )
+        self._image_client = genai.Client(
+            vertexai=True,
+            project=settings.vertex_project,
+            location=settings.vertex_image_location,
+        )
         self._text_model = settings.gemini_text_model
         self._image_model = settings.gemini_image_model
 
@@ -101,51 +106,24 @@ class GeminiClient:
         """
         image_bytes = Path(image_path).read_bytes()
         mime = _mime_type(image_path)
+        model_name = self._image_model
 
-        # Config'den gelen model önce, ardından fallback'ler
-        # Gerçek timeout asyncio.wait_for ile api.py katmanında yönetilir.
-        models_to_try = [
-            self._image_model,
-            "gemini-2.5-flash-image",
-            "gemini-3-pro-image-preview",
-        ]
-        seen: set[str] = set()
-        models = [x for x in models_to_try if not (x in seen or seen.add(x))]
+        response = self._image_client.models.generate_content(
+            model=model_name,
+            contents=[
+                prompt,
+                types.Part.from_bytes(data=image_bytes, mime_type=mime),
+            ],
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE", "TEXT"],
+            ),
+        )
 
-        last_error = None
+        for part in response.candidates[0].content.parts:
+            if part.inline_data is not None:
+                return part.inline_data.data
 
-        for model_name in models:
-            for attempt in range(2):  # Her model için en fazla 2 deneme
-                try:
-                    response = self._client.models.generate_content(
-                        model=model_name,
-                        contents=[
-                            prompt,
-                            types.Part.from_bytes(data=image_bytes, mime_type=mime),
-                        ],
-                        config=types.GenerateContentConfig(
-                            response_modalities=["IMAGE", "TEXT"],
-                        ),
-                    )
-
-                    for part in response.candidates[0].content.parts:
-                        if part.inline_data is not None:
-                            return part.inline_data.data
-
-                    raise GeminiError(f"Gemini ({model_name}) gorsel uretemedi — yanıtta inline_data yok")
-
-                except Exception as exc:
-                    err_str = str(exc)
-                    if "503" in err_str or "429" in err_str or "high demand" in err_str.lower():
-                        if attempt < 1:
-                            log.warning("[API MESGUL] %s yogun. 10s bekleniyor... (Deneme %d/2)", model_name, attempt + 1)
-                            time.sleep(10)
-                            continue
-                    last_error = exc
-                    log.warning("[UYARI] %s basarisiz, diger modele geciliyor. Hata: %s", model_name, exc)
-                    break
-
-        raise GeminiError(f"Gorsel duzenleme basarisiz. Son hata: {last_error}") from last_error
+        raise GeminiError(f"Gemini ({model_name}) gorsel uretemedi — yanıtta inline_data yok")
 
 
     # ------------------------------------------------------------------

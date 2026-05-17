@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 # backend/app/analyzer/image.py → backend/app/analyzer → backend/app → backend → Esnaf-Kopilot
 _BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
-_SKILL_FILE = _BASE_DIR / "esnaf-kopilot-gorsel-analiz-skill-v3.txt"
+_SKILL_FILE = _BASE_DIR / "esnaf-kopilot-gorsel-analiz-skill-v5.txt"
 
 def _load_image_skill() -> str:
     """Görsel analiz skill prompt'unu txt dosyasından yükler."""

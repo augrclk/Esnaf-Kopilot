@@ -48,10 +48,13 @@ _scrape_tasks: dict[str, asyncio.Task] = {}
 _cache_lock = asyncio.Lock()
 _CACHE_TTL = 7200  # 2 saat
 
-# ── Görsel üretimde eş zamanlı Gemini çağrısı limiti ─────────────────────────
-# Tüm task'lar aynı anda başlarsa API rate limit (429) baskısı artar.
-# Semaphore ile max 3 paralel image API çağrısına kısıtlanır.
-_IMAGE_SEM = asyncio.Semaphore(2)
+# ── Görsel üretimde rate limiter ─────────────────────────────────────────────
+# Semaphore=1: tek eş zamanlı istek.
+# IMAGE_MIN_INTERVAL: ardışık istekler arası minimum süre (saniye).
+# gemini-3.1-flash-image-preview ~4 RPM → 15s gap güvenli.
+_IMAGE_SEM = asyncio.Semaphore(1)
+_IMAGE_MIN_INTERVAL = 15.0  # saniye
+_image_last_call: float = 0.0
 
 
 async def _do_scrape(url: str, max_review_pages: int):
@@ -301,77 +304,70 @@ async def phase_images(req: PhaseRequest):
             # Strateji hazır — frontend bölümü açabilir
             yield _sse({"type": "start", "total": total, "strategy_note": strategy_note})
 
-            TASK_TIMEOUT = 200
+            TASK_TIMEOUT = 120
+            MAX_ATTEMPTS = 4
+            RETRY_DELAYS = [10, 20, 40]  # attempt 1, 2, 3 sonrası bekleme
 
-            async def _enhance_task(idx: int, task, timeout: int = TASK_TIMEOUT) -> dict | None:
+            async def _enhance_task(idx: int, task) -> dict | None:
                 base      = os.path.basename(task.source_image.local_path).split('.')[0]
                 ext       = os.path.basename(task.source_image.local_path).split('.')[-1]
                 safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
                 out_path  = os.path.join(out_dir, f"{base}_KONSEPT_{idx}_{safe_name}.{ext}")
-                try:
-                    dummy = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
-                    async with _IMAGE_SEM:  # max 3 eş zamanlı Gemini image çağrısı
-                        enhanced = await asyncio.wait_for(
-                            asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
-                            timeout=timeout
-                        )
-                    log.info("  ✓ Konsept %d: %s", idx, task.concept_name)
-                    return {"idx": idx, "concept": task.concept_name, "path": enhanced.local_path}
-                except asyncio.TimeoutError:
-                    log.warning("Konsept %d timeout (%ds)", idx, timeout)
-                    return None
-                except Exception as e:
-                    log.error("Konsept %d hata: %s", idx, e)
-                    return None
+                dummy     = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
 
-            # ── TUR 1 — Queue ile paralel, her biten anında stream'e gönder ──
-            queue        = asyncio.Queue()
-            failed_tasks = []  # (idx, task) tuple
-            count        = 0
+                for attempt in range(MAX_ATTEMPTS):
+                    try:
+                        async with _IMAGE_SEM:
+                            # İstekler arası minimum bekleme — 429 baskısını önler
+                            global _image_last_call
+                            elapsed = asyncio.get_event_loop().time() - _image_last_call
+                            if elapsed < _IMAGE_MIN_INTERVAL:
+                                await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
+                            _image_last_call = asyncio.get_event_loop().time()
+
+                            enhanced = await asyncio.wait_for(
+                                asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
+                                timeout=TASK_TIMEOUT
+                            )
+                        log.info("  ✓ Konsept %d: %s", idx, task.concept_name)
+                        return {"idx": idx, "concept": task.concept_name, "path": enhanced.local_path}
+                    except asyncio.TimeoutError:
+                        log.warning("Konsept %d timeout (%ds)", idx, TASK_TIMEOUT)
+                    except Exception as e:
+                        err = str(e)
+                        if "429" in err or "RESOURCE_EXHAUSTED" in err or "503" in err:
+                            if attempt < MAX_ATTEMPTS - 1:
+                                wait = RETRY_DELAYS[attempt]
+                                log.warning("  ⏳ Konsept %d rate-limit — %ds bekleniyor (deneme %d/%d)",
+                                            idx, wait, attempt + 1, MAX_ATTEMPTS)
+                                await asyncio.sleep(wait)
+                                continue
+                        log.error("Konsept %d hata: %s", idx, e)
+                    break
+
+                log.warning("Konsept %d tüm denemeler sonrası üretilemedi.", idx)
+                return None
+
+            # ── Tüm görevler paralel başlar, her biten anında stream'e gönderilir ──
+            queue   = asyncio.Queue()
+            count   = 0
 
             async def _run_and_enqueue(idx, task):
                 result = await _enhance_task(idx, task)
-                await queue.put((idx, task, result))
+                await queue.put((idx, result))
 
-            # Tüm görevleri başlat
             futures = [
                 asyncio.create_task(_run_and_enqueue(idx, task))
                 for idx, task in enumerate(analysis.edit_tasks, 1)
             ]
 
-            # Her biten görsel anında gönderilir
             for _ in range(total):
-                idx, task, result = await queue.get()
+                idx, result = await queue.get()
                 if result:
                     count += 1
                     yield _sse({"type": "image", "data": result})
-                else:
-                    failed_tasks.append((idx, task))
 
-            await asyncio.gather(*futures)  # cleanup
-
-            # ── TUR 2 — Başarısızlar sırayla retry ───────────────────────────
-            if failed_tasks:
-                log.info("[Phase/Images] Tur 1: %d/%d — %d retry", count, total, len(failed_tasks))
-                await asyncio.sleep(15)
-
-                for idx, task in failed_tasks:
-                    yield _sse({"type": "retry", "idx": idx, "concept": task.concept_name})
-                    log.info("  ↺ Retry: Konsept %d: %s", idx, task.concept_name)
-
-                    result = await _enhance_task(idx, task, timeout=240)
-                    if result:
-                        count += 1
-                        yield _sse({"type": "image", "data": result})
-                    else:
-                        await asyncio.sleep(20)
-                        result = await _enhance_task(idx, task, timeout=240)
-                        if result:
-                            count += 1
-                            yield _sse({"type": "image", "data": result})
-                        else:
-                            log.warning("Konsept %d tüm denemeler sonrası üretilemedi.", idx)
-                    await asyncio.sleep(5)
+            await asyncio.gather(*futures)
 
             log.info("[Phase/Images] Tamamlandı: %d/%d görsel", count, total)
             yield _sse({"type": "done", "count": count, "total": total})
