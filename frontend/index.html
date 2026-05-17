@@ -3,292 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Esnaf Kopilot - AI Ürün Geliştirici</title>
-    <meta name="description" content="Trendyol ürün listelemelerinizi yapay zeka ile analiz edin, SEO puanı alın, yorum analizi yapın ve yeni görseller üretin.">
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <title>Esnaf Kopilot - AI Ajanınız</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0f1e;
+            --orange: #F7941D;
+            --purple: #3333CC;
+            --cyan: #00cfff;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Nav */
+        nav {
+            background-color: var(--bg-dark);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Full Page Sections */
+        .snap-section {
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+            padding-top: 80px; /* Offset for nav */
+            overflow: hidden;
+        }
+
+        /* Speech Bubbles with Tails */
+        .bubble-static {
+            position: absolute;
+            padding: 12px 20px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            width: max-content;
+            z-index: 20;
+            animation: float-bubble 3s ease-in-out infinite;
+        }
+
+        @keyframes float-bubble {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Robot Bubble & Tail */
+        .bubble-robot {
+            background: var(--bg-dark);
+            color: white;
+            border: 2px solid var(--cyan);
+        }
+        .bubble-robot::after {
+            content: '';
+            position: absolute;
+            border-width: 10px;
+            border-style: solid;
+            border-color: var(--bg-dark) transparent transparent transparent;
+            bottom: -18px;
+            left: 20px;
+        }
+        .bubble-robot::before {
+            content: '';
+            position: absolute;
+            border-width: 12px;
+            border-style: solid;
+            border-color: var(--cyan) transparent transparent transparent;
+            bottom: -24px;
+            left: 18px;
+            z-index: -1;
+        }
+
+        /* Man Bubble & Tail */
+        .bubble-man {
+            background: white;
+            color: #111;
+        }
+        .bubble-man::after {
+            content: '';
+            position: absolute;
+            border-width: 12px;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+            bottom: -20px;
+            right: 20px;
+        }
+
+        .char-img {
+            max-height: 55vh;
+            object-fit: contain;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.5));
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Components */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--cyan);
+            transform: translateX(10px);
+        }
+
+        .cta-btn {
+            background: linear-gradient(135deg, var(--orange), #e8830a);
+            transition: all 0.3s;
+        }
+        .cta-btn:hover {
+            background: var(--purple);
+            box-shadow: 0 0 20px rgba(51, 51, 204, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Steps UI */
+        .step-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px 25px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-direction: column;
+        }
+        .step-arrow {
+            color: var(--cyan);
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <!-- Login Overlay -->
-    <div id="loginOverlay" class="login-overlay">
-        <div class="login-card glass-panel">
-            <div class="logo" style="justify-content:center;margin-bottom:1.5rem;">
-                <i class="fa-solid fa-rocket"></i>
-                <h1>Esnaf <span>Kopilot</span></h1>
-            </div>
-            <p style="text-align:center;color:var(--text-muted);margin-bottom:1.8rem;font-size:0.95rem;">Devam etmek için giriş yapın</p>
-            <div class="login-form">
-                <div class="input-group" style="margin-bottom:1rem;">
-                    <i class="fa-solid fa-envelope input-icon"></i>
-                    <input type="email" id="loginEmail" placeholder="E-posta adresi" autocomplete="email">
-                </div>
-                <div class="input-group" style="margin-bottom:1.5rem;">
-                    <i class="fa-solid fa-lock input-icon"></i>
-                    <input type="password" id="loginPassword" placeholder="Şifre" autocomplete="current-password">
-                </div>
-                <button id="loginBtn" class="btn-primary" style="width:100%;justify-content:center;">
-                    <span>Giriş Yap</span>
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
-                <p id="loginError" style="color:#f87171;text-align:center;margin-top:1rem;font-size:0.85rem;display:none;"></p>
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 py-4">
+        <!-- Logo -->
+        <div class="flex items-center">
+            <!-- Accurate Navbar SVG Logo Match -->
+            <div id="nav-text" class="flex items-center font-extrabold text-2xl tracking-tight" style="font-family: 'Outfit', sans-serif;">
+                <span style="color: var(--orange);">Esnaf</span>
+                <span style="color: var(--purple);" class="flex items-center ml-[2px]">
+                    K
+                    <span class="relative flex items-center justify-center mx-[1px]">
+                        <svg width="0.8em" height="0.8em" viewBox="0 0 24 24" fill="currentColor" class="inline-block relative" style="top: -0.05em;">
+                            <rect x="4" y="7" width="16" height="13" rx="5" />
+                            <path d="M12 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="12" cy="2.5" r="1.5" />
+                            <circle cx="3.5" cy="13.5" r="2.5" />
+                            <circle cx="20.5" cy="13.5" r="2.5" />
+                            <rect x="8.5" y="11" width="2" height="4" rx="1" fill="var(--bg-dark)" />
+                            <rect x="13.5" y="11" width="2" height="4" rx="1" fill="var(--bg-dark)" />
+                        </svg>
+                    </span>
+                    pilot
+                </span>
             </div>
         </div>
-    </div>
+        <div class="hidden md:flex space-x-8 text-sm font-medium text-gray-300">
+            <a href="#hero" class="nav-link hover:text-white transition">Ana Sayfa</a>
+            <a href="#features" class="nav-link hover:text-white transition">Özellikler</a>
+            <a href="#how-it-works" class="nav-link hover:text-white transition">Nasıl Çalışır</a>
+        </div>
+        <button onclick="window.location.href='dashboard.html'" class="bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-2 rounded-full text-sm font-semibold transition backdrop-blur-sm cursor-pointer">Giriş Yap</button>
+    </nav>
 
-    <div class="glass-bg"></div>
-    <div class="glow-sphere sphere-1"></div>
-    <div class="glow-sphere sphere-2"></div>
+    <!-- Main Scroll Container -->
+    <main id="main-scroll">
 
-    <main class="container" id="mainApp" style="display:none;">
-        <header class="app-header">
-            <div class="logo">
-                <i class="fa-solid fa-rocket"></i>
-                <h1>Esnaf <span>Kopilot</span></h1>
-            </div>
-            <p>Trendyol Ürünlerinizi Yapay Zeka ile Yeniden Tasarlayın</p>
-            <div class="user-bar" id="userBar">
-                <span class="user-email" id="userEmail"></span>
-                <button class="btn-logout" id="logoutBtn" title="Çıkış Yap">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Input + Status -->
-        <section class="input-section glass-panel">
-            <div class="input-group">
-                <i class="fa-solid fa-link input-icon"></i>
-                <input type="text" id="urlInput"
-                    placeholder="Trendyol ürün linkini buraya yapıştırın..."
-                    value="">
-                <button id="analyzeBtn" class="btn-primary">
-                    <span>Analizi Başlat</span>
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                </button>
-            </div>
-
-            <!-- Aşama Göstergesi -->
-            <div class="status-bar" id="statusBar" style="display: none;">
-                <div class="phase-steps">
-                    <div class="phase-step" id="step1">
-                        <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                        <span>Ürün Çekiliyor</span>
+        <!-- SECTION 1: HERO -->
+        <section id="hero" class="snap-section flex items-center justify-between px-2 md:px-4">
+            <!-- Left: Robot -->
+            <div class="w-1/3 md:w-1/4 flex justify-start items-end h-full pb-[10vh]">
+                <div class="relative">
+                    <div class="bubble-static bubble-robot bottom-[85%] left-[60%] md:left-[80%] whitespace-nowrap">
+                        Gel göstereyim!
                     </div>
-                    <div class="step-line"></div>
-                    <div class="phase-step" id="step2">
-                        <div class="step-icon"><i class="fa-solid fa-brain"></i></div>
-                        <span>İçerik Analizi</span>
-                    </div>
-                    <div class="step-line"></div>
-                    <div class="phase-step" id="step3">
-                        <div class="step-icon"><i class="fa-solid fa-image"></i></div>
-                        <span>Görsel Üretim</span>
-                    </div>
+                    <img src="characters/robot-selam.png" class="char-img" alt="Robot">
                 </div>
-                <div class="status-msg">
-                    <div class="loader-pulse"></div>
-                    <span id="statusText">İşleniyor...</span>
+            </div>
+
+            <!-- Center: Logo & Title -->
+            <div class="w-1/3 md:w-2/4 flex justify-center items-center h-full z-10">
+                <h1 class="text-[3rem] md:text-[5.5rem] lg:text-[7rem] font-extrabold tracking-tight flex items-center justify-center flex-wrap text-center" style="line-height: 1;">
+                    <span style="color: var(--orange);">Esnaf</span>
+                    <span style="color: var(--purple); display: flex; align-items: center;">
+                        K
+                        <span class="relative flex items-center justify-center mx-[4px]">
+                            <!-- Accurate Robot Head SVG for Hero -->
+                            <svg width="0.8em" height="0.8em" viewBox="0 0 24 24" fill="currentColor" class="inline-block relative" style="top: -0.05em;">
+                                <rect x="4" y="7" width="16" height="13" rx="5" />
+                                <path d="M12 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="12" cy="2.5" r="1.5" />
+                                <circle cx="3.5" cy="13.5" r="2.5" />
+                                <circle cx="20.5" cy="13.5" r="2.5" />
+                                <rect x="8.5" y="11" width="2" height="4" rx="1" fill="var(--bg-dark)" />
+                                <rect x="13.5" y="11" width="2" height="4" rx="1" fill="var(--bg-dark)" />
+                            </svg>
+                        </span>
+                        pilot
+                    </span>
+                </h1>
+            </div>
+
+            <!-- Right: Man -->
+            <div class="w-1/3 md:w-1/4 flex justify-end items-end h-full pb-[10vh]">
+                <div class="relative">
+                    <div class="bubble-static bubble-man bottom-[85%] right-[50%] md:right-[60%] whitespace-nowrap">
+                        Ne hizmet sunuyorsunuz?
+                    </div>
+                    <img src="characters/adam-dusunuyor.png" class="char-img" alt="Adam">
+                </div>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 opacity-50 animate-bounce cursor-pointer" onclick="window.scrollBy({top: window.innerHeight, behavior: 'smooth'})">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </div>
+        </section>
+
+        <!-- SECTION 2: FEATURES -->
+        <section id="features" class="snap-section flex items-center justify-between px-2 md:px-4 bg-[#0c1222]">
+            <!-- Left: Robot -->
+            <div class="w-1/3 md:w-1/4 flex justify-start items-end h-full pb-[10vh]">
+                <div class="relative">
+                    <div class="bubble-static bubble-robot bottom-[85%] left-[50%] md:left-[60%] text-sm md:text-base max-w-[200px]">
+                        Biz senin ürününü anlayıp analiz ederiz...
+                    </div>
+                    <img src="characters/robot-gosteriyor.png" class="char-img" alt="Robot">
+                </div>
+            </div>
+
+            <!-- Center: Text Lines -->
+            <div class="w-1/3 md:w-2/4 flex flex-col justify-center h-full px-4 md:px-10 z-10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center"><span style="color: var(--orange)">Esnaf Kopilot</span> Özellikleri</h2>
+                <div class="feature-item">
+                    <h3 class="text-lg md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-2xl">🔍</span> Ürün Analizi</h3>
+                    <p class="text-gray-400 text-xs md:text-sm">Linki yapıştırın, yapay zekamız tüm içeriği analiz etsin.</p>
+                </div>
+                <div class="feature-item">
+                    <h3 class="text-lg md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-2xl">🚀</span> SEO & AEO</h3>
+                    <p class="text-gray-400 text-xs md:text-sm">Arama motorları için başlık ve açıklamalarınızı kusursuzlaştırır.</p>
+                </div>
+                <div class="feature-item">
+                    <h3 class="text-lg md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-2xl">📊</span> Rakip Benchmark</h3>
+                    <p class="text-gray-400 text-xs md:text-sm">Sektördeki en iyi satıcılarla karşılaştırır, eksikleri gösterir.</p>
+                </div>
+            </div>
+
+            <!-- Right: Man -->
+            <div class="w-1/3 md:w-1/4 flex justify-end items-end h-full pb-[10vh]">
+                <div class="relative">
+                    <div class="bubble-static bubble-man bottom-[95%] right-[50%] md:right-[10%] whitespace-nowrap text-sm md:text-base">
+                        Peki nasıl çalışıyor?
+                    </div>
+                    <img src="characters/adam-guvenli.png" class="char-img" alt="Adam">
                 </div>
             </div>
         </section>
 
-        <!-- ── RESULTS ────────────────────────────────────────────────── -->
-        <section id="resultsSection" style="display: none;">
-
-            <!-- FAZ 1 ÇIKTI: Çekilen Ürün Bilgisi + Yorum Örnekleri -->
-            <div id="phaseContent" style="display: none;">
-
-                <!-- Önce / Sonra Karşılaştırma (başta skeleton) -->
-                <div class="compare-section glass-panel mt-2">
-                    <div class="card-header" style="margin-bottom: 1.8rem;">
-                        <i class="fa-solid fa-code-compare"></i>
-                        <h2>Önce / Sonra Karşılaştırma</h2>
-                    </div>
-
-                    <div class="compare-scores">
-                        <div class="compare-score-card">
-                            <span class="compare-label">Mevcut Skor</span>
-                            <div class="score-ring">
-                                <svg viewBox="0 0 80 80">
-                                    <circle cx="40" cy="40" r="32" class="ring-bg"/>
-                                    <circle cx="40" cy="40" r="32" class="ring-fill ring-before" id="ringFillBefore"/>
-                                </svg>
-                                <span class="score-number" id="scoreBefore">—</span>
-                            </div>
-                            <span class="score-sub">/ 100</span>
+        <!-- SECTION 3: HOW IT WORKS -->
+        <section id="how-it-works" class="snap-section flex flex-col justify-center px-2 md:px-4">
+            <!-- Top: Characters & Title -->
+            <div class="flex justify-between items-end h-[45vh] w-full">
+                <!-- Left: Robot -->
+                <div class="w-1/3 flex justify-start items-end">
+                    <div class="relative">
+                        <div class="bubble-static bubble-robot bottom-[95%] left-[50%] whitespace-nowrap">
+                            Bak böyle çalışır!
                         </div>
-                        <div class="compare-arrow">
-                            <i class="fa-solid fa-arrow-right-long"></i>
-                            <span>AI İyileştirmesi</span>
-                        </div>
-                        <div class="compare-score-card">
-                            <span class="compare-label">Hedef Skor</span>
-                            <div class="score-ring">
-                                <svg viewBox="0 0 80 80">
-                                    <circle cx="40" cy="40" r="32" class="ring-bg"/>
-                                    <circle cx="40" cy="40" r="32" class="ring-fill ring-after" id="ringFillAfter"/>
-                                </svg>
-                                <span class="score-number after-score-num" id="scoreAfter">—</span>
-                            </div>
-                            <span class="score-sub">/ 100</span>
-                        </div>
-                    </div>
-
-                    <!-- Başlık -->
-                    <div class="compare-row">
-                        <div class="compare-col compare-before">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-xmark"></i> Mevcut Başlık</div>
-                            <p id="origTitle" class="compare-text compare-text-before">—</p>
-                        </div>
-                        <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
-                        <div class="compare-col compare-after">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-check"></i> Yeni Başlık</div>
-                            <p id="newTitle" class="compare-text compare-text-after analyzing-placeholder">— analiz ediliyor...</p>
-                        </div>
-                    </div>
-
-                    <!-- Açıklama -->
-                    <div class="compare-row compare-row-desc">
-                        <div class="compare-col compare-before">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-xmark"></i> Mevcut Açıklama</div>
-                            <div id="origDescription" class="compare-text compare-desc-text compare-text-before">—</div>
-                        </div>
-                        <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
-                        <div class="compare-col compare-after">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-check"></i> Yeni Açıklama</div>
-                            <div id="newDescription" class="compare-text compare-desc-text compare-text-after analyzing-placeholder">— analiz ediliyor...</div>
-                        </div>
-                    </div>
-
-                    <!-- Anahtar Kelimeler -->
-                    <div style="margin-top: 1.5rem;">
-                        <div class="compare-col-label" style="margin-bottom: 0.7rem; color: var(--primary);">
-                            <i class="fa-solid fa-tags"></i> Önerilen Anahtar Kelimeler
-                        </div>
-                        <div class="keywords" id="keywordList">
-                            <span class="keyword-tag analyzing-placeholder">— analiz bekleniyor</span>
-                        </div>
+                        <img src="characters/robot-gosteriyor.png" class="char-img" style="max-height: 40vh;" alt="Robot">
                     </div>
                 </div>
 
-                <!-- Çekilen Yorum Örnekleri -->
-                <div id="reviewSampleCard" class="glass-panel mt-2" style="display: none;">
-                    <div class="card-header">
-                        <i class="fa-solid fa-comments"></i>
-                        <h2>Müşteri Yorumları</h2>
-                        <span class="review-count-badge" id="reviewCountBadge"></span>
-                        <span class="analyzing-tag"><i class="fa-solid fa-spinner fa-spin"></i> Analiz ediliyor...</span>
+                <!-- Center: Title -->
+                <div class="w-1/3 text-center mb-8 z-10">
+                    <h2 class="text-4xl md:text-5xl font-bold">Nasıl Çalışır?</h2>
+                </div>
+
+                <!-- Right: Man -->
+                <div class="w-1/3 flex justify-end items-end">
+                    <div class="relative">
+                        <div class="bubble-static bubble-man bottom-[95%] right-[50%] whitespace-nowrap">
+                            Hemen denemek isterim
+                        </div>
+                        <img src="characters/adam-selam.png" class="char-img" style="max-height: 40vh;" alt="Adam">
                     </div>
-                    <ul id="reviewSampleList" class="review-sample-list"></ul>
                 </div>
             </div>
 
-            <!-- FAZ 2 ÇIKTI: İçerik + Yorum Analizi -->
-            <div id="phaseAnalysis" style="display: none;">
-                <!-- Yorum Analizi -->
-                <div class="glass-panel mt-2" id="reviewAnalysisCard">
-                    <div class="card-header">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <h2>Müşteri Yorum Analizi</h2>
+            <!-- Bottom: 5 Steps Timeline -->
+            <div class="w-full max-w-5xl mx-auto bg-black/30 p-6 md:p-8 rounded-3xl border border-white/5 shadow-2xl mt-4 z-10">
+                <div class="flex flex-wrap md:flex-nowrap justify-between items-center w-full gap-2 md:gap-4">
+                    <div class="step-box flex-1">
+                        <span class="text-white/40 text-xl">01</span>
+                        <span class="text-xs md:text-sm">Link Ver</span>
                     </div>
-                    <p id="reviewSentimentSummary" class="strategy-text" style="margin-bottom: 1.2rem;"></p>
-                    <div class="review-analysis-grid">
-                        <div class="review-col positives-col">
-                            <div class="review-col-header">
-                                <i class="fa-solid fa-thumbs-up"></i>
-                                <span>Müşterilerin Sevdiği</span>
-                            </div>
-                            <ul id="positivesList" class="review-list"></ul>
-                        </div>
-                        <div class="review-col negatives-col">
-                            <div class="review-col-header">
-                                <i class="fa-solid fa-thumbs-down"></i>
-                                <span>Dikkat Edilmesi Gerekenler</span>
-                            </div>
-                            <ul id="negativesList" class="review-list"></ul>
-                        </div>
+                    <div class="step-arrow hidden md:block">→</div>
+                    <div class="step-box flex-1">
+                        <span class="text-white/40 text-xl">02</span>
+                        <span class="text-xs md:text-sm">AI Analizi</span>
                     </div>
-                    <div id="unansweredQuestionsSection" style="margin-top: 1.2rem; display: none;">
-                        <div class="review-col-header" style="margin-bottom: 0.6rem;">
-                            <i class="fa-solid fa-circle-question"></i>
-                            <span>Cevaplanmamış Müşteri Soruları</span>
-                        </div>
-                        <ul id="unansweredList" class="unanswered-list"></ul>
+                    <div class="step-arrow hidden md:block">→</div>
+                    <div class="step-box flex-1">
+                        <span class="text-white/40 text-xl">03</span>
+                        <span class="text-xs md:text-sm">Öneriler</span>
+                    </div>
+                    <div class="step-arrow hidden md:block">→</div>
+                    <div class="step-box flex-1">
+                        <span class="text-white/40 text-xl">04</span>
+                        <span class="text-xs md:text-sm">Uygula</span>
+                    </div>
+                    <div class="step-arrow hidden md:block">→</div>
+                    <div class="step-box flex-1" style="border-color: var(--orange); background: rgba(247,148,29,0.1);">
+                        <span class="text-orange-400 text-xl">05</span>
+                        <span class="text-xs md:text-sm">Kazan</span>
                     </div>
                 </div>
+            </div>
+        </section>
 
-                <!-- Hediye & Jest Önerileri -->
-                <div class="glass-panel mt-2" id="giftSuggestionsCard" style="display: none;">
-                    <div class="card-header">
-                        <i class="fa-solid fa-gift"></i>
-                        <h2>Hediye &amp; Jest Önerileri</h2>
-                    </div>
-                    <p id="giftStrategy" class="strategy-text" style="margin-bottom: 1.2rem;"></p>
-                    <div id="giftList"></div>
-                    <div id="giftPackagingSection" style="display: none; margin-top: 1.2rem;">
-                        <div class="review-col-header" style="margin-bottom: 0.6rem;">
-                            <i class="fa-solid fa-box-open"></i>
-                            <span>Paketleme Önerileri</span>
-                        </div>
-                        <ul id="giftPackagingList" class="unanswered-list"></ul>
-                    </div>
-                    <p id="giftDisclosure" class="strategy-text" style="margin-top: 1rem; font-style: italic; opacity: 0.75;"></p>
+        <!-- SECTION 4: CTA -->
+        <section id="cta" class="snap-section flex flex-col md:flex-row items-center justify-center bg-[#0c1222] px-4 md:px-10 gap-8">
+            <!-- Left: Character Image Slideshow -->
+            <div class="w-full md:w-1/2 flex flex-col justify-center items-center mt-10 md:mt-0">
+                <div class="relative w-[90%] max-w-[55vh] aspect-square flex justify-center items-center">
+                    <img src="characters/robot%20rate.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-100" alt="Esnaf Kopilot">
+                    <img src="characters/robot%20creativety.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
+                    <img src="characters/robot%20working.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
+                    <img src="characters/dreank_tea_with_esnaf.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
+                    <img src="characters/dene.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
+                </div>
+
+                <!-- Slideshow Indicators -->
+                <div class="flex justify-center gap-4 mt-6 z-10">
+                    <button class="slide-dot w-3 h-3 rounded-full bg-[var(--orange)] border-2 border-transparent transition-colors cursor-pointer" onclick="goToSlide(0)"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(1)"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(2)"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(3)"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(4)"></button>
                 </div>
             </div>
 
-            <!-- FAZ 3 ÇIKTI: Görseller -->
-            <div id="phaseImages" style="display: none;">
-                <div class="gallery-section mt-3">
-                    <div class="section-title">
-                        <h2>✨ Üretilen WOW Konseptleri</h2>
-                        <p>Müşteriyi büyülemek için özel olarak tasarlandı.</p>
-                    </div>
-                    <div class="gallery-grid" id="imageGallery"></div>
-                </div>
-            </div>
-
-            <!-- AI Chat (Faz 2'den sonra görünür) -->
-            <div id="phaseChatSection" class="glass-panel chat-card mt-3" style="display: none;">
-                <div class="card-header highlight">
-                    <i class="fa-solid fa-robot"></i>
-                    <h2>Bu Ürün Hakkında Asistana Sor</h2>
-                </div>
-                <p class="chat-subtitle">Analiz sonuçlarını bilen bir asistanla ürün stratejinizi geliştirin.</p>
-                <div class="quick-questions">
-                    <button class="quick-q-btn" onclick="askQuestion('Bu ürünün en büyük satış engeli ne?')"><i class="fa-solid fa-ban"></i> En büyük satış engeli?</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Başlığı daha premium hale getir.')"><i class="fa-solid fa-crown"></i> Başlığı premium yap</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Yorumlara göre açıklamada neyi vurgulamalıyım?')"><i class="fa-solid fa-magnifying-glass-chart"></i> Neyi vurgulayalım?</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Anneler için daha uygun bir açıklama yaz.')"><i class="fa-solid fa-heart"></i> Anneler için açıklama</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Trendyol için daha kısa bir başlık öner.')"><i class="fa-solid fa-scissors"></i> Daha kısa başlık</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Olumsuz yorumları nasıl açıklamada ele alabilirim?')"><i class="fa-solid fa-shield-halved"></i> Olumsuzları ele al</button>
-                </div>
-                <div class="chat-messages" id="chatMessages"></div>
-                <div class="chat-input-row">
-                    <input type="text" id="chatInput" placeholder="Ürün hakkında bir şey sor..." class="chat-input">
-                    <button id="chatSendBtn" class="btn-send" onclick="sendChat()">
-                        <i class="fa-solid fa-paper-plane"></i>
+            <!-- Right: CTA Box -->
+            <div class="w-full md:w-1/2 flex justify-center items-center h-[60vh] md:h-full z-10">
+                <div class="glass-card text-center max-w-lg p-10" style="background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(247,148,29,0.1) 100%); border-color: rgba(247,148,29,0.3);">
+                    <h2 class="text-4xl md:text-5xl font-extrabold mb-6">Şimdi Deneyin</h2>
+                    <p class="text-lg text-gray-300 mb-8">Rakipleriniz yapay zekayı kullanmaya başladı bile. Hemen analiz yaparak fark yaratın.</p>
+                    <button onclick="window.location.href='dashboard.html'" class="cta-btn text-white font-bold text-lg px-10 py-4 rounded-full w-full inline-flex items-center justify-center gap-3 shadow-lg cursor-pointer">
+                        Hemen Başla
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
                 </div>
             </div>
-
         </section>
+
     </main>
 
+    <!-- Navigation & Slideshow Scripts -->
     <script>
-        const firebaseConfig = {
-            apiKey:            "AIzaSyAHIyrcAcLunMuIp5uFwwvUEz5FeVwVwBY",
-            authDomain:        "esnaf-kopilot.firebaseapp.com",
-            projectId:         "esnaf-kopilot",
-            storageBucket:     "esnaf-kopilot.firebasestorage.app",
-            messagingSenderId: "173791628040",
-            appId:             "1:173791628040:web:17820e72100ebde9bdfabd",
+        // Navigation Smooth Scroll
+        document.querySelectorAll('.nav-link').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+
+                if (targetSection) {
+                    window.scrollTo({
+                        top: targetSection.offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // CTA Image Slideshow (Fading effect & Indicators)
+        const slides = document.querySelectorAll('.slideshow-img');
+        const dots = document.querySelectorAll('.slide-dot');
+        let currentSlide = 0;
+        let slideInterval;
+
+        function updateSlide(index) {
+            // Fade out current
+            slides[currentSlide].classList.remove('opacity-100');
+            slides[currentSlide].classList.add('opacity-0');
+            if(dots[currentSlide]) {
+                dots[currentSlide].classList.remove('bg-[var(--orange)]');
+                dots[currentSlide].classList.add('bg-white/30');
+            }
+
+            // Move to next
+            currentSlide = index;
+
+            // Fade in next
+            slides[currentSlide].classList.remove('opacity-0');
+            slides[currentSlide].classList.add('opacity-100');
+            if(dots[currentSlide]) {
+                dots[currentSlide].classList.remove('bg-white/30');
+                dots[currentSlide].classList.add('bg-[var(--orange)]');
+            }
+        }
+
+        function nextSlide() {
+            updateSlide((currentSlide + 1) % slides.length);
+        }
+
+        // For manual clicking
+        window.goToSlide = function(index) {
+            clearInterval(slideInterval); // Stop auto-play temporarily
+            updateSlide(index);
+            slideInterval = setInterval(nextSlide, 2500); // Restart auto-play
         };
-        firebase.initializeApp(firebaseConfig);
+
+        if(slides.length > 0) {
+            slideInterval = setInterval(nextSlide, 2500); // Her 2.5 saniyede bir değiştir
+        }
     </script>
-    <script src="app.js"></script>
 </body>
 </html>
