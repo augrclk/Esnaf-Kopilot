@@ -34,7 +34,6 @@ class GeminiClient:
     def __init__(self) -> None:
         self._client = genai.Client(
             vertexai=True,
-            api_key=settings.gemini_api_key,
             project=settings.vertex_project,
             location=settings.vertex_location,
         )
