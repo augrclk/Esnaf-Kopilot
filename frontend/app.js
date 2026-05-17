@@ -189,6 +189,7 @@ function renderAnalyzePhase(data) {
 
     // Yorum analizi
     renderReviewAnalysis(data.review_analysis);
+    renderGiftSuggestions(data.gift_suggestions);
     document.getElementById('phaseAnalysis').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     // Chat bölümünü de göster
@@ -355,6 +356,58 @@ function renderReviewAnalysis(ra) {
         });
     } else {
         if (unansweredSection) unansweredSection.style.display = 'none';
+    }
+}
+
+// ── Hediye Önerileri Render ───────────────────────────────────────────────────
+function renderGiftSuggestions(gs) {
+    if (!gs || !gs.suggestions || gs.suggestions.length === 0) return;
+
+    const card = document.getElementById('giftSuggestionsCard');
+    if (!card) return;
+    card.style.display = 'block';
+
+    const strategyEl = document.getElementById('giftStrategy');
+    if (strategyEl) strategyEl.textContent = gs.gift_strategy || '';
+
+    const typeLabels = { A: 'Sorun Çözücü', B: 'Kullanım Kolaylaştırıcı', C: 'Tamamlayıcı', D: 'Kişisel Dokunuş', E: 'Koruyucu' };
+    const impactColors = { HIGH: '#4ade80', MEDIUM: '#facc15', LOW: '#9ca3af' };
+
+    const listEl = document.getElementById('giftList');
+    listEl.innerHTML = '';
+    (gs.suggestions || []).forEach(s => {
+        const color = impactColors[s.impact] || '#9ca3af';
+        const item = document.createElement('div');
+        item.style.cssText = 'margin-bottom:0.8rem; padding:0.9rem 1rem; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);';
+        item.innerHTML = `
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.4rem;">
+                <strong style="font-size:0.95rem;">${escHtml(s.gift)}</strong>
+                <span class="keyword-tag" style="font-size:0.7rem;padding:2px 8px;">${escHtml(typeLabels[s.type] || s.type)}</span>
+                <span style="margin-left:auto;font-size:0.78rem;color:var(--text-muted);">${escHtml(s.estimated_cost)}</span>
+                <span style="font-size:0.72rem;font-weight:600;color:${color};background:${color}22;padding:2px 7px;border-radius:20px;">${escHtml(s.impact)}</span>
+            </div>
+            <p style="font-size:0.83rem;color:var(--text-muted);margin:0 0 0.25rem;">${escHtml(s.why)}</p>
+            ${s.bulk_note ? `<p style="font-size:0.78rem;color:var(--text-muted);margin:0;opacity:0.7;"><i class="fa-solid fa-boxes-stacked" style="font-size:0.7rem;margin-right:4px;"></i>${escHtml(s.bulk_note)}</p>` : ''}
+        `;
+        listEl.appendChild(item);
+    });
+
+    const packSection = document.getElementById('giftPackagingSection');
+    const packList    = document.getElementById('giftPackagingList');
+    if (gs.packaging_tips && gs.packaging_tips.length > 0) {
+        packSection.style.display = 'block';
+        packList.innerHTML = '';
+        gs.packaging_tips.forEach(tip => {
+            const li = document.createElement('li');
+            li.className = 'unanswered-item';
+            li.innerHTML = `<i class="fa-solid fa-box-open"></i> ${escHtml(tip)}`;
+            packList.appendChild(li);
+        });
+    }
+
+    const disclosureEl = document.getElementById('giftDisclosure');
+    if (disclosureEl && gs.disclosure_strategy) {
+        disclosureEl.textContent = '💡 ' + gs.disclosure_strategy;
     }
 }
 
