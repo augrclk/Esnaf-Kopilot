@@ -583,6 +583,57 @@ async def get_result(
     return {"status": "success", "data": result}
 
 
+# ── Admin Endpoint'leri ──────────────────────────────────────────────────────
+
+class SetTierRequest(BaseModel):
+    uid:  str
+    tier: str  # "free" | "pro" | "admin"
+
+
+def _require_admin(user: AuthUser) -> None:
+    """Kullanıcı admin değilse 403 fırlatır."""
+    profile = db._db().collection("users").document(user.uid).get().to_dict() or {}
+    if profile.get("tier") != "admin":
+        raise HTTPException(status_code=403, detail="Admin yetkisi gerekli.")
+
+
+@router.post("/admin/set-tier")
+async def admin_set_tier(
+    req: SetTierRequest,
+    user: AuthUser = Depends(get_current_user),
+):
+    """
+    Admin: hedef kullanıcının tier'ını değiştirir.
+    Sadece tier=admin olan kullanıcılar çağırabilir.
+    """
+    await asyncio.to_thread(_require_admin, user)
+    try:
+        await asyncio.to_thread(db.set_user_tier, req.uid, req.tier)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return {"status": "success", "uid": req.uid, "new_tier": req.tier}
+
+
+@router.get("/admin/users")
+async def admin_list_users(
+    user: AuthUser = Depends(get_current_user),
+):
+    """
+    Admin: tüm kullanıcıları listeler (tier + email).
+    """
+    await asyncio.to_thread(_require_admin, user)
+    firestore_db = db._db()
+    docs = firestore_db.collection("users").stream()
+    users = []
+    for doc in docs:
+        d = doc.to_dict()
+        if hasattr(d.get("created_at"), "isoformat"):
+            d["created_at"] = d["created_at"].isoformat()
+        d.pop("limits", None)  # limits tier'dan türetiliyor, gereksiz
+        users.append(d)
+    return {"status": "success", "data": users}
+
+
 # ── Eski scrape endpoint (geriye uyumluluk) ──────────────────────────────────
 @router.post("/scrape")
 async def scrape_only(req: ScrapeRequest):
