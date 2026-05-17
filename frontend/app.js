@@ -5,7 +5,7 @@ const API_BASE = window.location.hostname === 'localhost'
 
 // ── Global State ─────────────────────────────────────────────────────────────
 let analysisContext  = null;
-let currentOutputDir = '';
+// currentOutputDir kaldırıldı — görseller artık Firebase Storage'da
 let _currentUser     = null;   // Firebase User
 
 // ── Firebase Auth ─────────────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ async function startProgressiveAnalysis() {
 
     resetUI();
     analysisContext = null;
-    currentOutputDir = '';
+    // output_dir artık kullanılmıyor
 
     const analyzeBtn = document.getElementById('analyzeBtn');
     analyzeBtn.disabled = true;
@@ -114,7 +114,7 @@ async function startProgressiveAnalysis() {
 
         const analyzePromise = apiFetch('/api/phase/analyze', { url, max_review_pages: 5 })
             .then(res => {
-                currentOutputDir = res.output_dir || '';
+                // output_dir artık kullanılmıyor
                 analysisContext = res.data;
                 renderAnalyzePhase(res.data);
                 setStepDone(2);
@@ -283,7 +283,7 @@ async function streamImages(url) {
             'Content-Type':  'application/json',
             'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ url, output_dir: currentOutputDir || '', max_review_pages: 5 })
+        body: JSON.stringify({ url, max_review_pages: 5 })
     });
     if (!res.ok) { console.error('Images stream error:', res.status); return; }
 
@@ -352,7 +352,7 @@ function _appendImageCard(img) {
     card.className = 'concept-card fade-in';
     card.innerHTML = `
         <div class="concept-img-wrapper">
-            <img src="${API_BASE}/${escHtml(img.path)}" alt="${escHtml(img.concept)}"
+            <img src="${escHtml(img.url || (API_BASE + '/' + img.path))}" alt="${escHtml(img.concept)}"
                  onerror="this.src='https://placehold.co/400x400/1a1a2e/6c63ff?text=Y%C3%BCkleniyor...'">
         </div>
         <div class="concept-info">
@@ -509,13 +509,13 @@ async function sendChat() {
     const typingId = appendTyping(messagesEl);
 
     try {
-        const res  = await apiFetch('/api/chat', { message, analysis_context: analysisContext, output_dir: currentOutputDir });
+        const res  = await apiFetch('/api/chat', { message, analysis_context: analysisContext });
         removeTyping(messagesEl, typingId);
-        if (res.image_path) {
+        if (res.image_url) {
             appendMessage(messagesEl, 'ai', res.answer || 'Görsel oluşturuldu!');
             const imgSection = document.getElementById('phaseImages');
             if (imgSection) imgSection.style.display = 'block';
-            _appendImageCard({ path: res.image_path, concept: 'Özel Görsel' });
+            _appendImageCard({ url: res.image_url, concept: 'Özel Görsel' });
             imgSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             appendMessage(messagesEl, 'ai', res.answer || 'Yanıt alınamadı.');
