@@ -804,9 +804,55 @@ input[type="text"]:focus {
 
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    /* Mevcut Grid Kuralları */
     .dashboard-grid, .review-analysis-grid { grid-template-columns: 1fr; }
-    .chat-msg-bubble { max-width: 90%; }
-    .quick-questions { gap: 0.5rem; }
+    
+    /* 1. .input-group */
+    .input-group { flex-direction: column; gap: 0.8rem; }
+    .input-icon { display: none; } /* mobilde gizle */
+    
+    /* 2. .phase-steps */
+    .phase-step { min-width: auto; flex: 1; }
+    .phase-step span { display: none; }
+    .step-line { width: 8px; } /* mobilde çok daha dar */
+
+    /* 3. .compare-scores */
+    .compare-scores { flex-direction: column; gap: 0.8rem; }
+
+    /* 4. .compare-row */
+    .compare-row { grid-template-columns: 1fr; }
+    .compare-divider { display: none; } /* mobilde ayracı gizle */
+
+    /* 6. .gallery-grid */
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
+    /* 7. .chat-messages */
+    .chat-messages { max-height: 250px; }
+
+    /* 8. .quick-questions */
+    .quick-questions { gap: 0.4rem; }
     .quick-q-btn { font-size: 0.8rem; padding: 0.5rem 0.8rem; }
+
+    /* 9. .glass-panel & container vb. */
+    .container { padding: 1rem; }
+    .glass-panel { padding: 1rem; }
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.4rem !important; }
+    .section-title h2 { font-size: 1.5rem; }
     .description-text { font-size: 0.95rem; }
+
+    /* 10. .btn-primary */
+    .btn-primary { width: 100%; justify-content: center; min-height: 52px; }
+    
+    .chat-msg-bubble { max-width: 90%; }
+}
+
+/* En Küçük Ekranlar (max-width: 380px) İçin İyileştirmeler */
+@media (max-width: 380px) {
+    .concept-name { font-size: 0.9rem; }
+    .phase-step .step-icon { width: 24px; height: 24px; font-size: 0.7rem; }
+    .step-line { width: 4px; }
+    .chat-msg-bubble { font-size: 0.85rem; padding: 0.7rem 0.9rem; }
+    .score-ring { width: 70px; height: 70px; }
+    .score-number { font-size: 1.2rem; }
 }
