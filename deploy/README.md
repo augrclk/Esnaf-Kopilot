@@ -3,7 +3,7 @@
 ## 1. VM Oluştur (GCP Console)
 
 - **Compute Engine → VM instances → Create**
-- Machine type: `e2-small` (2 vCPU, 2GB RAM)
+- Machine type: `e2-medium` (2 vCPU, 4GB RAM)
 - Boot disk: Ubuntu 22.04 LTS, 20GB SSD
 - Firewall: ✅ Allow HTTP, ✅ Allow HTTPS
 - Region: `europe-west1` (Belçika) — Türkiye'ye en yakın
