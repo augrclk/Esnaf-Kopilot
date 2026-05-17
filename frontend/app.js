@@ -352,7 +352,7 @@ function _appendImageCard(img) {
     card.className = 'concept-card fade-in';
     card.innerHTML = `
         <div class="concept-img-wrapper">
-            <img src="${API_BASE}/${img.path}" alt="${escHtml(img.concept)}"
+            <img src="${API_BASE}/${escHtml(img.path)}" alt="${escHtml(img.concept)}"
                  onerror="this.src='https://placehold.co/400x400/1a1a2e/6c63ff?text=Y%C3%BCkleniyor...'">
         </div>
         <div class="concept-info">
