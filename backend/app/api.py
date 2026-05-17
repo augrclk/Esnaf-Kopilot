@@ -12,6 +12,7 @@ Mimari Notlar:
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 import json
+import re
 from pydantic import BaseModel
 import asyncio
 import os
@@ -40,6 +41,11 @@ pipeline         = EsnafKopilotPipeline()
 # ── Scrape Cache (URL → ScrapedProduct) ─────────────────────────────────────
 _scrape_cache: dict = {}
 
+# ── Görsel API rate limiter ──────────────────────────────────────────────────
+_IMAGE_SEM          = asyncio.Semaphore(1)
+_IMAGE_MIN_INTERVAL = 15.0
+_image_last_call: float = 0.0
+
 def _get_cached_scrape(url: str, max_review_pages: int = 5):
     """Senkron cache lookup — Phase 1 sonrası sadece dict okuma yapılır."""
     if url not in _scrape_cache:
@@ -64,6 +70,18 @@ class PhaseRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     analysis_context: dict
+    output_dir: str = ""
+
+
+_IMAGE_INTENT_RE = re.compile(
+    r"görsel\s*(üret|yap|oluştur|çek|hazırla|istiyorum|ver|çıkar)"
+    r"|resim\s*(üret|yap|oluştur|çek|hazırla|istiyorum|ver|çıkar)"
+    r"|fotoğraf\s*(üret|yap|oluştur|çek|hazırla|istiyorum|ver|çıkar)"
+    r"|yeni\s*görsel"
+    r"|görsel\s*üretimi"
+    r"|bana\s*(bir\s*)?(görsel|resim|fotoğraf)",
+    re.IGNORECASE,
+)
 
 
 # ── Health ───────────────────────────────────────────────────────────────────
@@ -382,6 +400,45 @@ Cevaplanmamış Sorular:
 
 Genel Duygu: {review.get("sentiment_summary", "")}
 """
+        # ── Görsel üretim intent tespiti ────────────────────────────────────
+        if _IMAGE_INTENT_RE.search(req.message):
+            product_url = product.get("url", "")
+            if not product_url:
+                answer = await asyncio.to_thread(gemini.chat_text, system_prompt, req.message)
+                return {"status": "success", "answer": answer}
+
+            out_dir = req.output_dir or f"outputs/api_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            os.makedirs(out_dir, exist_ok=True)
+
+            scraped     = _get_cached_scrape(product_url)
+            downloaded  = await asyncio.to_thread(scraper.download_images, scraped.images, out_dir)
+            valid_imgs  = [img for img in downloaded if img.local_path]
+
+            if not valid_imgs:
+                return {"status": "success", "answer": "Ürüne ait indirilebilir görsel bulunamadı."}
+
+            source_img  = valid_imgs[0]
+            safe_name   = "".join(c if c.isalnum() else "_" for c in req.message[:40])
+            out_path    = os.path.join(out_dir, f"chat_gorsel_{safe_name}.jpg")
+            prompt_obj  = ImageEditPrompt(concept_name="Özel Görsel", prompt=req.message)
+
+            global _image_last_call
+            async with _IMAGE_SEM:
+                elapsed = asyncio.get_running_loop().time() - _image_last_call
+                if elapsed < _IMAGE_MIN_INTERVAL:
+                    await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
+                _image_last_call = asyncio.get_running_loop().time()
+                result = await asyncio.wait_for(
+                    asyncio.to_thread(image_analyzer.enhance, source_img, prompt_obj, out_path),
+                    timeout=150,
+                )
+
+            return {
+                "status": "success",
+                "answer": "Görsel oluşturuldu!",
+                "image_path": result.local_path,
+            }
+
         answer = await asyncio.to_thread(gemini.chat_text, system_prompt, req.message)
         return {"status": "success", "answer": answer}
 

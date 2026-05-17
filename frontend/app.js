@@ -378,9 +378,17 @@ async function sendChat() {
     const typingId = appendTyping(messagesEl);
 
     try {
-        const res  = await apiFetch('/api/chat', { message, analysis_context: analysisContext });
+        const res  = await apiFetch('/api/chat', { message, analysis_context: analysisContext, output_dir: currentOutputDir });
         removeTyping(messagesEl, typingId);
-        appendMessage(messagesEl, 'ai', res.answer || 'Yanıt alınamadı.');
+        if (res.image_path) {
+            appendMessage(messagesEl, 'ai', res.answer || 'Görsel oluşturuldu!');
+            const imgSection = document.getElementById('phaseImages');
+            if (imgSection) imgSection.style.display = 'block';
+            _appendImageCard({ path: res.image_path, concept: 'Özel Görsel' });
+            imgSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            appendMessage(messagesEl, 'ai', res.answer || 'Yanıt alınamadı.');
+        }
     } catch (err) {
         removeTyping(messagesEl, typingId);
         appendMessage(messagesEl, 'ai', 'Bağlantı hatası: ' + err.message);
