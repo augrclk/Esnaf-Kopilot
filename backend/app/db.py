@@ -47,7 +47,10 @@ def get_or_create_user(uid: str, email: str) -> dict:
     snap = ref.get()
 
     if snap.exists:
-        return snap.to_dict()
+        data = snap.to_dict()
+        # limits her zaman koddan türetilir — stale Firestore alanına bakılmaz
+        data["limits"] = TIER_LIMITS.get(data.get("tier", "free"), TIER_LIMITS["free"])
+        return data
 
     # Yeni kullanıcı — varsayılan tier: free
     data = {
@@ -55,10 +58,10 @@ def get_or_create_user(uid: str, email: str) -> dict:
         "email":      email,
         "tier":       "free",
         "created_at": firestore.SERVER_TIMESTAMP,
-        "limits":     TIER_LIMITS["free"],
     }
     ref.set(data)
     log.info("[DB] Yeni kullanıcı oluşturuldu: %s (%s)", uid, email)
+    data["limits"] = TIER_LIMITS["free"]
     return data
 
 
@@ -68,7 +71,7 @@ def set_user_tier(uid: str, tier: str) -> None:
         raise ValueError(f"Geçersiz tier: {tier}")
     db  = _db()
     ref = db.collection("users").document(uid)
-    ref.update({"tier": tier, "limits": TIER_LIMITS[tier]})
+    ref.update({"tier": tier})   # limits Firestore'da saklanmıyor, koddan türetiliyor
     log.info("[DB] Tier güncellendi: %s → %s", uid, tier)
 
 

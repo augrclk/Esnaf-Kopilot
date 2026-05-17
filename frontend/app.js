@@ -1,3 +1,8 @@
+// ── Config ───────────────────────────────────────────────────────────────────
+const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : '';  // production: same-origin, nginx proxy
+
 // ── Global State ─────────────────────────────────────────────────────────────
 let analysisContext  = null;
 let currentOutputDir = '';
@@ -14,12 +19,14 @@ async function _getToken() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     // Auth state listener — show/hide login overlay
-    _auth.onAuthStateChanged(user => {
+    _auth.onAuthStateChanged(async user => {
         _currentUser = user;
         if (user) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainApp').style.display      = '';
             document.getElementById('userEmail').textContent       = user.email;
+            // Firestore'da kullanıcı kaydını oluştur/güncelle
+            try { await apiFetch('/api/user/me', undefined, 'GET'); } catch (_) {}
         } else {
             document.getElementById('loginOverlay').style.display = 'flex';
             document.getElementById('mainApp').style.display      = 'none';
@@ -186,7 +193,7 @@ async function apiFetch(path, body, method = 'POST') {
         },
     };
     if (body !== undefined) opts.body = JSON.stringify(body);
-    const res = await fetch('http://localhost:8000' + path, opts);
+    const res = await fetch(API_BASE + path, opts);
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         if (res.status === 401) { _auth.signOut(); throw new Error('Oturum süresi doldu, lütfen tekrar giriş yapın.'); }
@@ -270,7 +277,7 @@ function renderAnalyzePhase(data) {
 
 async function streamImages(url) {
     const token = await _getToken();
-    const res = await fetch('http://localhost:8000/api/phase/images', {
+    const res = await fetch(API_BASE + '/api/phase/images', {
         method:  'POST',
         headers: {
             'Content-Type':  'application/json',
@@ -345,7 +352,7 @@ function _appendImageCard(img) {
     card.className = 'concept-card fade-in';
     card.innerHTML = `
         <div class="concept-img-wrapper">
-            <img src="http://localhost:8000/${img.path}" alt="${escHtml(img.concept)}"
+            <img src="${API_BASE}/${img.path}" alt="${escHtml(img.concept)}"
                  onerror="this.src='https://placehold.co/400x400/1a1a2e/6c63ff?text=Y%C3%BCkleniyor...'">
         </div>
         <div class="concept-info">

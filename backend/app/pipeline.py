@@ -21,16 +21,30 @@ log = logging.getLogger(__name__)
 class EsnafKopilotPipeline:
     """
     Ürün analizinin uçtan uca çalıştırıldığı servis.
+    Servisler dışarıdan enjekte edilir — api.py'deki singleton'lar kullanılır.
     """
 
-    def __init__(self):
-        self.http_client = HttpClient()
-        self.scraper = TrendyolScraper(self.http_client)
-        
-        self.gemini = GeminiClient()
-        self.content_analyzer = ContentAnalyzer(self.gemini)
-        self.image_analyzer = ImageAnalyzer(self.gemini)
-        self.review_analyzer = ReviewAnalyzer(self.gemini)
+    def __init__(
+        self,
+        scraper: TrendyolScraper | None = None,
+        content_analyzer: ContentAnalyzer | None = None,
+        image_analyzer: ImageAnalyzer | None = None,
+        review_analyzer: ReviewAnalyzer | None = None,
+    ):
+        # Fallback: dependency injection verilmezse kendi oluşturur (geriye uyumluluk)
+        if scraper is None:
+            http_client = HttpClient()
+            scraper = TrendyolScraper(http_client)
+        if content_analyzer is None or image_analyzer is None or review_analyzer is None:
+            gemini = GeminiClient()
+            content_analyzer = content_analyzer or ContentAnalyzer(gemini)
+            image_analyzer = image_analyzer or ImageAnalyzer(gemini)
+            review_analyzer = review_analyzer or ReviewAnalyzer(gemini)
+
+        self.scraper = scraper
+        self.content_analyzer = content_analyzer
+        self.image_analyzer = image_analyzer
+        self.review_analyzer = review_analyzer
 
     def run(self, url: str, max_review_pages: int = 5, output_dir: str = "outputs") -> dict:
         """
