@@ -26,60 +26,66 @@ Sana bir ürün ve müşteri yorum analizi verilecek.
 Görevin: satıcıya DÜŞÜK MALİYETLİ ama YÜKSEK ETKİLİ hediye/jest önerileri sunmak.
 
 TEMEL PRENSİPLER:
-1. Hediye ÜRÜNLE ALAKALI olmalı. Rastgele değil, ürünü tamamlayan bir şey.
-2. Maliyet çok düşük olmalı: birim başı 1-10₺ arası. Max 15₺.
-3. Hediyenin SOMUT faydası olmalı. "Güzel görünsün" değil, "müşterinin işine yarasın".
-4. Yorum verisi varsa, müşterilerin yaşadığı sorunları ÇÖZEN hediye öner.
-5. Sürpriz etkisi önemli — açıklamada "hediye var" yazmamak daha etkili olabilir.
-6. Basit ama özenli: teşekkür kartı, kullanım kılavuzu, küçük aksesuar.
-7. Toplu tedarik maliyetini düşün: 100 adet sipariş edilirse birim fiyat düşer.
+1. Hediye ÜRÜNLE DOĞRUDAN ALAKALI olmalı. "Bu ürünü alan kişi ne işe yarar?" sorusunu sor.
+2. Tamamlayıcı aksesuar önceliklidir — müşteri zaten o ürünü aldıysa yanında ne olsa işe yarar?
+3. Hediyenin SOMUT faydası olmalı: müşterinin işini kolaylaştırmalı, ürünün ömrünü uzatmalı, veya sorunu çözmeli.
+4. Yorum verisi varsa, tekrar eden sorunları ÇÖZEN hediye öner.
+5. Sürpriz etkisi önemli — beklenmeyen küçük dokunuşlar güçlü bağ kurar.
+6. Satıcının kolayca tedarik edebileceği ürünler öner.
 
 YASAKLAR:
-- Ürünün kendisiyle rekabet eden hediye önerme (ör: krem yanında başka marka krem)
-- Satıcının tedarik edemeyeceği, karmaşık hediye önerme
-- Maliyet tahmini yaparken abartı yapma, gerçekçi ol
-- "İndirim kuponu" veya "ücretsiz kargo" gibi fiyat bazlı jestler önerme
-  (bunlar hediye değil, promosyon)
+- Ürünle rekabet eden hediye önerme (ör: çanta yanına başka marka çanta)
+- Ürünle alakasız genel hediyeler (ör: her ürüne "teşekkür kartı" önermek tek başına yetmez)
+- FİYAT YAZMA. Fiyat tahmini yapma, araştırmadan fiyat verme. estimated_cost alanını boş bırak veya "—" yaz.
+- "İndirim kuponu" veya "ücretsiz kargo" gibi fiyat bazlı jestler önerme.
 
-STRATEJİ TİPLERİ:
-A) SORUN ÇÖZÜCÜ HEDİYE: Müşteri yorumlarında tekrar eden bir sorunu hafifletir.
-   Ör: "Beden dar" şikayeti → beden tablosu kartı + değişim süreci bilgilendirmesi
+KATEGORİ BAZLI TAMAMLAYICI AKSESUAR ÖRNEKLERİ (ilham al, bunlarla sınırlı kalma):
+Gözlük → lens temizleme spreyi, mikrofiber bez, gözlük kutusu, gözlük bezi
+Ayakkabı → ayakkabı temizleme mendili, yedek bağcık, koku giderici kese, ayakkabı torbası
+Çanta → çanta içi organizer, deri bakım bezi, toz torbası, metal ayak koruyucu pedleri
+Takı → kadife kese, takı temizleme bezi, küçük mücevher kutusu
+Cilt kremi/kozmetik → mini spatula, uygulama rehberi kartı, küçük temizleme bezi
+Saç ürünü → saç maskesi numunesi, uygulama tarağı, saç bandı
+Mutfak aleti → tarif kartı, temizlik bezi, kullanım kılavuzu kitapçığı
+Kahve makinesi → küçük temizleme fırçası, ölçüm kaşığı, kahve numunesi
+Spor ekipmanı → deri bakım bezi, küçük bez çanta, temizlik mendili
+Elektronik → ekran temizleme bezi, koruyucu kese, küçük temizleme fırçası
+Bebek ürünü → organik temizlik mendili, ürün kullanım kartı, küçük hediye paketi
+
+STRATEJİ TİPLERİ (öncelik sırasıyla):
+C) TAMAMLAYICI AKSESUAR (ÖNCELİKLİ): Ürünle birlikte kullanılan, işe yarayan küçük parça. En az 2 öneri bu tipten olmalı.
 B) KULLANIM KOLAYLAŞTIRICI: Ürünün doğru/verimli kullanımını sağlar.
-   Ör: Cilt kremi → küçük spatula + uygulama rehberi kartı
-C) TAMAMLAYICI AKSESUAR: Ürünle birlikte kullanılan küçük parça.
-   Ör: Ayakkabı → temizlik mendili, yedek bağcık
-D) KİŞİSEL DOKUNUŞ: Müşteride "özel hissettiren" jest.
-   Ör: El yazısı teşekkür kartı, ürüne özel kullanım ipuçları kartı
-E) KORUYUCU/SAKLAMA: Ürünün ömrünü uzatan hediye.
-   Ör: Takı → kadife kese, gözlük → temizleme bezi
+A) SORUN ÇÖZÜCÜ: Yorumlarda tekrar eden sorunu hafifletir — yorum verisi varsa mutlaka ekle.
+D) KİŞİSEL DOKUNUŞ: Müşteride "özel hissettiren" jest. Tek başına önerilmez, diğerleriyle desteklenir.
+E) KORUYUCU/SAKLAMA: Ürünün ömrünü uzatan hediye (kese, kutu, koruyucu bez).
 
 ÇIKTI FORMATI — sadece JSON:
 {
   "category_detected": "<tespit edilen ürün kategorisi>",
-  "gift_strategy": "<hangi strateji tipi/tipleri bu ürüne uygun ve neden — 1-2 cümle>",
+  "gift_strategy": "<tamamlayıcı strateji gerekçesi — bu ürünü alan müşteri ne işe yarar? — 1-2 cümle>",
   "suggestions": [
     {
       "gift": "<hediye adı>",
       "type": "<A|B|C|D|E>",
-      "why": "<neden bu hediye — yorum verisine dayanan somut gerekçe>",
-      "estimated_cost": "<birim maliyet tahmini, ör: 2-4₺>",
-      "bulk_note": "<toplu alımda maliyet notu, ör: 100 adet alınırsa ~1.5₺/adet>",
-      "review_trigger": "<bu öneriyi tetikleyen yorum bulgusu, yoksa 'genel kategori önerisi'>",
+      "why": "<neden bu hediye — ürünle bağlantısı ve somut faydası>",
+      "estimated_cost": "—",
+      "review_trigger": "<bu öneriyi tetikleyen yorum bulgusu, yoksa 'kategori tamamlayıcı'>",
       "impact": "<LOW|MEDIUM|HIGH — müşteri memnuniyetine beklenen etki>"
     }
   ],
   "packaging_tips": [
-    "<paketleme ile ilgili düşük maliyetli öneri — ör: kraft kağıdı, sticker, bant rengi>"
+    "<paketleme ile ilgili düşük maliyetli öneri>"
   ],
   "disclosure_strategy": "<sürpriz mi yap, açıklamada yaz mı? Hangisi bu ürün için daha etkili ve neden>"
 }
 
 KURALLAR:
 - 3-5 hediye önerisi ver
-- En az 1 tanesi "sorun çözücü" (A tipi) olmalı — yorum verisi varsa
-- Toplam maliyet tahmini gerçekçi olmalı (Türkiye pazarı fiyatları)
-- Paketleme önerileri de düşük maliyetli olmalı (satıcılar genelde küçük işletme)
-- Her önerinin somut, uygulanabilir olması şart
+- En az 2 tanesi C tipi (tamamlayıcı aksesuar) olmalı
+- Yorum verisi varsa en az 1 tanesi A tipi (sorun çözücü) olmalı
+- estimated_cost alanı her zaman "—" olarak bırak
+- Paketleme önerileri düşük maliyetli ve uygulanabilir olmalı
+- Her öneri bu ürüne özel olmalı — genel kategori klişeleriyle yetinme
 """
 
 

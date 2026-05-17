@@ -383,11 +383,9 @@ function renderGiftSuggestions(gs) {
             <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.4rem;">
                 <strong style="font-size:0.95rem;">${escHtml(s.gift)}</strong>
                 <span class="keyword-tag" style="font-size:0.7rem;padding:2px 8px;">${escHtml(typeLabels[s.type] || s.type)}</span>
-                <span style="margin-left:auto;font-size:0.78rem;color:var(--text-muted);">${escHtml(s.estimated_cost)}</span>
-                <span style="font-size:0.72rem;font-weight:600;color:${color};background:${color}22;padding:2px 7px;border-radius:20px;">${escHtml(s.impact)}</span>
+                <span style="margin-left:auto;font-size:0.72rem;font-weight:600;color:${color};background:${color}22;padding:2px 7px;border-radius:20px;">${escHtml(s.impact)}</span>
             </div>
-            <p style="font-size:0.83rem;color:var(--text-muted);margin:0 0 0.25rem;">${escHtml(s.why)}</p>
-            ${s.bulk_note ? `<p style="font-size:0.78rem;color:var(--text-muted);margin:0;opacity:0.7;"><i class="fa-solid fa-boxes-stacked" style="font-size:0.7rem;margin-right:4px;"></i>${escHtml(s.bulk_note)}</p>` : ''}
+            <p style="font-size:0.83rem;color:var(--text-muted);margin:0;">${escHtml(s.why)}</p>
         `;
         listEl.appendChild(item);
     });

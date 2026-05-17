@@ -10,10 +10,11 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     vertex_project: str = "gen-lang-client-0328351111"
     vertex_location: str = "us-central1"
+    vertex_image_location: str = "global"
 
     # Gemini model isimleri
     gemini_text_model: str = "gemini-3-flash-preview"
-    gemini_image_model: str = "gemini-2.5-flash-image"
+    gemini_image_model: str = "gemini-3.1-flash-image-preview"
 
     # Scraper ayarları
     scraper_timeout: float = 20.0
