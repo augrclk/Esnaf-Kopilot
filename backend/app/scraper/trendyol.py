@@ -141,6 +141,7 @@ class TrendyolScraper:
             self._find_description_in_html(page_html)
             or self._find_description_via_api(product_id, url)
             or self._find_description_via_playwright(url)
+            or self._find_json_ld_description(page_html)
             or ""
         )
 
@@ -168,6 +169,7 @@ class TrendyolScraper:
             extract_text_by_class(page_html, "content-description-content"),
             extract_text_by_class(page_html, "product-content-wrapper__text"),
             _extract_rich_content(page_html),
+            self._extract_structured_description(page_html),
         ]
         if next_data:
             for key in ("productDescription", "description", "contentDescription"):
@@ -179,6 +181,38 @@ class TrendyolScraper:
             (c for c in candidates if c and _is_real_description(c)),
             None,
         )
+
+    def _find_json_ld_description(self, page_html: str) -> str | None:
+        """JSON-LD içindeki description alanını okur (SEO bait dahil olabilir ama yokluktan iyidir)."""
+        json_ld = extract_json_ld_product(page_html)
+        return clean_text(json_ld.get("description")) or None
+
+    def _extract_structured_description(self, page_html: str) -> str | None:
+        """Yeni Trendyol yapısındaki özellik (attribute) ve kurşun imi listelerini çeker."""
+        desc_lines = []
+        
+        # 1. Bullet points (Ek Bilgiler vb.)
+        ul_match = re.search(r'<ul\b[^>]*class=["\'][^"\']*(?:info-list|content-descriptions-description-content|detail-desc-list)[^"\']*["\'][^>]*>(.*?)</ul>', page_html, flags=re.IGNORECASE | re.DOTALL)
+        if ul_match:
+            ul_content = ul_match.group(1)
+            li_matches = re.findall(r'<li\b[^>]*>(.*?)</li>', ul_content, flags=re.IGNORECASE | re.DOTALL)
+            for li in li_matches:
+                text = clean_text(li)
+                # Standart satıcı uyarılarını ve stok mesajlarını ele
+                if "tarafından gönderilecektir" in text or "fiyatından satılmak üzere" in text or "fiyatını satıcı belirlemektedir" in text or "birden fazla satıcı tarafından satılabilir" in text or "ücretsiz iade" in text or "Sponsorlu ürünler" in text:
+                    continue
+                if text:
+                    desc_lines.append("- " + text)
+                    
+        # 2. Ürün Özellikleri (Attributes)
+        attr_section = re.search(r'class=["\']attributes["\']>(.*?)(?:</div>\s*</div>|</section>)', page_html, flags=re.IGNORECASE | re.DOTALL)
+        if attr_section:
+            attrs = re.findall(r'<div class=["\']attribute-item[^>]*>.*?<div class=["\']name["\']>(.*?)</div>.*?<div class=["\']value["\']>(.*?)</div>', attr_section.group(1), flags=re.IGNORECASE | re.DOTALL)
+            for name, value in attrs:
+                desc_lines.append(f"{clean_text(name)}: {clean_text(value)}")
+
+        combined = "\n".join(desc_lines)
+        return combined if len(combined) > 10 else None
 
     def _find_description_via_api(
         self, product_id: str | None, product_url: str
@@ -540,15 +574,11 @@ def _extract_rich_content(page_html: str) -> str | None:
 
 def _is_real_description(text: str) -> bool:
     """Metnin gerçek bir ürün açıklaması olup olmadığını kontrol eder."""
-    if len(text) < 30:
+    if len(text) < 15:
         return False
-    # SEO bait metinlerini ele
-    seo_markers = (
-        "yorumlarını inceleyin",
-        "indirimli fiyata satın",
-        "trendyol'a özel",
-    )
-    return not any(m in text.lower() for m in seo_markers)
+    # SEO bait metinleri de artık bir açıklama olarak kabul ediliyor (çünkü başka açıklama yok)
+    # Eskiden bu fonksiyonla filtreliyorduk, ancak şimdi çok agresif filtrelemeyi kaldırıyoruz
+    return True
 
 
 # ---------------------------------------------------------------------------
