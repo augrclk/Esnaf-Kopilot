@@ -7,6 +7,9 @@ const API_BASE = window.location.hostname === 'localhost'
 let analysisContext  = null;
 // currentOutputDir kaldırıldı — görseller artık Firebase Storage'da
 let _currentUser     = null;   // Firebase User
+let _products        = [];
+let _activeDetailProduct = null;
+let _addProductPlatform = 'Trendyol';
 
 // ── Firebase Auth ─────────────────────────────────────────────────────────────
 const _auth = firebase.auth();
@@ -27,6 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('userEmail').textContent       = user.email;
             // Firestore'da kullanıcı kaydını oluştur/güncelle
             try { await apiFetch('/api/user/me', undefined, 'GET'); } catch (_) {}
+            loadDashboardStats();
+            loadRecentAnalyses();
+            loadProducts();
         } else {
             document.getElementById('loginOverlay').style.display = 'flex';
             document.getElementById('mainApp').style.display      = 'none';
@@ -44,8 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const analyzeBtn = document.getElementById('analyzeBtn');
     const urlInput   = document.getElementById('urlInput');
-    urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') analyzeBtn.click(); });
-    analyzeBtn.addEventListener('click', () => startProgressiveAnalysis());
+    if (urlInput && analyzeBtn) {
+        urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') analyzeBtn.click(); });
+        analyzeBtn.addEventListener('click', () => startProgressiveAnalysis());
+    }
 
     // Chat input Enter
     const chatInput = document.getElementById('chatInput');
@@ -501,7 +509,10 @@ async function sendChat() {
     const sendBtn    = document.getElementById('chatSendBtn');
     const message    = input.value.trim();
     if (!message) return;
-    if (!analysisContext) { alert('Önce bir analiz yapmanız gerekiyor.'); return; }
+    if (!_products.length) {
+        appendMessage(messagesEl, 'ai', 'Önce Ürünlerim sayfasından bir ürün ekleyin. Sonra eklediğiniz ürünler hakkında konuşabiliriz.');
+        return;
+    }
 
     appendMessage(messagesEl, 'user', message);
     input.value = '';
@@ -509,17 +520,11 @@ async function sendChat() {
     const typingId = appendTyping(messagesEl);
 
     try {
-        const res  = await apiFetch('/api/chat', { message, analysis_context: analysisContext });
+        const select = document.getElementById('copilotProductSelect');
+        const productId = select?.value || null;
+        const res  = await apiFetch('/api/products/chat', { message, product_id: productId });
         removeTyping(messagesEl, typingId);
-        if (res.image_path) {
-            appendMessage(messagesEl, 'ai', res.answer || 'Görsel oluşturuldu!');
-            const imgSection = document.getElementById('phaseImages');
-            if (imgSection) imgSection.style.display = 'block';
-            _appendImageCard({ path: res.image_path, concept: 'Özel Görsel' });
-            imgSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            appendMessage(messagesEl, 'ai', res.answer || 'Yanıt alınamadı.');
-        }
+        appendMessage(messagesEl, 'ai', res.answer || 'Yanıt alınamadı.');
     } catch (err) {
         removeTyping(messagesEl, typingId);
         appendMessage(messagesEl, 'ai', 'Bağlantı hatası: ' + err.message);
@@ -595,6 +600,16 @@ function navigateTo(pageId) {
         if (el) el.textContent = _currentUser.email;
         loadApiKeys();
         fetchUserPlan();
+    }
+    if (pageId === 'urunlerim' && _currentUser) {
+        loadProducts();
+    }
+    if (pageId === 'kopilot' && _currentUser) {
+        initKopilotPage();
+    }
+    if (pageId === 'dashboard' && _currentUser) {
+        loadDashboardStats();
+        loadRecentAnalyses();
     }
 
     _closeSidebar();
@@ -744,6 +759,342 @@ async function streamManualImages(title, desc, imagesB64) {
             try { handleImageEvent(JSON.parse(line.slice(6))); } catch (_) {}
         }
     }
+}
+
+// ── Ürünlerim + Kopilot Ürün Chat ───────────────────────────────────────────
+function _productTitle(product) {
+    return (product.scraped_data?.title || product.product_title || 'Başlıksız ürün').trim();
+}
+
+function _productDescription(product) {
+    return product.scraped_data?.description || '';
+}
+
+function _productImages(product) {
+    return product.scraped_data?.image_urls || [];
+}
+
+function _scorePill(product) {
+    if (product.score === null || product.score === undefined) {
+        return '<span class="product-pill"><i class="fa-solid fa-hourglass-half"></i> Skor bekliyor</span>';
+    }
+    return `<span class="product-pill product-score-ready"><i class="fa-solid fa-star"></i> ${product.score}/100</span>`;
+}
+
+async function loadProducts() {
+    const list = document.getElementById('productsList');
+    if (list) {
+        list.innerHTML = `
+            <div class="empty-state" style="padding:4rem 2rem;">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p>Ürünler yükleniyor...</p>
+            </div>`;
+    }
+    try {
+        const res = await apiFetch('/api/products', undefined, 'GET');
+        _products = res.data || [];
+        renderProducts();
+        initKopilotPage();
+    } catch (err) {
+        if (list) {
+            list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Ürünler yüklenemedi: ${escHtml(err.message)}</p></div>`;
+        }
+    }
+}
+
+function renderProducts() {
+    const list = document.getElementById('productsList');
+    if (!list) return;
+    if (!_products.length) {
+        list.innerHTML = `
+            <div class="glass-panel empty-state" style="padding:4rem 2rem;">
+                <i class="fa-solid fa-box-open"></i>
+                <p>Henüz ürün eklenmedi.</p>
+                <button class="btn-primary" style="padding:0.65rem 1.2rem;font-size:0.85rem;" onclick="openAddProductModal()">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>İlk Ürünü Ekle</span>
+                </button>
+            </div>`;
+        return;
+    }
+
+    list.innerHTML = _products.map(product => {
+        const title = _productTitle(product);
+        const thumb = product.thumbnail
+            ? `<img class="product-thumb" src="${escHtml(product.thumbnail)}" alt="${escHtml(title)}">`
+            : `<div class="product-thumb product-thumb-placeholder"><i class="fa-solid fa-box"></i></div>`;
+        const platform = product.platform || 'Manuel';
+        const status = product.status === 'improved' ? 'İyileştirildi'
+            : product.status === 'analyzed' ? 'Analiz edildi'
+            : product.status === 'inspected' ? 'İncelendi'
+            : 'Taslak';
+        return `
+            <article class="product-card">
+                ${thumb}
+                <div>
+                    <h3 class="product-card-title">${escHtml(title)}</h3>
+                    <div class="product-card-meta">
+                        <span class="product-pill"><i class="fa-solid fa-store"></i> ${escHtml(platform)}</span>
+                        ${_scorePill(product)}
+                        <span class="product-pill"><i class="fa-solid fa-circle-check"></i> ${escHtml(status)}</span>
+                    </div>
+                </div>
+                <div class="product-card-actions">
+                    <button class="product-action-btn" onclick="openProductDetail('${product.id}', 'inspect')"><i class="fa-solid fa-eye"></i> İncele</button>
+                    <button class="product-action-btn" onclick="openProductDetail('${product.id}', 'analyze')"><i class="fa-solid fa-chart-simple"></i> Analiz Et</button>
+                    <button class="product-action-btn product-action-primary" onclick="openProductDetail('${product.id}', 'improve')"><i class="fa-solid fa-rocket"></i> İyileştir</button>
+                    <button class="icon-btn" onclick="deleteProduct('${product.id}')" title="Sil"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </article>`;
+    }).join('');
+}
+
+function initKopilotPage() {
+    const select = document.getElementById('copilotProductSelect');
+    const empty = document.getElementById('copilotEmptyState');
+    const chatInput = document.getElementById('chatInput');
+    if (select) {
+        const current = select.value;
+        select.innerHTML = '<option value="">Tüm ürünler</option>' + _products.map(p =>
+            `<option value="${p.id}">${escHtml(_productTitle(p))}</option>`
+        ).join('');
+        if (_products.some(p => p.id === current)) select.value = current;
+    }
+    if (empty) empty.style.display = _products.length ? 'none' : 'flex';
+    if (chatInput) chatInput.disabled = !_products.length;
+}
+
+function openAddProductModal() {
+    document.getElementById('addProductModal').style.display = 'flex';
+    selectProductPlatform(_addProductPlatform);
+}
+
+function closeAddProductModal() {
+    document.getElementById('addProductModal').style.display = 'none';
+    const status = document.getElementById('addProductStatus');
+    if (status) status.style.display = 'none';
+}
+
+function selectProductPlatform(platform) {
+    _addProductPlatform = platform;
+    document.querySelectorAll('.platform-choice').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.platform === platform);
+    });
+    document.getElementById('addProductUrlFields').style.display = platform === 'Trendyol' ? 'block' : 'none';
+    document.getElementById('addProductManualFields').style.display = platform === 'Manuel' ? 'block' : 'none';
+}
+
+async function submitNewProduct() {
+    const btn = document.getElementById('addProductSubmitBtn');
+    const status = document.getElementById('addProductStatus');
+    btn.disabled = true;
+    status.style.display = 'flex';
+    status.querySelector('span').textContent = _addProductPlatform === 'Trendyol'
+        ? 'Ürün verisi çekiliyor...'
+        : 'Ürün kaydediliyor...';
+
+    try {
+        if (_addProductPlatform === 'Trendyol') {
+            const url = document.getElementById('productUrlInput').value.trim();
+            if (!url) throw new Error('Trendyol ürün linki gerekli.');
+            await apiFetch('/api/products/from-url', { url });
+            document.getElementById('productUrlInput').value = '';
+        } else {
+            const title = document.getElementById('manualProductTitle').value.trim();
+            const description = document.getElementById('manualProductDescription').value.trim();
+            if (!title) throw new Error('Ürün başlığı gerekli.');
+            await apiFetch('/api/products/manual', { platform: 'Manuel', title, description });
+            document.getElementById('manualProductTitle').value = '';
+            document.getElementById('manualProductDescription').value = '';
+        }
+        closeAddProductModal();
+        await loadProducts();
+        navigateTo('urunlerim');
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        btn.disabled = false;
+        status.style.display = 'none';
+    }
+}
+
+async function deleteProduct(productId) {
+    if (!confirm('Ürün silinsin mi?')) return;
+    try {
+        await apiFetch(`/api/products/${encodeURIComponent(productId)}`, undefined, 'DELETE');
+        await loadProducts();
+        loadDashboardStats();
+    } catch (err) {
+        alert('Silinemedi: ' + err.message);
+    }
+}
+
+async function openProductDetail(productId, mode = 'inspect') {
+    if (!productId) return;
+    const overlay = document.getElementById('productDetailOverlay');
+    const body = document.getElementById('productDetailBody');
+    overlay.style.display = 'flex';
+    body.innerHTML = `<div class="product-loading"><i class="fa-solid fa-circle-notch"></i><span>Ürün verisi hazırlanıyor...</span></div>`;
+
+    try {
+        const res = await apiFetch(`/api/products/${encodeURIComponent(productId)}`, undefined, 'GET');
+        _activeDetailProduct = res.data;
+        renderProductDetail(_activeDetailProduct);
+        if (mode === 'analyze') await analyzeActiveProduct();
+        if (mode === 'improve') await improveActiveProduct();
+    } catch (err) {
+        body.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>${escHtml(err.message)}</p></div>`;
+    }
+}
+
+function closeProductDetail() {
+    document.getElementById('productDetailOverlay').style.display = 'none';
+    _activeDetailProduct = null;
+}
+
+function renderProductDetail(product) {
+    const title = _productTitle(product);
+    document.getElementById('detailTitle').textContent = title;
+    document.getElementById('detailPlatform').textContent = product.platform || 'Manuel';
+    document.getElementById('detailScore').textContent = product.score === null || product.score === undefined ? 'Skor bekliyor' : `${product.score}/100`;
+
+    const images = _productImages(product);
+    const reviews = product.scraped_data?.review_sample || [];
+    const analysis = product.data?.content_analysis || null;
+    const improved = product.image_paths || [];
+    const body = document.getElementById('productDetailBody');
+
+    body.innerHTML = `
+        <section class="detail-section">
+            <h3>Görseller</h3>
+            ${images.length ? `<div class="detail-gallery">${images.map(url => `<img src="${escHtml(url)}" alt="${escHtml(title)}">`).join('')}</div>` : '<p class="section-sub">Görsel bulunamadı.</p>'}
+        </section>
+        <section class="detail-section">
+            <h3>Başlık</h3>
+            <p class="detail-description">${escHtml(title)}</p>
+        </section>
+        <section class="detail-section">
+            <h3>Ürün Açıklaması</h3>
+            <p class="detail-description">${escHtml(_productDescription(product) || 'Açıklama bulunamadı.')}</p>
+        </section>
+        <section class="detail-section">
+            <h3>Yorumlar (${product.scraped_data?.review_count || reviews.length || 0})</h3>
+            ${reviews.length ? reviews.slice(0, 8).map(r => `<div class="detail-review"><strong>${r.rating ? '★'.repeat(Math.round(r.rating)) : ''}</strong><br>${escHtml(r.text || '')}</div>`).join('') : '<p class="section-sub">Yorum bulunamadı.</p>'}
+        </section>
+        ${analysis ? renderAnalysisBlock(product) : ''}
+        ${improved.length ? renderImprovedImages(improved) : ''}
+    `;
+}
+
+function renderAnalysisBlock(product) {
+    const ca = product.data?.content_analysis || {};
+    return `
+        <section class="detail-section">
+            <h3>Analiz Sonucu</h3>
+            <div class="detail-analysis-card">
+                <strong>Skor: ${product.score}/100</strong><br>
+                ${escHtml(ca.score_summary || '')}
+                <br><br><strong>Yeni Başlık:</strong><br>${escHtml(ca.new_title || '')}
+                <br><br><strong>Yeni Açıklama:</strong><br>${escHtml(ca.new_description || '')}
+            </div>
+        </section>`;
+}
+
+function renderImprovedImages(paths) {
+    return `
+        <section class="detail-section">
+            <h3>İyileştirilmiş Görseller</h3>
+            <div class="detail-gallery">
+                ${paths.map(path => `<img src="${API_BASE}/outputs/${escHtml(path)}" alt="İyileştirilmiş görsel">`).join('')}
+            </div>
+        </section>`;
+}
+
+async function analyzeActiveProduct() {
+    const product = _activeDetailProduct;
+    if (!product) return;
+    if (product.data && product.score !== null && product.score !== undefined) {
+        renderProductDetail(product);
+        return;
+    }
+    const body = document.getElementById('productDetailBody');
+    body.innerHTML = `<div class="product-loading"><i class="fa-solid fa-circle-notch"></i><span>Ürün analiz ediliyor...</span></div>`;
+    const res = await apiFetch(`/api/products/${encodeURIComponent(product.id)}/analyze`, {});
+    _activeDetailProduct = (await apiFetch(`/api/products/${encodeURIComponent(product.id)}`, undefined, 'GET')).data;
+    renderProductDetail(_activeDetailProduct);
+    await loadProducts();
+    loadDashboardStats();
+    return res;
+}
+
+async function improveActiveProduct() {
+    const product = _activeDetailProduct;
+    if (!product) return;
+    const body = document.getElementById('productDetailBody');
+    body.innerHTML = `<div class="product-loading"><i class="fa-solid fa-circle-notch"></i><span>Ürün iyileştiriliyor...</span></div>`;
+
+    const token = await _getToken();
+    const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(product.id)}/improve`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('İyileştirme başlatılamadı.');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let statusText = 'Ürün iyileştiriliyor...';
+    body.innerHTML = `<div class="product-loading"><i class="fa-solid fa-circle-notch"></i><span id="productImproveStatus">${statusText}</span></div>`;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'error') throw new Error(event.message);
+            if (event.message) statusText = event.message;
+            if (event.type === 'start') statusText = `${event.total || 0} görsel iyileştiriliyor...`;
+            if (event.type === 'image') statusText = `${event.data?.idx || ''}. görsel hazırlandı...`;
+            const el = document.getElementById('productImproveStatus');
+            if (el) el.textContent = statusText;
+        }
+    }
+
+    _activeDetailProduct = (await apiFetch(`/api/products/${encodeURIComponent(product.id)}`, undefined, 'GET')).data;
+    renderProductDetail(_activeDetailProduct);
+    await loadProducts();
+    loadDashboardStats();
+}
+
+async function loadDashboardStats() {
+    try {
+        const res = await apiFetch('/api/user/stats', undefined, 'GET');
+        const s = res.data || {};
+        document.getElementById('statTotalAnalyses').textContent = s.total_analyses ?? 0;
+        document.getElementById('statThisMonth').textContent = s.this_month ?? 0;
+        document.getElementById('statAvgScore').textContent = s.avg_score ?? '—';
+        document.getElementById('statImages').textContent = s.images_this_month ?? 0;
+    } catch (_) {}
+}
+
+async function loadRecentAnalyses() {
+    const target = document.getElementById('recentAnalyses');
+    if (!target) return;
+    try {
+        const res = await apiFetch('/api/user/results?limit=5', undefined, 'GET');
+        const items = res.data || [];
+        if (!items.length) return;
+        target.className = 'recent-list';
+        target.innerHTML = items.map(item => `
+            <div class="detail-review" style="margin-top:0.8rem;">
+                <strong>${escHtml(item.product_title || 'Başlıksız ürün')}</strong>
+                <div class="section-sub">${item.created_at ? new Date(item.created_at).toLocaleDateString('tr-TR') : ''}</div>
+            </div>
+        `).join('');
+    } catch (_) {}
 }
 
 // ── API Anahtarları ───────────────────────────────────────────────────────────

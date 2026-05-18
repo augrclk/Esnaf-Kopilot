@@ -121,9 +121,9 @@
                             <h1 class="welcome-title">Hoş geldin! 👋</h1>
                             <p class="welcome-sub">Ürünlerinizi yapay zeka ile optimize etmeye hazır mısınız?</p>
                         </div>
-                        <button class="btn-primary btn-new-analysis" onclick="navigateTo('kopilot')">
+                        <button class="btn-primary btn-new-analysis" onclick="navigateTo('urunlerim'); openAddProductModal();">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Yeni Analiz</span>
+                            <span>Ürün Ekle</span>
                         </button>
                     </div>
 
@@ -165,59 +165,53 @@
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <h2>Son Analizler</h2>
                         </div>
-                        <div class="empty-state">
+                        <div class="empty-state" id="recentAnalyses">
                             <i class="fa-solid fa-magnifying-glass"></i>
                             <p>Henüz analiz yapılmadı.</p>
-                            <button class="btn-primary" style="padding:0.6rem 1.5rem;font-size:0.85rem;" onclick="navigateTo('kopilot')">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                <span>İlk Analizi Başlat</span>
+                            <button class="btn-primary" style="padding:0.6rem 1.5rem;font-size:0.85rem;" onclick="navigateTo('urunlerim'); openAddProductModal();">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>İlk Ürünü Ekle</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Platforms -->
-                    <div class="glass-panel section-card">
-                        <div class="card-header">
-                            <i class="fa-solid fa-store"></i>
-                            <h2>Desteklenen Platformlar</h2>
-                        </div>
-                        <div class="platform-grid">
-                            <div class="platform-card platform-active">
-                                <div class="platform-logo platform-logo-active">
-                                    <i class="fa-solid fa-shopping-bag"></i>
-                                </div>
-                                <span class="platform-name">Trendyol</span>
-                                <span class="active-status"><i class="fa-solid fa-circle-check"></i> Aktif</span>
-                            </div>
-                            <div class="platform-card platform-locked">
-                                <div class="platform-logo">
-                                    <i class="fa-solid fa-basket-shopping"></i>
-                                </div>
-                                <span class="platform-name">Hepsiburada</span>
-                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
-                            </div>
-                            <div class="platform-card platform-locked">
-                                <div class="platform-logo">
-                                    <i class="fa-solid fa-tag"></i>
-                                </div>
-                                <span class="platform-name">N11</span>
-                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
-                            </div>
-                            <div class="platform-card platform-locked">
-                                <div class="platform-logo">
-                                    <i class="fa-brands fa-amazon"></i>
-                                </div>
-                                <span class="platform-name">Amazon TR</span>
-                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <!-- ── Page: Kopilot ──────────────────────────────────────── -->
             <div id="page-kopilot" class="page">
                 <div class="page-inner">
+                    <section class="glass-panel kopilot-chat-shell">
+                        <div class="kopilot-chat-head">
+                            <div>
+                                <h2 class="section-heading">AI Chat</h2>
+                                <p class="section-sub">Eklediğiniz ürünleri seçip Kopilot ile konuşun.</p>
+                            </div>
+                            <select id="copilotProductSelect" class="settings-input product-context-select">
+                                <option value="">Tüm ürünler</option>
+                            </select>
+                        </div>
+                        <div class="quick-questions">
+                            <button class="quick-q-btn" onclick="askQuestion('Bu ürünlerde en acil düzeltmem gereken şey ne?')"><i class="fa-solid fa-triangle-exclamation"></i> Öncelik ne?</button>
+                            <button class="quick-q-btn" onclick="askQuestion('Başlık için daha iyi bir öneri ver.')"><i class="fa-solid fa-heading"></i> Başlık öner</button>
+                            <button class="quick-q-btn" onclick="askQuestion('Yorumlara göre açıklamada neyi vurgulamalıyım?')"><i class="fa-solid fa-comments"></i> Yorum içgörüsü</button>
+                        </div>
+                        <div class="empty-state" id="copilotEmptyState" style="display:none;">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>Önce bir ürün ekleyin, sonra Kopilot ürünleriniz hakkında konuşsun.</p>
+                            <button class="btn-primary" style="padding:0.65rem 1.2rem;font-size:0.85rem;" onclick="navigateTo('urunlerim'); openAddProductModal();">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Ürün Ekle</span>
+                            </button>
+                        </div>
+                        <div class="chat-messages" id="chatMessages"></div>
+                        <div class="chat-input-row">
+                            <input type="text" id="chatInput" placeholder="Ürünler hakkında bir şey sor..." class="chat-input">
+                            <button id="chatSendBtn" class="btn-send" onclick="sendChat()">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </section>
 
                     <!-- Mode Toggle -->
                     <div class="mode-toggle">
@@ -541,65 +535,18 @@
                     <div class="products-header">
                         <div>
                             <h2 class="section-heading">Ürünlerim</h2>
-                            <p class="section-sub">Analiz ettiğiniz ürünler burada otomatik kaydedilir.</p>
+                            <p class="section-sub">Ürün ekleyin, inceleyin, analiz edin ve iyileştirin.</p>
                         </div>
-                        <button class="btn-primary" style="padding:0.7rem 1.4rem;font-size:0.9rem;" onclick="navigateTo('kopilot')">
+                        <button class="btn-primary" style="padding:0.7rem 1.4rem;font-size:0.9rem;" onclick="openAddProductModal()">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Yeni Analiz</span>
+                            <span>Ürün Ekle</span>
                         </button>
                     </div>
 
-                    <!-- Products Table -->
-                    <div class="glass-panel" style="margin-top:1.5rem;">
-                        <div class="products-table-header">
-                            <span>Ürün</span>
-                            <span>Platform</span>
-                            <span>SEO Skoru</span>
-                            <span>Tarih</span>
-                            <span>İşlem</span>
-                        </div>
+                    <div class="products-list" id="productsList">
                         <div class="empty-state" style="padding:4rem 2rem;">
-                            <i class="fa-solid fa-box-open"></i>
-                            <p>Henüz kaydedilmiş ürün yok.</p>
-                            <p style="font-size:0.8rem;opacity:0.6;">Kopilot ile analiz başlattığınızda ürünler burada görünür.</p>
-                            <button class="btn-primary" style="padding:0.6rem 1.5rem;font-size:0.85rem;" onclick="navigateTo('kopilot')">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                <span>İlk Analizi Başlat</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Locked features -->
-                    <div class="glass-panel" style="margin-top:1.5rem;">
-                        <div class="card-header">
-                            <i class="fa-solid fa-chart-bar"></i>
-                            <h2>Toplu İşlemler</h2>
-                        </div>
-                        <div class="locked-hint-items">
-                            <div class="locked-hint-item">
-                                <i class="fa-solid fa-layer-group"></i>
-                                <div>
-                                    <strong>Toplu Analiz</strong>
-                                    <span>Tüm ürünleri tek seferde analiz et</span>
-                                </div>
-                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
-                            </div>
-                            <div class="locked-hint-item">
-                                <i class="fa-solid fa-file-export"></i>
-                                <div>
-                                    <strong>Excel / CSV Dışa Aktar</strong>
-                                    <span>Tüm verilerini indir</span>
-                                </div>
-                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
-                            </div>
-                            <div class="locked-hint-item">
-                                <i class="fa-solid fa-bell"></i>
-                                <div>
-                                    <strong>Skor Düşüşü Bildirimi</strong>
-                                    <span>Ürün skoru düşünce e-posta al</span>
-                                </div>
-                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
-                            </div>
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            <p>Ürünler yükleniyor...</p>
                         </div>
                     </div>
                 </div>
@@ -779,24 +726,6 @@
                         </div>
                     </div>
 
-                    <!-- Mağaza Bilgileri -->
-                    <div class="glass-panel section-card">
-                        <div class="card-header">
-                            <i class="fa-solid fa-store"></i>
-                            <h2>Mağaza Bilgileri</h2>
-                        </div>
-                        <div class="settings-row">
-                            <label class="settings-label">Trendyol Mağaza Linki</label>
-                            <div class="settings-input-wrap">
-                                <input type="text" placeholder="https://www.trendyol.com/magaza/..." class="settings-input">
-                                <button class="btn-save" disabled>
-                                    <i class="fa-solid fa-floppy-disk"></i> Kaydet
-                                    <span class="yakinda-badge" style="margin-left:0.5rem;"><i class="fa-solid fa-lock"></i> Yakında</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- API Anahtarları -->
                     <div class="glass-panel section-card">
                         <div class="card-header">
@@ -872,6 +801,80 @@
             </div>
 
         </main>
+    </div>
+
+    <div id="addProductModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card add-product-card">
+            <div class="modal-head">
+                <div>
+                    <h2>Ürün Ekle</h2>
+                    <p>Platform seçip ürün bilgisini içeri alın.</p>
+                </div>
+                <button class="icon-btn" onclick="closeAddProductModal()" title="Kapat">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="platform-choice-row">
+                <button class="platform-choice active" data-platform="Trendyol" onclick="selectProductPlatform('Trendyol')">
+                    <i class="fa-solid fa-store"></i>
+                    <span>Trendyol</span>
+                </button>
+                <button class="platform-choice" data-platform="Manuel" onclick="selectProductPlatform('Manuel')">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Manuel</span>
+                </button>
+            </div>
+            <div id="addProductUrlFields">
+                <div class="input-group">
+                    <i class="fa-solid fa-link input-icon"></i>
+                    <input type="text" id="productUrlInput" placeholder="Trendyol ürün linkini yapıştırın">
+                </div>
+                <p class="form-hint">Link girince başlık, açıklama, yorumlar ve görseller otomatik çekilir.</p>
+            </div>
+            <div id="addProductManualFields" style="display:none;">
+                <div class="input-group" style="margin-bottom:1rem;">
+                    <i class="fa-solid fa-tag input-icon"></i>
+                    <input type="text" id="manualProductTitle" placeholder="Ürün başlığı">
+                </div>
+                <textarea id="manualProductDescription" class="manual-textarea" placeholder="Ürün açıklaması"></textarea>
+            </div>
+            <div id="addProductStatus" class="action-loader" style="display:none;">
+                <div class="loader-pulse"></div>
+                <span>Ürün verisi çekiliyor...</span>
+            </div>
+            <button id="addProductSubmitBtn" class="btn-primary modal-submit" onclick="submitNewProduct()">
+                <span>Ürünü Ekle</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="productDetailOverlay" class="product-detail-overlay" style="display:none;">
+        <div class="product-detail-shell">
+            <div class="product-detail-topbar">
+                <button class="icon-btn" onclick="closeProductDetail()" title="Kapat">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h2 id="detailTitle">Ürün</h2>
+                    <div class="detail-meta">
+                        <span id="detailPlatform">Platform</span>
+                        <span id="detailScore">Skor bekliyor</span>
+                    </div>
+                </div>
+            </div>
+            <div id="productDetailBody" class="product-detail-body"></div>
+            <div class="product-detail-actions">
+                <button class="detail-action-btn" onclick="openProductDetail(_activeDetailProduct?.id, 'analyze')">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <span>Analiz Et</span>
+                </button>
+                <button class="detail-action-btn detail-action-primary" onclick="openProductDetail(_activeDetailProduct?.id, 'improve')">
+                    <i class="fa-solid fa-rocket"></i>
+                    <span>İyileştir</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>

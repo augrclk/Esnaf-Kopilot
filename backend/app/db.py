@@ -253,3 +253,114 @@ def get_usage(uid: str) -> dict:
     usage["tier"]   = tier
     usage["limits"] = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
     return usage
+
+
+def get_stats(uid: str) -> dict:
+    """Dashboard metriklerini döner. Ürün silmek geçmiş sayaçları düşürmez."""
+    db = _db()
+    usage = get_usage(uid)
+
+    results = list(
+        db.collection("users").document(uid)
+          .collection("results")
+          .stream()
+    )
+    scores = []
+    for doc in results:
+        data = (doc.to_dict() or {}).get("data") or {}
+        ca = data.get("content_analysis") or {}
+        score = ca.get("score")
+        if isinstance(score, (int, float)):
+            scores.append(score)
+
+    return {
+        "total_analyses": len(results),
+        "this_month": usage.get("analyses", 0),
+        "images_this_month": usage.get("images", 0),
+        "avg_score": round(sum(scores) / len(scores)) if scores else None,
+        "tier": usage.get("tier", "free"),
+        "limits": usage.get("limits", TIER_LIMITS["free"]),
+    }
+
+
+# ── Ürün Yönetimi ───────────────────────────────────────────────────────────
+
+def create_product(uid: str, url: str, product_title: str, platform: str, status: str = "draft") -> str:
+    db = _db()
+    ref = db.collection("users").document(uid).collection("products").document()
+    ref.set({
+        "url": url,
+        "product_title": product_title,
+        "platform": platform,
+        "status": status,
+        "score": None,
+        "image_paths": [],
+        "created_at": firestore.SERVER_TIMESTAMP,
+        "updated_at": firestore.SERVER_TIMESTAMP,
+    })
+    return ref.id
+
+
+def update_product_scraped(uid: str, product_id: str, scraped_data: dict, status: str = "inspected") -> None:
+    _db().collection("users").document(uid).collection("products").document(product_id).update({
+        "scraped_data": scraped_data,
+        "product_title": scraped_data.get("title", ""),
+        "status": status,
+        "updated_at": firestore.SERVER_TIMESTAMP,
+    })
+
+
+def update_product_analyzed(uid: str, product_id: str, analysis_data: dict, score: int) -> None:
+    _db().collection("users").document(uid).collection("products").document(product_id).update({
+        "data": analysis_data,
+        "score": score,
+        "status": "analyzed",
+        "updated_at": firestore.SERVER_TIMESTAMP,
+    })
+
+
+def update_product_improved(uid: str, product_id: str, image_paths: list[str]) -> None:
+    _db().collection("users").document(uid).collection("products").document(product_id).update({
+        "image_paths": image_paths,
+        "status": "improved",
+        "updated_at": firestore.SERVER_TIMESTAMP,
+    })
+
+
+def get_product(uid: str, product_id: str) -> dict | None:
+    snap = _db().collection("users").document(uid).collection("products").document(product_id).get()
+    if not snap.exists:
+        return None
+    d = snap.to_dict() or {}
+    d["id"] = snap.id
+    for key in ("created_at", "updated_at"):
+        if hasattr(d.get(key), "isoformat"):
+            d[key] = d[key].isoformat()
+    return d
+
+
+def list_products(uid: str, limit: int = 50) -> list[dict]:
+    docs = (
+        _db().collection("users").document(uid)
+        .collection("products")
+        .order_by("created_at", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+        .stream()
+    )
+    items = []
+    for doc in docs:
+        d = doc.to_dict() or {}
+        d["id"] = doc.id
+        for key in ("created_at", "updated_at"):
+            if hasattr(d.get(key), "isoformat"):
+                d[key] = d[key].isoformat()
+        sd = d.get("scraped_data") or {}
+        imgs = sd.get("image_urls") or []
+        d["thumbnail"] = imgs[0] if imgs else None
+        d.pop("data", None)
+        items.append(d)
+    return items
+
+
+def delete_product(uid: str, product_id: str) -> None:
+    _db().collection("users").document(uid).collection("products").document(product_id).delete()

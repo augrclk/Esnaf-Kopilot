@@ -13,6 +13,7 @@ import logging
 import os
 from datetime import datetime
 from time import monotonic
+from typing import Optional
 
 from app.pipeline import EsnafKopilotPipeline
 from app.scraper.http_client import HttpClient
@@ -150,6 +151,21 @@ class PhaseRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     analysis_context: dict
+
+
+class ProductFromUrlRequest(BaseModel):
+    url: str
+
+
+class ProductManualRequest(BaseModel):
+    platform: str = "Manuel"
+    title: str
+    description: str = ""
+
+
+class ProductChatRequest(BaseModel):
+    message: str
+    product_id: Optional[str] = None
 
 
 _IMAGE_INTENT_RE = re.compile(
@@ -593,6 +609,12 @@ async def get_usage(user: AuthUser = Depends(get_current_user)):
     return {"status": "success", "data": usage}
 
 
+@router.get("/user/stats")
+async def get_user_stats(user: AuthUser = Depends(get_current_user)):
+    stats = await asyncio.to_thread(db.get_stats, user.uid)
+    return {"status": "success", "data": stats}
+
+
 @router.get("/user/results")
 async def list_results(
     limit: int = Query(default=20, ge=1, le=100),
@@ -613,6 +635,295 @@ async def get_result(
     if result is None:
         raise HTTPException(status_code=404, detail="Sonuç bulunamadı.")
     return {"status": "success", "data": result}
+
+
+# ── Ürün Yönetimi ───────────────────────────────────────────────────────────
+
+def _scraped_data_from(scraped) -> dict:
+    return {
+        "title": scraped.product.title,
+        "description": scraped.product.description or "",
+        "image_urls": [img.url for img in (scraped.images or [])[:8]],
+        "review_count": len(scraped.reviews or []),
+        "review_sample": [
+            {"rating": r.rating, "text": r.text}
+            for r in (scraped.reviews or [])[:10]
+        ],
+    }
+
+
+def _analysis_payload(product_doc: dict, score_result, new_content, review_analysis, gift_suggestions) -> dict:
+    sd = product_doc.get("scraped_data") or {}
+    return {
+        "product": {
+            "original_title": sd.get("title", ""),
+            "original_description": sd.get("description", ""),
+            "url": product_doc.get("url", ""),
+        },
+        "content_analysis": {
+            "score": score_result.total_score,
+            "score_summary": score_result.summary,
+            "categories": [
+                {"name": c.name, "score": c.score, "max_score": c.max_score, "notes": c.notes}
+                for c in score_result.categories
+            ],
+            "new_title": new_content.new_title,
+            "new_description": new_content.new_description,
+            "faq": new_content.faq,
+            "keywords": new_content.suggested_keywords,
+            "notes": new_content.notes,
+        },
+        "review_analysis": review_analysis,
+        "gift_suggestions": gift_suggestions,
+    }
+
+
+def _product_review_models(product_doc: dict) -> tuple[Product, list[Review]]:
+    sd = product_doc.get("scraped_data") or {}
+    product = Product(
+        url=product_doc.get("url") or "manual",
+        product_id=None,
+        title=sd.get("title") or product_doc.get("product_title") or "",
+        description=sd.get("description", ""),
+    )
+    reviews = [
+        Review(
+            review_id=str(i),
+            rating=r.get("rating"),
+            title=None,
+            text=r.get("text", ""),
+            date=None,
+            user=None,
+            variant=None,
+            helpful_count=None,
+        )
+        for i, r in enumerate(sd.get("review_sample") or [])
+    ]
+    return product, reviews
+
+
+@router.get("/products")
+async def list_products_endpoint(
+    limit: int = Query(default=50, ge=1, le=100),
+    user: AuthUser = Depends(get_current_user),
+):
+    return {"status": "success", "data": await asyncio.to_thread(db.list_products, user.uid, limit)}
+
+
+@router.post("/products/chat")
+async def chat_with_products(req: ProductChatRequest, user: AuthUser = Depends(get_current_user)):
+    if not req.message.strip():
+        raise HTTPException(status_code=422, detail="Mesaj boş olamaz.")
+
+    if req.product_id:
+        product = await asyncio.to_thread(db.get_product, user.uid, req.product_id)
+        products = [product] if product else []
+    else:
+        product_refs = await asyncio.to_thread(db.list_products, user.uid, 20)
+        products = [
+            await asyncio.to_thread(db.get_product, user.uid, p["id"])
+            for p in product_refs
+        ]
+
+    products = [p for p in products if p]
+    if not products:
+        raise HTTPException(status_code=422, detail="Önce Ürünlerim sayfasından ürün ekleyin.")
+
+    def _product_summary(p: dict) -> str:
+        sd = p.get("scraped_data") or {}
+        data = p.get("data") or {}
+        ca = data.get("content_analysis") or {}
+        review = data.get("review_analysis") or {}
+        comments = sd.get("review_sample") or []
+        return f"""
+Ürün: {sd.get("title") or p.get("product_title") or "Başlıksız"}
+Platform: {p.get("platform", "-")}
+Durum: {p.get("status", "-")}
+Skor: {p.get("score") if p.get("score") is not None else "Henüz analiz edilmedi"}
+Açıklama: {(sd.get("description") or "")[:700]}
+Önerilen Başlık: {ca.get("new_title", "")}
+Analiz Özeti: {ca.get("score_summary", "")}
+Yorum Özeti: {review.get("sentiment_summary", "")}
+Örnek Yorumlar: {" | ".join((r.get("text", "")[:160] for r in comments[:5]))}
+""".strip()
+
+    scope = "tek ürün" if req.product_id else "kullanıcının tüm ekli ürünleri"
+    system_prompt = f"""Sen Esnaf Kopilot içinde çalışan e-ticaret AI asistanısın.
+Kapsam: {scope}.
+Sadece aşağıdaki ürün verilerine dayanarak Türkçe, kısa, net ve uygulanabilir cevap ver.
+Kullanıcı analiz istemeden puan uydurma; skor yoksa analiz edilmediğini söyle.
+
+=== ÜRÜNLER ===
+{chr(10).join(_product_summary(p) for p in products)}
+"""
+    try:
+        answer = await asyncio.to_thread(gemini.chat_text, system_prompt, req.message.strip())
+        try:
+            await asyncio.to_thread(db.increment_usage, user.uid, "chat_message")
+        except Exception as db_err:
+            log.warning("[DB] Chat usage artırma başarısız: %s", db_err)
+        return {"status": "success", "answer": answer}
+    except Exception as e:
+        log.error("chat_with_products error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/products/{product_id}")
+async def get_product_endpoint(product_id: str, user: AuthUser = Depends(get_current_user)):
+    product = await asyncio.to_thread(db.get_product, user.uid, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
+    return {"status": "success", "data": product}
+
+
+@router.delete("/products/{product_id}")
+async def delete_product_endpoint(product_id: str, user: AuthUser = Depends(get_current_user)):
+    product = await asyncio.to_thread(db.get_product, user.uid, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
+    await asyncio.to_thread(db.delete_product, user.uid, product_id)
+    return {"status": "success"}
+
+
+@router.post("/products/from-url")
+async def add_product_from_url(req: ProductFromUrlRequest, user: AuthUser = Depends(get_current_user)):
+    _validate_url(req.url)
+    product_id = await asyncio.to_thread(db.create_product, user.uid, req.url, "", "Trendyol", "draft")
+    try:
+        scraped = await asyncio.to_thread(scraper.scrape, req.url, max_review_pages=2)
+        scraped_data = _scraped_data_from(scraped)
+        await asyncio.to_thread(db.update_product_scraped, user.uid, product_id, scraped_data, "inspected")
+        return {"status": "success", "product_id": product_id, "scraped_data": scraped_data}
+    except Exception as e:
+        await asyncio.to_thread(db.delete_product, user.uid, product_id)
+        log.error("add_product_from_url error: %s", e, exc_info=True)
+        raise HTTPException(status_code=422, detail=f"Ürün çekilemedi: {str(e)}")
+
+
+@router.post("/products/manual")
+async def add_product_manual(req: ProductManualRequest, user: AuthUser = Depends(get_current_user)):
+    if not req.title.strip():
+        raise HTTPException(status_code=422, detail="Ürün başlığı boş olamaz.")
+    platform = req.platform if req.platform in {"Trendyol", "Hepsiburada", "N11", "Manuel"} else "Manuel"
+    product_id = await asyncio.to_thread(db.create_product, user.uid, "", req.title.strip(), platform, "draft")
+    scraped_data = {
+        "title": req.title.strip(),
+        "description": req.description.strip(),
+        "image_urls": [],
+        "review_count": 0,
+        "review_sample": [],
+    }
+    await asyncio.to_thread(db.update_product_scraped, user.uid, product_id, scraped_data, "draft")
+    return {"status": "success", "product_id": product_id, "scraped_data": scraped_data}
+
+
+@router.post("/products/{product_id}/analyze")
+async def analyze_product(product_id: str, user: AuthUser = Depends(get_current_user)):
+    product_doc = await asyncio.to_thread(db.get_product, user.uid, product_id)
+    if product_doc is None:
+        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
+    if product_doc.get("data") and product_doc.get("score") is not None:
+        return {"status": "success", "data": product_doc["data"], "product_id": product_id, "cached": True}
+
+    try:
+        await asyncio.to_thread(db.check_quota, user.uid, "analysis")
+    except PermissionError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+    product_obj, reviews = _product_review_models(product_doc)
+    try:
+        score_result, ra = await asyncio.gather(
+            asyncio.to_thread(content_analyzer.score, product_obj, reviews),
+            asyncio.to_thread(review_analyzer.analyze, product_obj, reviews),
+        )
+        new_content, gift_suggestions = await asyncio.gather(
+            asyncio.to_thread(content_analyzer.generate, product_obj, reviews, score_result.total_score, ra),
+            asyncio.to_thread(gift_advisor.suggest, product_obj, ra),
+        )
+    except Exception as e:
+        log.error("analyze_product error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    result_data = _analysis_payload(product_doc, score_result, new_content, ra, gift_suggestions)
+    await asyncio.to_thread(db.update_product_analyzed, user.uid, product_id, result_data, score_result.total_score)
+    await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
+    await asyncio.to_thread(db.save_result, user.uid, product_doc.get("url") or "manual", product_obj.title, "", result_data)
+    return {"status": "success", "data": result_data, "product_id": product_id, "cached": False}
+
+
+@router.get("/products/{product_id}/improve")
+async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_current_user)):
+    def _sse(event: dict) -> str:
+        return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+    async def _stream():
+        product_doc = await asyncio.to_thread(db.get_product, user.uid, product_id)
+        if product_doc is None:
+            yield _sse({"type": "error", "message": "Ürün bulunamadı."})
+            return
+
+        if product_doc.get("status") == "improved":
+            yield _sse({"type": "done", "count": len(product_doc.get("image_paths") or []), "cached": True})
+            return
+
+        if not product_doc.get("data"):
+            yield _sse({"type": "step", "step": 1, "message": "Analiz hazırlanıyor..."})
+            try:
+                await analyze_product(product_id, user)
+            except HTTPException as e:
+                yield _sse({"type": "error", "message": str(e.detail)})
+                return
+            product_doc = await asyncio.to_thread(db.get_product, user.uid, product_id)
+            yield _sse({"type": "analyze_done", "data": {"score": product_doc.get("score")}})
+
+        url = product_doc.get("url") or ""
+        if not url or url == "manual":
+            await asyncio.to_thread(db.update_product_improved, user.uid, product_id, [])
+            yield _sse({"type": "done", "count": 0})
+            return
+
+        try:
+            await asyncio.to_thread(db.check_quota, user.uid, "image")
+        except PermissionError as e:
+            yield _sse({"type": "error", "message": str(e)})
+            return
+
+        yield _sse({"type": "step", "step": 2, "message": "Görseller hazırlanıyor..."})
+        try:
+            scraped = await asyncio.to_thread(scraper.scrape, url, max_review_pages=1)
+            out_dir = _make_output_dir(user.uid)
+            downloaded = await asyncio.to_thread(scraper.download_images, scraped.images[:3], out_dir)
+            valid_images = [img for img in downloaded if img.local_path]
+            if not valid_images:
+                await asyncio.to_thread(db.update_product_improved, user.uid, product_id, [])
+                yield _sse({"type": "done", "count": 0})
+                return
+
+            analysis = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
+            yield _sse({"type": "start", "total": len(analysis.edit_tasks)})
+            paths = []
+            for idx, task in enumerate(analysis.edit_tasks, 1):
+                safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
+                out_path = os.path.join(out_dir, f"product_{product_id}_{idx}_{safe_name}.jpg")
+                prompt_obj = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
+                async with _IMAGE_SEM:
+                    enhanced = await asyncio.to_thread(image_analyzer.enhance, task.source_image, prompt_obj, out_path)
+                rel_path = os.path.relpath(enhanced.local_path, _OUTPUTS_DIR)
+                paths.append(rel_path)
+                await asyncio.to_thread(db.increment_usage, user.uid, "image")
+                yield _sse({"type": "image", "data": {"idx": idx, "concept": task.concept_name, "path": rel_path}})
+
+            await asyncio.to_thread(db.update_product_improved, user.uid, product_id, paths)
+            yield _sse({"type": "done", "count": len(paths)})
+        except Exception as e:
+            log.error("improve_product error: %s", e, exc_info=True)
+            yield _sse({"type": "error", "message": str(e)})
+
+    return StreamingResponse(_stream(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    })
 
 
 # ── Pazaryeri API Anahtarları ─────────────────────────────────────────────────
