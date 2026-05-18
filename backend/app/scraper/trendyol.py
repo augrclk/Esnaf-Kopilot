@@ -205,13 +205,19 @@ class TrendyolScraper:
                     desc_lines.append("- " + text)
                     
         # 2. Ürün Özellikleri (Attributes)
-        attr_section = re.search(r'class=["\']attributes["\']>(.*?)(?:</div>\s*</div>|</section>)', page_html, flags=re.IGNORECASE | re.DOTALL)
-        if attr_section:
-            attrs = re.findall(r'<div class=["\']attribute-item[^>]*>.*?<div class=["\']name["\']>(.*?)</div>.*?<div class=["\']value["\']>(.*?)</div>', attr_section.group(1), flags=re.IGNORECASE | re.DOTALL)
-            for name, value in attrs:
-                desc_lines.append(f"{clean_text(name)}: {clean_text(value)}")
+        attrs = re.findall(r'<div class=["\']attribute-item[^>]*>.*?<div class=["\']name["\']>(.*?)</div>.*?<div class=["\']value["\']>(.*?)</div>', page_html, flags=re.IGNORECASE | re.DOTALL)
+        for name, value in attrs:
+            desc_lines.append(f"{clean_text(name)}: {clean_text(value)}")
 
-        combined = "\n".join(desc_lines)
+        # Deduplicate
+        seen = set()
+        unique_lines = []
+        for line in desc_lines:
+            if line not in seen:
+                seen.add(line)
+                unique_lines.append(line)
+
+        combined = "\n".join(unique_lines)
         return combined if len(combined) > 10 else None
 
     def _find_description_via_api(
