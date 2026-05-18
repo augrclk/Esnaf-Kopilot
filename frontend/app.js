@@ -301,10 +301,10 @@ function renderProducts() {
         list.innerHTML = `
             <div class="glass-panel empty-state" style="padding:4rem 2rem;">
                 <i class="fa-solid fa-box-open"></i>
-                <p>Henüz ürün eklenmedi.</p>
-                <button class="btn-primary" style="padding:0.65rem 1.2rem;font-size:0.85rem;" onclick="openAddProductModal()">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>İlk Ürünü Ekle</span>
+                <p>Henüz ürün yok. Mağazadan içe aktarın.</p>
+                <button class="btn-primary" style="padding:0.65rem 1.2rem;font-size:0.85rem;" onclick="openImportModal()">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Mağazadan İçe Aktar</span>
                 </button>
             </div>`;
         return;
@@ -356,40 +356,6 @@ function initKopilotPage() {
     if (chatInput) chatInput.disabled = !_products.length;
 }
 
-function openAddProductModal() {
-    document.getElementById('addProductModal').style.display = 'flex';
-}
-
-function closeAddProductModal() {
-    document.getElementById('addProductModal').style.display = 'none';
-    const status = document.getElementById('addProductStatus');
-    if (status) status.style.display = 'none';
-}
-
-async function submitNewProduct() {
-    const btn = document.getElementById('addProductSubmitBtn');
-    const status = document.getElementById('addProductStatus');
-    btn.disabled = true;
-    status.style.display = 'flex';
-    status.querySelector('span').textContent = 'Ürün kaydediliyor...';
-
-    try {
-        const title = document.getElementById('manualProductTitle').value.trim();
-        const description = document.getElementById('manualProductDescription').value.trim();
-        if (!title) throw new Error('Ürün başlığı gerekli.');
-        await apiFetch('/api/products/manual', { platform: 'Manuel', title, description });
-        document.getElementById('manualProductTitle').value = '';
-        document.getElementById('manualProductDescription').value = '';
-        closeAddProductModal();
-        await loadProducts();
-        navigateTo('urunlerim');
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        btn.disabled = false;
-        status.style.display = 'none';
-    }
-}
 
 async function deleteProduct(productId) {
     if (!confirm('Ürün silinsin mi?')) return;
