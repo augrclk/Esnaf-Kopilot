@@ -18,6 +18,7 @@ from typing import Optional
 from app.pipeline import EsnafKopilotPipeline
 from app.scraper.http_client import HttpClient
 from app.scraper.trendyol import TrendyolScraper
+from app import test_commerce as tc_store
 from app.analyzer.gemini_client import GeminiClient
 from app.analyzer.content import ContentAnalyzer
 from app.analyzer.image import ImageAnalyzer
@@ -166,6 +167,20 @@ class ProductManualRequest(BaseModel):
 class ProductChatRequest(BaseModel):
     message: str
     product_id: Optional[str] = None
+
+
+class ConnectStoreRequest(BaseModel):
+    name: str
+    platform: str
+    api_url: str
+
+
+class ImportProductsRequest(BaseModel):
+    product_ids: list[str]
+
+
+class DeployRequest(BaseModel):
+    store_id: str
 
 
 _IMAGE_INTENT_RE = re.compile(
@@ -1291,3 +1306,168 @@ async def scrape_only(
     except Exception as e:
         log.error("scrape_only error for %s: %s", req.url, e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Test Commerce (mock mağaza) ───────────────────────────────────────────────
+
+@router.get("/test-commerce/products")
+async def tc_list_products():
+    """Test Commerce — ürün listesi. Auth gerekmez (herkese açık mock API)."""
+    return {"status": "success", "data": tc_store.get_products()}
+
+
+@router.get("/test-commerce/products/{product_id}")
+async def tc_get_product(product_id: str):
+    product = tc_store.get_product(product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
+    return {"status": "success", "data": product}
+
+
+@router.put("/test-commerce/products/{product_id}")
+async def tc_update_product(product_id: str, body: dict):
+    updated = tc_store.update_product(
+        product_id,
+        title=body.get("title"),
+        description=body.get("description"),
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
+    return {"status": "success", "data": updated}
+
+
+# ── Bağlı Mağazalar ───────────────────────────────────────────────────────────
+
+@router.get("/user/stores")
+async def list_connected_stores(user: AuthUser = Depends(get_current_user)):
+    stores = await asyncio.to_thread(db.list_stores, user.uid)
+    return {"status": "success", "data": stores}
+
+
+@router.post("/user/stores")
+async def connect_store(req: ConnectStoreRequest, user: AuthUser = Depends(get_current_user)):
+    if not req.api_url.strip():
+        raise HTTPException(status_code=422, detail="API URL boş olamaz.")
+    store_id = await asyncio.to_thread(
+        db.save_store, user.uid, req.name.strip(), req.platform.strip(), req.api_url.strip()
+    )
+    return {"status": "success", "store_id": store_id}
+
+
+@router.delete("/user/stores/{store_id}")
+async def disconnect_store(store_id: str, user: AuthUser = Depends(get_current_user)):
+    await asyncio.to_thread(db.delete_store, user.uid, store_id)
+    return {"status": "success"}
+
+
+@router.get("/stores/{store_id}/products")
+async def proxy_store_products(store_id: str, user: AuthUser = Depends(get_current_user)):
+    """Bağlı mağazanın ürün listesini proxy'ler."""
+    import httpx
+    store = await asyncio.to_thread(db.get_store, user.uid, store_id)
+    if store is None:
+        raise HTTPException(status_code=404, detail="Mağaza bulunamadı.")
+    api_url = store["api_url"].rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{api_url}/products")
+            resp.raise_for_status()
+            return {"status": "success", "data": resp.json().get("data", resp.json())}
+    except Exception as e:
+        log.error("proxy_store_products error: %s", e)
+        raise HTTPException(status_code=502, detail=f"Mağazaya bağlanılamadı: {str(e)}")
+
+
+@router.post("/stores/{store_id}/import")
+async def import_from_store(
+    store_id: str,
+    req: ImportProductsRequest,
+    user: AuthUser = Depends(get_current_user),
+):
+    """Seçilen ürünleri mağazadan içe aktarır, draft ürün olarak oluşturur."""
+    import httpx
+    store = await asyncio.to_thread(db.get_store, user.uid, store_id)
+    if store is None:
+        raise HTTPException(status_code=404, detail="Mağaza bulunamadı.")
+    api_url = store["api_url"].rstrip("/")
+    platform_name = store.get("name", store.get("platform", "Mağaza"))
+    created = []
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for pid in req.product_ids:
+            try:
+                resp = await client.get(f"{api_url}/products/{pid}")
+                resp.raise_for_status()
+                item = resp.json().get("data", {})
+                title = item.get("title", "Başlıksız ürün")
+                description = item.get("description", "")
+                images = item.get("images") or []
+                reviews_raw = item.get("reviews") or []
+
+                product_id = await asyncio.to_thread(
+                    db.create_product, user.uid, "", title, platform_name, "inspected"
+                )
+                scraped_data = {
+                    "title":        title,
+                    "description":  description,
+                    "image_urls":   images[:8],
+                    "review_count": len(reviews_raw),
+                    "review_sample": [
+                        {"rating": r.get("rating"), "text": r.get("text", "")}
+                        for r in reviews_raw[:10]
+                    ],
+                }
+                await asyncio.to_thread(
+                    db.update_product_scraped, user.uid, product_id, scraped_data, "inspected"
+                )
+                await asyncio.to_thread(
+                    db.update_product_source, user.uid, product_id, store_id, pid
+                )
+                created.append({"product_id": product_id, "title": title})
+            except Exception as e:
+                log.error("import_from_store error pid=%s: %s", pid, e)
+
+    return {"status": "success", "imported": created}
+
+
+@router.post("/products/{product_id}/deploy")
+async def deploy_to_store(
+    product_id: str,
+    req: DeployRequest,
+    user: AuthUser = Depends(get_current_user),
+):
+    """İyileştirilmiş içeriği bağlı mağazaya gönderir."""
+    import httpx
+    product = await asyncio.to_thread(db.get_product, user.uid, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
+
+    store = await asyncio.to_thread(db.get_store, user.uid, req.store_id)
+    if store is None:
+        raise HTTPException(status_code=404, detail="Mağaza bulunamadı.")
+
+    ca = (product.get("data") or {}).get("content_analysis") or {}
+    new_title = ca.get("new_title") or ""
+    new_desc  = ca.get("new_description") or ""
+    if not new_title and not new_desc:
+        raise HTTPException(status_code=422, detail="Ürün henüz analiz edilmemiş, deploy edilecek içerik yok.")
+
+    store_product_id = product.get("source_product_id")
+    if not store_product_id:
+        raise HTTPException(status_code=422, detail="Bu ürünün kaynak mağaza ürün ID'si bilinmiyor.")
+
+    api_url = store["api_url"].rstrip("/")
+    payload = {}
+    if new_title:
+        payload["title"] = new_title
+    if new_desc:
+        payload["description"] = new_desc
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.put(f"{api_url}/products/{store_product_id}", json=payload)
+            resp.raise_for_status()
+        return {"status": "success", "deployed": payload}
+    except Exception as e:
+        log.error("deploy_to_store error: %s", e)
+        raise HTTPException(status_code=502, detail=f"Mağazaya gönderilemedi: {str(e)}")

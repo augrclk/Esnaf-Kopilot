@@ -600,6 +600,7 @@ function navigateTo(pageId) {
         if (el) el.textContent = _currentUser.email;
         loadApiKeys();
         fetchUserPlan();
+        loadConnectedStores();
     }
     if (pageId === 'urunlerim' && _currentUser) {
         loadProducts();
@@ -958,6 +959,17 @@ function renderProductDetail(product) {
     document.getElementById('detailPlatform').textContent = product.platform || 'Manuel';
     document.getElementById('detailScore').textContent = product.score === null || product.score === undefined ? 'Skor bekliyor' : `${product.score}/100`;
 
+    // Deploy butonu: mağazadan içe aktarılmış + analiz edilmiş ürünlerde görünür
+    const deployBtn = document.getElementById('deployBtn');
+    if (deployBtn) {
+        const canDeploy = product.source_store_id && product.data?.content_analysis?.new_title;
+        deployBtn.style.display = canDeploy ? 'flex' : 'none';
+        deployBtn.disabled = false;
+        deployBtn.querySelector('span').textContent = 'Mağazaya Gönder';
+        deployBtn.style.background = '';
+        deployBtn.style.borderColor = '';
+    }
+
     const images = _productImages(product);
     const reviews = product.scraped_data?.review_sample || [];
     const analysis = product.data?.content_analysis || null;
@@ -1144,6 +1156,185 @@ async function deleteApiKey(platform) {
         await loadApiKeys();
     } catch (err) {
         alert(`Hata: ${err.message}`);
+    }
+}
+
+// ── Bağlı Mağazalar ───────────────────────────────────────────────────────────
+let _connectedStores = [];
+let _importStoreId   = null;
+let _importProducts  = [];
+
+function onStorePlatformChange() {
+    const sel = document.getElementById('storePlatformSelect');
+    const urlInput  = document.getElementById('storeUrlInput');
+    const nameInput = document.getElementById('storeNameInput');
+    if (sel.value === 'test-commerce') {
+        urlInput.value  = window.location.origin + '/api/test-commerce';
+        nameInput.value = nameInput.value || 'Test Mağaza';
+    }
+}
+
+async function loadConnectedStores() {
+    const list = document.getElementById('connectedStoresList');
+    if (!list) return;
+    try {
+        const res = await apiFetch('/api/user/stores', undefined, 'GET');
+        _connectedStores = res.data || [];
+        if (!_connectedStores.length) {
+            list.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted);padding:0.5rem 0;">Henüz bağlı mağaza yok.</p>';
+            return;
+        }
+        list.innerHTML = _connectedStores.map(s => `
+            <div class="api-key-item">
+                <div class="api-key-platform"><i class="fa-solid fa-store"></i> ${escHtml(s.name || s.platform)}</div>
+                <div class="api-key-masked" style="font-size:0.78rem;color:var(--text-muted);">${escHtml(s.api_url)}</div>
+                <button class="btn-delete-key" onclick="disconnectStore('${escHtml(s.id)}')">
+                    <i class="fa-solid fa-trash"></i> Sil
+                </button>
+            </div>`).join('');
+    } catch (err) {
+        if (list) list.innerHTML = `<p style="font-size:0.82rem;color:#f87171;padding:0.5rem 0;">Yüklenemedi: ${escHtml(err.message)}</p>`;
+    }
+}
+
+async function connectStore() {
+    const platform = document.getElementById('storePlatformSelect').value;
+    const name     = document.getElementById('storeNameInput').value.trim();
+    const apiUrl   = document.getElementById('storeUrlInput').value.trim();
+    if (!platform) { alert('Platform seçin.'); return; }
+    if (!apiUrl)   { alert('API URL girin.'); return; }
+    try {
+        await apiFetch('/api/user/stores', { name: name || platform, platform, api_url: apiUrl });
+        document.getElementById('storePlatformSelect').value = '';
+        document.getElementById('storeNameInput').value = '';
+        document.getElementById('storeUrlInput').value  = '';
+        await loadConnectedStores();
+    } catch (err) {
+        alert('Hata: ' + err.message);
+    }
+}
+
+async function disconnectStore(storeId) {
+    if (!confirm('Mağaza bağlantısı kaldırılsın mı?')) return;
+    try {
+        await apiFetch(`/api/user/stores/${encodeURIComponent(storeId)}`, undefined, 'DELETE');
+        await loadConnectedStores();
+    } catch (err) {
+        alert('Hata: ' + err.message);
+    }
+}
+
+async function openImportModal() {
+    const modal = document.getElementById('importStoreModal');
+    const list  = document.getElementById('importProductsList');
+    modal.style.display = 'flex';
+    list.innerHTML = `<div class="empty-state" style="padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i><p>Mağazalar kontrol ediliyor...</p></div>`;
+    document.getElementById('importConfirmBtn').disabled = true;
+
+    try {
+        const res = await apiFetch('/api/user/stores', undefined, 'GET');
+        _connectedStores = res.data || [];
+        if (!_connectedStores.length) {
+            list.innerHTML = `<div class="empty-state" style="padding:2rem;">
+                <i class="fa-solid fa-store"></i>
+                <p>Önce Ayarlar'dan bir mağaza bağlayın.</p>
+                <button class="btn-primary" style="padding:0.6rem 1.2rem;font-size:0.85rem;margin-top:0.5rem;" onclick="closeImportModal();navigateTo('ayarlar');">
+                    <i class="fa-solid fa-gear"></i> Ayarlara Git
+                </button>
+            </div>`;
+            return;
+        }
+        _importStoreId = _connectedStores[0].id;
+        document.getElementById('importStoreNameLabel').textContent =
+            `"${_connectedStores[0].name || _connectedStores[0].platform}" mağazasından ürün seçin.`;
+
+        const prodRes = await apiFetch(`/api/stores/${encodeURIComponent(_importStoreId)}/products`, undefined, 'GET');
+        _importProducts = prodRes.data || [];
+
+        if (!_importProducts.length) {
+            list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">Mağazada ürün bulunamadı.</p>';
+            return;
+        }
+
+        list.innerHTML = _importProducts.map(p => `
+            <label class="import-product-row" style="display:flex;align-items:center;gap:0.8rem;padding:0.75rem 0.5rem;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;">
+                <input type="checkbox" class="import-chk" value="${escHtml(p.id)}" onchange="_updateImportBtn()">
+                <img src="${escHtml((p.images||[])[0] || 'https://placehold.co/48x48/1a1a2e/6c63ff?text=?')}"
+                     style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;"
+                     onerror="this.src='https://placehold.co/48x48/1a1a2e/6c63ff?text=?'">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:0.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(p.title)}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">
+                        ${escHtml(p.brand || '')} · ${p.price ? p.price.toLocaleString('tr-TR', {style:'currency',currency:'TRY'}) : ''} · ⭐ ${p.rating || '?'} (${p.review_count || 0} yorum)
+                    </div>
+                </div>
+            </label>`).join('');
+    } catch (err) {
+        list.innerHTML = `<div class="empty-state" style="padding:2rem;"><i class="fa-solid fa-triangle-exclamation"></i><p>Hata: ${escHtml(err.message)}</p></div>`;
+    }
+}
+
+function _updateImportBtn() {
+    const checked = document.querySelectorAll('.import-chk:checked').length;
+    const btn = document.getElementById('importConfirmBtn');
+    btn.disabled = checked === 0;
+    btn.querySelector('span').textContent = checked > 0 ? `${checked} Ürünü İçe Al` : 'Seçilenleri İçe Al';
+}
+
+function closeImportModal() {
+    document.getElementById('importStoreModal').style.display = 'none';
+    _importStoreId = null;
+    _importProducts = [];
+}
+
+async function confirmImportProducts() {
+    const selectedIds = Array.from(document.querySelectorAll('.import-chk:checked')).map(c => c.value);
+    if (!selectedIds.length || !_importStoreId) return;
+
+    const status = document.getElementById('importStatus');
+    const btn    = document.getElementById('importConfirmBtn');
+    status.style.display = 'flex';
+    btn.disabled = true;
+
+    try {
+        const res = await apiFetch(`/api/stores/${encodeURIComponent(_importStoreId)}/import`, { product_ids: selectedIds });
+        closeImportModal();
+        await loadProducts();
+        navigateTo('urunlerim');
+        alert(`${(res.imported || []).length} ürün başarıyla içe aktarıldı!`);
+    } catch (err) {
+        alert('Hata: ' + err.message);
+    } finally {
+        status.style.display = 'none';
+        btn.disabled = false;
+    }
+}
+
+async function deployActiveProduct() {
+    const product = _activeDetailProduct;
+    if (!product) return;
+    if (!product.source_store_id) {
+        alert('Bu ürün bir mağazadan içe aktarılmamış, deploy edilecek hedef mağaza bilinmiyor.');
+        return;
+    }
+    const btn = document.getElementById('deployBtn');
+    btn.disabled = true;
+    btn.querySelector('span').textContent = 'Gönderiliyor...';
+    try {
+        await apiFetch(`/api/products/${encodeURIComponent(product.id)}/deploy`, { store_id: product.source_store_id });
+        btn.querySelector('span').textContent = '✓ Mağazaya Gönderildi';
+        btn.style.background = 'rgba(74,222,128,0.2)';
+        btn.style.borderColor = '#4ade80';
+        setTimeout(() => {
+            btn.querySelector('span').textContent = 'Mağazaya Gönder';
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.disabled = false;
+        }, 3000);
+    } catch (err) {
+        alert('Deploy hatası: ' + err.message);
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Mağazaya Gönder';
     }
 }
 

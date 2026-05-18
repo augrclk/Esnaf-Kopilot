@@ -2007,3 +2007,45 @@ input[type="text"]:focus {
 .manual-textarea          { background: rgba(0,0,0,0.04); }
 .yakinda-cta              { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
 .score-ring .score-number { color: var(--text-main); }
+
+/* ── Test Commerce / Store additions ─────────────────────────────── */
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: var(--text-main);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.25);
+}
+
+.detail-action-deploy {
+    background: rgba(96,165,250,0.12);
+    border-color: rgba(96,165,250,0.35);
+    color: #60a5fa;
+}
+.detail-action-deploy:hover {
+    background: rgba(96,165,250,0.22);
+}
+
+.import-product-row:hover {
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+}
+.import-product-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}

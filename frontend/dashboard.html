@@ -537,10 +537,16 @@
                             <h2 class="section-heading">Ürünlerim</h2>
                             <p class="section-sub">Ürün ekleyin, inceleyin, analiz edin ve iyileştirin.</p>
                         </div>
-                        <button class="btn-primary" style="padding:0.7rem 1.4rem;font-size:0.9rem;" onclick="openAddProductModal()">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Ürün Ekle</span>
-                        </button>
+                        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:flex-end;">
+                            <button class="btn-secondary" style="padding:0.7rem 1.2rem;font-size:0.85rem;" onclick="openImportModal()">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <span>Mağazadan İçe Aktar</span>
+                            </button>
+                            <button class="btn-primary" style="padding:0.7rem 1.4rem;font-size:0.9rem;" onclick="openAddProductModal()">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Ürün Ekle</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="products-list" id="productsList">
@@ -754,6 +760,32 @@
                         </div>
                     </div>
 
+                    <!-- Bağlı Mağazalar -->
+                    <div class="glass-panel section-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-store"></i>
+                            <h2>Bağlı Mağazalar</h2>
+                        </div>
+                        <p class="settings-note">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Mağazanızı bağlayın, ürünleri içe aktarın ve iyileştirilmiş içerikleri tek tıkla mağazanıza gönderin.
+                        </p>
+                        <div id="connectedStoresList" class="api-keys-list"></div>
+                        <div class="add-key-form" style="flex-wrap:wrap;gap:0.6rem;">
+                            <select id="storePlatformSelect" class="settings-input" onchange="onStorePlatformChange()" style="min-width:150px;">
+                                <option value="">Platform seç...</option>
+                                <option value="test-commerce">Test Mağaza</option>
+                                <option value="trendyol" disabled>Trendyol (Yakında)</option>
+                                <option value="hepsiburada" disabled>Hepsiburada (Yakında)</option>
+                            </select>
+                            <input type="text" id="storeNameInput" class="settings-input" placeholder="Mağaza adı..." style="min-width:140px;">
+                            <input type="text" id="storeUrlInput" class="settings-input" placeholder="API URL..." style="flex:1;min-width:200px;">
+                            <button class="btn-primary" style="padding:0.65rem 1.2rem;font-size:0.85rem;white-space:nowrap;" onclick="connectStore()">
+                                <i class="fa-solid fa-plug"></i> Bağla
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Bildirimler -->
                     <div class="glass-panel section-card">
                         <div class="card-header">
@@ -801,6 +833,38 @@
             </div>
 
         </main>
+    </div>
+
+    <!-- Import from Store Modal -->
+    <div id="importStoreModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card add-product-card">
+            <div class="modal-head">
+                <div>
+                    <h2>Mağazadan İçe Aktar</h2>
+                    <p id="importStoreNameLabel">Ürünleri seçin ve içe aktarın.</p>
+                </div>
+                <button class="icon-btn" onclick="closeImportModal()" title="Kapat">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="importProductsList" style="max-height:360px;overflow-y:auto;margin:1rem 0;">
+                <div class="empty-state" style="padding:2rem;">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <p>Yükleniyor...</p>
+                </div>
+            </div>
+            <div id="importStatus" class="action-loader" style="display:none;">
+                <div class="loader-pulse"></div>
+                <span>İçe aktarılıyor...</span>
+            </div>
+            <div style="display:flex;gap:0.7rem;justify-content:flex-end;">
+                <button class="btn-secondary" onclick="closeImportModal()">İptal</button>
+                <button id="importConfirmBtn" class="btn-primary" onclick="confirmImportProducts()" disabled>
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Seçilenleri İçe Al</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="addProductModal" class="modal-overlay" style="display:none;">
@@ -872,6 +936,10 @@
                 <button class="detail-action-btn detail-action-primary" onclick="openProductDetail(_activeDetailProduct?.id, 'improve')">
                     <i class="fa-solid fa-rocket"></i>
                     <span>İyileştir</span>
+                </button>
+                <button id="deployBtn" class="detail-action-btn detail-action-deploy" onclick="deployActiveProduct()" style="display:none;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Mağazaya Gönder</span>
                 </button>
             </div>
         </div>

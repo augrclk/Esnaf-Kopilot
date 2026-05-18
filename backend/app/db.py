@@ -364,3 +364,73 @@ def list_products(uid: str, limit: int = 50) -> list[dict]:
 
 def delete_product(uid: str, product_id: str) -> None:
     _db().collection("users").document(uid).collection("products").document(product_id).delete()
+
+
+# ── Bağlı Mağazalar ───────────────────────────────────────────────────────────
+
+def save_store(uid: str, name: str, platform: str, api_url: str) -> str:
+    """Yeni mağaza bağlantısını kaydeder. Aynı platform varsa üzerine yazar."""
+    db   = _db()
+    docs = (
+        db.collection("users").document(uid)
+          .collection("connected_stores")
+          .where(filter=FieldFilter("platform", "==", platform))
+          .limit(1)
+          .stream()
+    )
+    existing = next(docs, None)
+    if existing:
+        ref = existing.reference
+    else:
+        ref = db.collection("users").document(uid).collection("connected_stores").document()
+
+    ref.set({
+        "name":       name,
+        "platform":   platform,
+        "api_url":    api_url,
+        "created_at": firestore.SERVER_TIMESTAMP,
+    })
+    log.info("[DB] Mağaza kaydedildi: uid=%s, platform=%s, url=%s", uid, platform, api_url)
+    return ref.id
+
+
+def list_stores(uid: str) -> list[dict]:
+    db   = _db()
+    docs = (
+        db.collection("users").document(uid)
+          .collection("connected_stores")
+          .order_by("created_at", direction=firestore.Query.DESCENDING)
+          .stream()
+    )
+    result = []
+    for doc in docs:
+        d = doc.to_dict() or {}
+        d["id"] = doc.id
+        if hasattr(d.get("created_at"), "isoformat"):
+            d["created_at"] = d["created_at"].isoformat()
+        result.append(d)
+    return result
+
+
+def delete_store(uid: str, store_id: str) -> None:
+    _db().collection("users").document(uid).collection("connected_stores").document(store_id).delete()
+    log.info("[DB] Mağaza silindi: uid=%s, store_id=%s", uid, store_id)
+
+
+def get_store(uid: str, store_id: str) -> dict | None:
+    snap = _db().collection("users").document(uid).collection("connected_stores").document(store_id).get()
+    if not snap.exists:
+        return None
+    d = snap.to_dict() or {}
+    d["id"] = snap.id
+    if hasattr(d.get("created_at"), "isoformat"):
+        d["created_at"] = d["created_at"].isoformat()
+    return d
+
+
+def update_product_source(uid: str, product_id: str, store_id: str, store_product_id: str) -> None:
+    """Ürünün kaynak mağaza bilgisini günceller (import sonrası)."""
+    _db().collection("users").document(uid).collection("products").document(product_id).update({
+        "source_store_id":     store_id,
+        "source_product_id":   store_product_id,
+    })
