@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 30" role="img" aria-label="Esnaf Kopilot">
+  <!-- Esnaf - orange (#F7941D, landing page rengi) -->
+  <text x="0" y="24" font-family="Outfit,Arial,sans-serif" font-weight="800" font-size="24" fill="#F7941D">Esnaf</text>
+  <!-- K - purple (#3333CC, landing page rengi) -->
+  <text x="73" y="24" font-family="Outfit,Arial,sans-serif" font-weight="800" font-size="24" fill="#3333CC">K</text>
+  <!-- Robot (landing page ile aynı shape: rounded body + antenna + side ears + dark rect eyes) -->
+  <g transform="translate(89, 4) scale(0.792)" fill="#3333CC">
+    <rect x="4" y="7" width="16" height="13" rx="5"/>
+    <path d="M12 3v4" stroke="#3333CC" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <circle cx="12" cy="2.5" r="1.5"/>
+    <circle cx="3.5" cy="13.5" r="2.5"/>
+    <circle cx="20.5" cy="13.5" r="2.5"/>
+    <rect x="8.5" y="11" width="2" height="4" rx="1" fill="#0f111a"/>
+    <rect x="13.5" y="11" width="2" height="4" rx="1" fill="#0f111a"/>
+  </g>
+  <!-- pilot - purple -->
+  <text x="109" y="24" font-family="Outfit,Arial,sans-serif" font-weight="800" font-size="24" fill="#3333CC">pilot</text>
+</svg>

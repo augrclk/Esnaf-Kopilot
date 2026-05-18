@@ -6,6 +6,7 @@
     <title>Esnaf Kopilot - AI Ürün Geliştirici</title>
     <meta name="description" content="Trendyol ürün listelemelerinizi yapay zeka ile analiz edin, SEO puanı alın, yorum analizi yapın ve yeni görseller üretin.">
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Firebase SDK -->
@@ -16,9 +17,8 @@
     <!-- Login Overlay -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-card glass-panel">
-            <div class="logo" style="justify-content:center;margin-bottom:1.5rem;">
-                <i class="fa-solid fa-rocket"></i>
-                <h1>Esnaf <span>Kopilot</span></h1>
+            <div style="display:flex;justify-content:center;margin-bottom:1.5rem;">
+                <img src="characters/logo.svg" alt="Esnaf Kopilot" style="height:36px;filter:drop-shadow(0 0 8px rgba(242,107,39,0.3));">
             </div>
             <p style="text-align:center;color:var(--text-muted);margin-bottom:1.8rem;font-size:0.95rem;">Devam etmek için giriş yapın</p>
             <div class="login-form">
@@ -43,240 +43,836 @@
     <div class="glow-sphere sphere-1"></div>
     <div class="glow-sphere sphere-2"></div>
 
-    <main class="container" id="mainApp" style="display:none;">
-        <header class="app-header">
-            <div class="logo">
-                <i class="fa-solid fa-rocket"></i>
-                <h1>Esnaf <span>Kopilot</span></h1>
+    <!-- Main App: Sidebar SPA -->
+    <div id="mainApp" style="display:none;">
+
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-logo">
+                <img src="characters/logo.svg" alt="Esnaf Kopilot" class="sidebar-logo-img">
             </div>
-            <p>Trendyol Ürünlerinizi Yapay Zeka ile Yeniden Tasarlayın</p>
-            <div class="user-bar" id="userBar">
-                <span class="user-email" id="userEmail"></span>
+
+            <ul class="sidebar-nav">
+                <li>
+                    <a class="nav-item active" data-page="dashboard">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item" data-page="kopilot">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Kopilot</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item" data-page="urunlerim">
+                        <i class="fa-solid fa-box"></i>
+                        <span>Ürünlerim</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item" data-page="yakinda">
+                        <i class="fa-solid fa-rocket"></i>
+                        <span>Yakında</span>
+                        <span class="nav-badge">Yeni</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item" data-page="ayarlar">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Ayarlar</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-user">
+                    <div class="sidebar-user-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <span class="user-email" id="userEmail"></span>
+                </div>
                 <button class="btn-logout" id="logoutBtn" title="Çıkış Yap">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
-        </header>
+        </nav>
 
-        <!-- Input + Status -->
-        <section class="input-section glass-panel">
-            <div class="input-group">
-                <i class="fa-solid fa-link input-icon"></i>
-                <input type="text" id="urlInput"
-                    placeholder="Trendyol ürün linkini buraya yapıştırın..."
-                    value="">
-                <button id="analyzeBtn" class="btn-primary">
-                    <span>Analizi Başlat</span>
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <!-- Mobile overlay -->
+        <div id="sidebarOverlay"></div>
+
+        <!-- Page Content -->
+        <main id="pageContent">
+            <!-- Topbar -->
+            <div class="topbar">
+                <button class="hamburger" id="hamburgerBtn">
+                    <i class="fa-solid fa-bars"></i>
                 </button>
+                <h2 class="page-title" id="pageTitle">Dashboard</h2>
             </div>
 
-            <!-- Aşama Göstergesi -->
-            <div class="status-bar" id="statusBar" style="display: none;">
-                <div class="phase-steps">
-                    <div class="phase-step" id="step1">
-                        <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                        <span>Ürün Çekiliyor</span>
-                    </div>
-                    <div class="step-line"></div>
-                    <div class="phase-step" id="step2">
-                        <div class="step-icon"><i class="fa-solid fa-brain"></i></div>
-                        <span>İçerik Analizi</span>
-                    </div>
-                    <div class="step-line"></div>
-                    <div class="phase-step" id="step3">
-                        <div class="step-icon"><i class="fa-solid fa-image"></i></div>
-                        <span>Görsel Üretim</span>
-                    </div>
-                </div>
-                <div class="status-msg">
-                    <div class="loader-pulse"></div>
-                    <span id="statusText">İşleniyor...</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- ── RESULTS ────────────────────────────────────────────────── -->
-        <section id="resultsSection" style="display: none;">
-
-            <!-- FAZ 1 ÇIKTI: Çekilen Ürün Bilgisi + Yorum Örnekleri -->
-            <div id="phaseContent" style="display: none;">
-
-                <!-- Önce / Sonra Karşılaştırma (başta skeleton) -->
-                <div class="compare-section glass-panel mt-2">
-                    <div class="card-header" style="margin-bottom: 1.8rem;">
-                        <i class="fa-solid fa-code-compare"></i>
-                        <h2>Önce / Sonra Karşılaştırma</h2>
+            <!-- ── Page: Dashboard ────────────────────────────────────── -->
+            <div id="page-dashboard" class="page active">
+                <div class="page-inner">
+                    <!-- Welcome -->
+                    <div class="welcome-row">
+                        <div>
+                            <h1 class="welcome-title">Hoş geldin! 👋</h1>
+                            <p class="welcome-sub">Ürünlerinizi yapay zeka ile optimize etmeye hazır mısınız?</p>
+                        </div>
+                        <button class="btn-primary btn-new-analysis" onclick="navigateTo('kopilot')">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Yeni Analiz</span>
+                        </button>
                     </div>
 
-                    <div class="compare-scores">
-                        <div class="compare-score-card">
-                            <span class="compare-label">Mevcut Skor</span>
-                            <div class="score-ring">
-                                <svg viewBox="0 0 80 80">
-                                    <circle cx="40" cy="40" r="32" class="ring-bg"/>
-                                    <circle cx="40" cy="40" r="32" class="ring-fill ring-before" id="ringFillBefore"/>
-                                </svg>
-                                <span class="score-number" id="scoreBefore">—</span>
+                    <!-- Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card glass-panel">
+                            <div class="stat-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="statTotalAnalyses">0</div>
+                                <div class="stat-label">Toplam Analiz</div>
                             </div>
-                            <span class="score-sub">/ 100</span>
                         </div>
-                        <div class="compare-arrow">
-                            <i class="fa-solid fa-arrow-right-long"></i>
-                            <span>AI İyileştirmesi</span>
-                        </div>
-                        <div class="compare-score-card">
-                            <span class="compare-label">Hedef Skor</span>
-                            <div class="score-ring">
-                                <svg viewBox="0 0 80 80">
-                                    <circle cx="40" cy="40" r="32" class="ring-bg"/>
-                                    <circle cx="40" cy="40" r="32" class="ring-fill ring-after" id="ringFillAfter"/>
-                                </svg>
-                                <span class="score-number after-score-num" id="scoreAfter">—</span>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-icon stat-icon-green"><i class="fa-solid fa-calendar-check"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="statThisMonth">0</div>
+                                <div class="stat-label">Bu Ay</div>
                             </div>
-                            <span class="score-sub">/ 100</span>
+                        </div>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-icon stat-icon-purple"><i class="fa-solid fa-star"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="statAvgScore">—</div>
+                                <div class="stat-label">Ort. SEO Skoru</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-icon stat-icon-yellow"><i class="fa-solid fa-image"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="statImages">0</div>
+                                <div class="stat-label">Üretilen Görsel</div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Başlık -->
-                    <div class="compare-row">
-                        <div class="compare-col compare-before">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-xmark"></i> Mevcut Başlık</div>
-                            <p id="origTitle" class="compare-text compare-text-before">—</p>
+                    <!-- Recent Analyses -->
+                    <div class="glass-panel section-card">
+                        <div class="card-header" style="margin-bottom:0;">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <h2>Son Analizler</h2>
                         </div>
-                        <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
-                        <div class="compare-col compare-after">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-check"></i> Yeni Başlık</div>
-                            <p id="newTitle" class="compare-text compare-text-after analyzing-placeholder">— analiz ediliyor...</p>
-                        </div>
-                    </div>
-
-                    <!-- Açıklama -->
-                    <div class="compare-row compare-row-desc">
-                        <div class="compare-col compare-before">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-xmark"></i> Mevcut Açıklama</div>
-                            <div id="origDescription" class="compare-text compare-desc-text compare-text-before">—</div>
-                        </div>
-                        <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
-                        <div class="compare-col compare-after">
-                            <div class="compare-col-label"><i class="fa-solid fa-circle-check"></i> Yeni Açıklama</div>
-                            <div id="newDescription" class="compare-text compare-desc-text compare-text-after analyzing-placeholder">— analiz ediliyor...</div>
+                        <div class="empty-state">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <p>Henüz analiz yapılmadı.</p>
+                            <button class="btn-primary" style="padding:0.6rem 1.5rem;font-size:0.85rem;" onclick="navigateTo('kopilot')">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>İlk Analizi Başlat</span>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Anahtar Kelimeler -->
-                    <div style="margin-top: 1.5rem;">
-                        <div class="compare-col-label" style="margin-bottom: 0.7rem; color: var(--primary);">
-                            <i class="fa-solid fa-tags"></i> Önerilen Anahtar Kelimeler
+                    <!-- Platforms -->
+                    <div class="glass-panel section-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-store"></i>
+                            <h2>Desteklenen Platformlar</h2>
                         </div>
-                        <div class="keywords" id="keywordList">
-                            <span class="keyword-tag analyzing-placeholder">— analiz bekleniyor</span>
+                        <div class="platform-grid">
+                            <div class="platform-card platform-active">
+                                <div class="platform-logo platform-logo-active">
+                                    <i class="fa-solid fa-shopping-bag"></i>
+                                </div>
+                                <span class="platform-name">Trendyol</span>
+                                <span class="active-status"><i class="fa-solid fa-circle-check"></i> Aktif</span>
+                            </div>
+                            <div class="platform-card platform-locked">
+                                <div class="platform-logo">
+                                    <i class="fa-solid fa-basket-shopping"></i>
+                                </div>
+                                <span class="platform-name">Hepsiburada</span>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                            <div class="platform-card platform-locked">
+                                <div class="platform-logo">
+                                    <i class="fa-solid fa-tag"></i>
+                                </div>
+                                <span class="platform-name">N11</span>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                            <div class="platform-card platform-locked">
+                                <div class="platform-logo">
+                                    <i class="fa-brands fa-amazon"></i>
+                                </div>
+                                <span class="platform-name">Amazon TR</span>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Çekilen Yorum Örnekleri -->
-                <div id="reviewSampleCard" class="glass-panel mt-2" style="display: none;">
-                    <div class="card-header">
-                        <i class="fa-solid fa-comments"></i>
-                        <h2>Müşteri Yorumları</h2>
-                        <span class="review-count-badge" id="reviewCountBadge"></span>
-                        <span class="analyzing-tag"><i class="fa-solid fa-spinner fa-spin"></i> Analiz ediliyor...</span>
-                    </div>
-                    <ul id="reviewSampleList" class="review-sample-list"></ul>
                 </div>
             </div>
 
-            <!-- FAZ 2 ÇIKTI: İçerik + Yorum Analizi -->
-            <div id="phaseAnalysis" style="display: none;">
-                <!-- Yorum Analizi -->
-                <div class="glass-panel mt-2" id="reviewAnalysisCard">
-                    <div class="card-header">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <h2>Müşteri Yorum Analizi</h2>
-                    </div>
-                    <p id="reviewSentimentSummary" class="strategy-text" style="margin-bottom: 1.2rem;"></p>
-                    <div class="review-analysis-grid">
-                        <div class="review-col positives-col">
-                            <div class="review-col-header">
-                                <i class="fa-solid fa-thumbs-up"></i>
-                                <span>Müşterilerin Sevdiği</span>
-                            </div>
-                            <ul id="positivesList" class="review-list"></ul>
-                        </div>
-                        <div class="review-col negatives-col">
-                            <div class="review-col-header">
-                                <i class="fa-solid fa-thumbs-down"></i>
-                                <span>Dikkat Edilmesi Gerekenler</span>
-                            </div>
-                            <ul id="negativesList" class="review-list"></ul>
-                        </div>
-                    </div>
-                    <div id="unansweredQuestionsSection" style="margin-top: 1.2rem; display: none;">
-                        <div class="review-col-header" style="margin-bottom: 0.6rem;">
-                            <i class="fa-solid fa-circle-question"></i>
-                            <span>Cevaplanmamış Müşteri Soruları</span>
-                        </div>
-                        <ul id="unansweredList" class="unanswered-list"></ul>
-                    </div>
-                </div>
+            <!-- ── Page: Kopilot ──────────────────────────────────────── -->
+            <div id="page-kopilot" class="page">
+                <div class="page-inner">
 
-                <!-- Hediye & Jest Önerileri -->
-                <div class="glass-panel mt-2" id="giftSuggestionsCard" style="display: none;">
-                    <div class="card-header">
-                        <i class="fa-solid fa-gift"></i>
-                        <h2>Hediye &amp; Jest Önerileri</h2>
+                    <!-- Mode Toggle -->
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" id="modeUrlBtn" onclick="setMode('url')">
+                            <i class="fa-solid fa-link"></i>
+                            <span>URL ile Analiz</span>
+                        </button>
+                        <button class="mode-btn" id="modeManualBtn" onclick="setMode('manual')">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Manuel Giriş</span>
+                        </button>
                     </div>
-                    <p id="giftStrategy" class="strategy-text" style="margin-bottom: 1.2rem;"></p>
-                    <div id="giftList"></div>
-                    <div id="giftPackagingSection" style="display: none; margin-top: 1.2rem;">
-                        <div class="review-col-header" style="margin-bottom: 0.6rem;">
+
+                    <!-- Manuel Form -->
+                    <section id="manualModeSection" class="glass-panel" style="display:none;margin-bottom:1.5rem;">
+                        <div class="manual-form">
+                            <div class="input-group" style="margin-bottom:1rem;">
+                                <i class="fa-solid fa-tag input-icon"></i>
+                                <input type="text" id="manualTitle" placeholder="Ürün başlığı...">
+                            </div>
+                            <textarea id="manualDesc" class="manual-textarea" placeholder="Ürün açıklaması (opsiyonel)..."></textarea>
+
+                            <!-- Image upload -->
+                            <div class="upload-area" id="imageUploadArea">
+                                <input type="file" id="imageFiles" multiple accept="image/*" style="display:none;">
+                                <label for="imageFiles" class="upload-label">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <div>
+                                        <span>Ürün görselleri yükle</span>
+                                        <small>PNG, JPG • Maks 5 görsel • Opsiyonel</small>
+                                    </div>
+                                </label>
+                            </div>
+                            <div id="imagePreviewList" class="image-preview-list"></div>
+
+                            <!-- CSV upload -->
+                            <div class="upload-area upload-area-csv">
+                                <input type="file" id="reviewsCsvFile" accept=".csv,.txt" style="display:none;">
+                                <label for="reviewsCsvFile" class="upload-label">
+                                    <i class="fa-solid fa-file-csv"></i>
+                                    <div>
+                                        <span id="csvFileName">Müşteri yorumları CSV</span>
+                                        <small>Sütunlar: rating, text • Opsiyonel</small>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <p class="csv-hint">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Yorumlarınız yoksa boş bırakın — otomatik yorum çekimi <strong>Yakında</strong> geliyor.
+                            </p>
+
+                            <div class="status-bar" id="manualStatusBar" style="display:none;">
+                                <div class="status-msg">
+                                    <div class="loader-pulse"></div>
+                                    <span id="manualStatusText">Analiz ediliyor...</span>
+                                </div>
+                            </div>
+
+                            <button id="manualAnalyzeBtn" class="btn-primary" style="width:100%;justify-content:center;padding:1rem;margin-top:0.5rem;" onclick="startManualAnalysis()">
+                                <span>Analizi Başlat</span>
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- URL Input + Status -->
+                    <section id="urlModeSection" class="input-section glass-panel">
+                        <div class="input-group">
+                            <i class="fa-solid fa-link input-icon"></i>
+                            <input type="text" id="urlInput" placeholder="Trendyol ürün linkini buraya yapıştırın...">
+                            <button id="analyzeBtn" class="btn-primary">
+                                <span>Analizi Başlat</span>
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            </button>
+                        </div>
+
+                        <!-- Aşama Göstergesi -->
+                        <div class="status-bar" id="statusBar" style="display:none;">
+                            <div class="phase-steps">
+                                <div class="phase-step" id="step1">
+                                    <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                                    <span>Ürün Çekiliyor</span>
+                                </div>
+                                <div class="step-line"></div>
+                                <div class="phase-step" id="step2">
+                                    <div class="step-icon"><i class="fa-solid fa-brain"></i></div>
+                                    <span>İçerik Analizi</span>
+                                </div>
+                                <div class="step-line"></div>
+                                <div class="phase-step" id="step3">
+                                    <div class="step-icon"><i class="fa-solid fa-image"></i></div>
+                                    <span>Görsel Üretim</span>
+                                </div>
+                            </div>
+                            <div class="status-msg">
+                                <div class="loader-pulse"></div>
+                                <span id="statusText">İşleniyor...</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ── RESULTS ───────────────────────────────────── -->
+                    <section id="resultsSection" style="display:none;">
+
+                        <!-- FAZ 1: Scrape -->
+                        <div id="phaseContent" style="display:none;">
+                            <div class="compare-section glass-panel mt-2">
+                                <div class="card-header" style="margin-bottom:1.8rem;">
+                                    <i class="fa-solid fa-code-compare"></i>
+                                    <h2>Önce / Sonra Karşılaştırma</h2>
+                                </div>
+
+                                <div class="compare-scores">
+                                    <div class="compare-score-card">
+                                        <span class="compare-label">Mevcut Skor</span>
+                                        <div class="score-ring">
+                                            <svg viewBox="0 0 80 80">
+                                                <circle cx="40" cy="40" r="32" class="ring-bg"/>
+                                                <circle cx="40" cy="40" r="32" class="ring-fill ring-before" id="ringFillBefore"/>
+                                            </svg>
+                                            <span class="score-number" id="scoreBefore">—</span>
+                                        </div>
+                                        <span class="score-sub">/ 100</span>
+                                    </div>
+                                    <div class="compare-arrow">
+                                        <i class="fa-solid fa-arrow-right-long"></i>
+                                        <span>AI İyileştirmesi</span>
+                                    </div>
+                                    <div class="compare-score-card">
+                                        <span class="compare-label">Hedef Skor</span>
+                                        <div class="score-ring">
+                                            <svg viewBox="0 0 80 80">
+                                                <circle cx="40" cy="40" r="32" class="ring-bg"/>
+                                                <circle cx="40" cy="40" r="32" class="ring-fill ring-after" id="ringFillAfter"/>
+                                            </svg>
+                                            <span class="score-number after-score-num" id="scoreAfter">—</span>
+                                        </div>
+                                        <span class="score-sub">/ 100</span>
+                                    </div>
+                                </div>
+
+                                <!-- Başlık -->
+                                <div class="compare-row">
+                                    <div class="compare-col compare-before">
+                                        <div class="compare-col-label"><i class="fa-solid fa-circle-xmark"></i> Mevcut Başlık</div>
+                                        <p id="origTitle" class="compare-text compare-text-before">—</p>
+                                    </div>
+                                    <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
+                                    <div class="compare-col compare-after">
+                                        <div class="compare-col-label"><i class="fa-solid fa-circle-check"></i> Yeni Başlık</div>
+                                        <p id="newTitle" class="compare-text compare-text-after analyzing-placeholder">— analiz ediliyor...</p>
+                                    </div>
+                                </div>
+
+                                <!-- Açıklama -->
+                                <div class="compare-row compare-row-desc">
+                                    <div class="compare-col compare-before">
+                                        <div class="compare-col-label"><i class="fa-solid fa-circle-xmark"></i> Mevcut Açıklama</div>
+                                        <div id="origDescription" class="compare-text compare-desc-text compare-text-before">—</div>
+                                    </div>
+                                    <div class="compare-divider"><i class="fa-solid fa-right-left"></i></div>
+                                    <div class="compare-col compare-after">
+                                        <div class="compare-col-label"><i class="fa-solid fa-circle-check"></i> Yeni Açıklama</div>
+                                        <div id="newDescription" class="compare-text compare-desc-text compare-text-after analyzing-placeholder">— analiz ediliyor...</div>
+                                    </div>
+                                </div>
+
+                                <!-- Anahtar Kelimeler -->
+                                <div style="margin-top:1.5rem;">
+                                    <div class="compare-col-label" style="margin-bottom:0.7rem;color:var(--primary);">
+                                        <i class="fa-solid fa-tags"></i> Önerilen Anahtar Kelimeler
+                                    </div>
+                                    <div class="keywords" id="keywordList">
+                                        <span class="keyword-tag analyzing-placeholder">— analiz bekleniyor</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Yorum Örnekleri -->
+                            <div id="reviewSampleCard" class="glass-panel mt-2" style="display:none;">
+                                <div class="card-header">
+                                    <i class="fa-solid fa-comments"></i>
+                                    <h2>Müşteri Yorumları</h2>
+                                    <span class="review-count-badge" id="reviewCountBadge"></span>
+                                    <span class="analyzing-tag"><i class="fa-solid fa-spinner fa-spin"></i> Analiz ediliyor...</span>
+                                </div>
+                                <ul id="reviewSampleList" class="review-sample-list"></ul>
+                            </div>
+                        </div>
+
+                        <!-- FAZ 2: Analiz -->
+                        <div id="phaseAnalysis" style="display:none;">
+                            <div class="glass-panel mt-2" id="reviewAnalysisCard">
+                                <div class="card-header">
+                                    <i class="fa-solid fa-chart-pie"></i>
+                                    <h2>Müşteri Yorum Analizi</h2>
+                                </div>
+                                <p id="reviewSentimentSummary" class="strategy-text" style="margin-bottom:1.2rem;"></p>
+                                <div class="review-analysis-grid">
+                                    <div class="review-col positives-col">
+                                        <div class="review-col-header">
+                                            <i class="fa-solid fa-thumbs-up"></i>
+                                            <span>Müşterilerin Sevdiği</span>
+                                        </div>
+                                        <ul id="positivesList" class="review-list"></ul>
+                                    </div>
+                                    <div class="review-col negatives-col">
+                                        <div class="review-col-header">
+                                            <i class="fa-solid fa-thumbs-down"></i>
+                                            <span>Dikkat Edilmesi Gerekenler</span>
+                                        </div>
+                                        <ul id="negativesList" class="review-list"></ul>
+                                    </div>
+                                </div>
+                                <div id="unansweredQuestionsSection" style="margin-top:1.2rem;display:none;">
+                                    <div class="review-col-header" style="margin-bottom:0.6rem;">
+                                        <i class="fa-solid fa-circle-question"></i>
+                                        <span>Cevaplanmamış Müşteri Soruları</span>
+                                    </div>
+                                    <ul id="unansweredList" class="unanswered-list"></ul>
+                                </div>
+                            </div>
+
+                            <!-- Hediye Önerileri -->
+                            <div class="glass-panel mt-2" id="giftSuggestionsCard" style="display:none;">
+                                <div class="card-header">
+                                    <i class="fa-solid fa-gift"></i>
+                                    <h2>Hediye &amp; Jest Önerileri</h2>
+                                </div>
+                                <p id="giftStrategy" class="strategy-text" style="margin-bottom:1.2rem;"></p>
+                                <div id="giftList"></div>
+                                <div id="giftPackagingSection" style="display:none;margin-top:1.2rem;">
+                                    <div class="review-col-header" style="margin-bottom:0.6rem;">
+                                        <i class="fa-solid fa-box-open"></i>
+                                        <span>Paketleme Önerileri</span>
+                                    </div>
+                                    <ul id="giftPackagingList" class="unanswered-list"></ul>
+                                </div>
+                                <p id="giftDisclosure" class="strategy-text" style="margin-top:1rem;font-style:italic;opacity:0.75;"></p>
+                            </div>
+                        </div>
+
+                        <!-- FAZ 3: Görseller -->
+                        <div id="phaseImages" style="display:none;">
+                            <div class="gallery-section mt-3">
+                                <div class="section-title">
+                                    <h2>✨ Üretilen WOW Konseptleri</h2>
+                                    <p id="strategyNote">Müşteriyi büyülemek için özel olarak tasarlandı.</p>
+                                </div>
+                                <div class="gallery-grid" id="imageGallery"></div>
+                            </div>
+                        </div>
+
+                        <!-- AI Chat -->
+                        <div id="phaseChatSection" class="glass-panel chat-card mt-3" style="display:none;">
+                            <div class="card-header highlight">
+                                <i class="fa-solid fa-robot"></i>
+                                <h2>Bu Ürün Hakkında Asistana Sor</h2>
+                            </div>
+                            <p class="chat-subtitle">Analiz sonuçlarını bilen bir asistanla ürün stratejinizi geliştirin.</p>
+                            <div class="quick-questions">
+                                <button class="quick-q-btn" onclick="askQuestion('Bu ürünün en büyük satış engeli ne?')"><i class="fa-solid fa-ban"></i> En büyük satış engeli?</button>
+                                <button class="quick-q-btn" onclick="askQuestion('Başlığı daha premium hale getir.')"><i class="fa-solid fa-crown"></i> Başlığı premium yap</button>
+                                <button class="quick-q-btn" onclick="askQuestion('Yorumlara göre açıklamada neyi vurgulamalıyım?')"><i class="fa-solid fa-magnifying-glass-chart"></i> Neyi vurgulayalım?</button>
+                                <button class="quick-q-btn" onclick="askQuestion('Anneler için daha uygun bir açıklama yaz.')"><i class="fa-solid fa-heart"></i> Anneler için açıklama</button>
+                                <button class="quick-q-btn" onclick="askQuestion('Trendyol için daha kısa bir başlık öner.')"><i class="fa-solid fa-scissors"></i> Daha kısa başlık</button>
+                                <button class="quick-q-btn" onclick="askQuestion('Olumsuz yorumları nasıl açıklamada ele alabilirim?')"><i class="fa-solid fa-shield-halved"></i> Olumsuzları ele al</button>
+                            </div>
+                            <div class="chat-messages" id="chatMessages"></div>
+                            <div class="chat-input-row">
+                                <input type="text" id="chatInput" placeholder="Ürün hakkında bir şey sor..." class="chat-input">
+                                <button id="chatSendBtn" class="btn-send" onclick="sendChat()">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </section>
+
+                    <!-- Locked features hint -->
+                    <div class="locked-features-hint glass-panel mt-2" id="lockedHint">
+                        <div class="locked-hint-title">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>Yakında Bu Sayfada</span>
+                        </div>
+                        <div class="locked-hint-items">
+                            <div class="locked-hint-item">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <div>
+                                    <strong>Toplu Ürün Analizi</strong>
+                                    <span>50+ ürünü tek seferde analiz et</span>
+                                </div>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                            <div class="locked-hint-item">
+                                <i class="fa-solid fa-trophy"></i>
+                                <div>
+                                    <strong>Rakip Analizi</strong>
+                                    <span>Rakiplerinle karşılaştır, öne geç</span>
+                                </div>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                            <div class="locked-hint-item">
+                                <i class="fa-solid fa-clock"></i>
+                                <div>
+                                    <strong>Otomatik Güncelleme</strong>
+                                    <span>Listelemeleri zamanlamayla güncelle</span>
+                                </div>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Page: Ürünlerim ────────────────────────────────────── -->
+            <div id="page-urunlerim" class="page">
+                <div class="page-inner">
+                    <div class="products-header">
+                        <div>
+                            <h2 class="section-heading">Ürünlerim</h2>
+                            <p class="section-sub">Analiz ettiğiniz ürünler burada otomatik kaydedilir.</p>
+                        </div>
+                        <button class="btn-primary" style="padding:0.7rem 1.4rem;font-size:0.9rem;" onclick="navigateTo('kopilot')">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Yeni Analiz</span>
+                        </button>
+                    </div>
+
+                    <!-- Products Table -->
+                    <div class="glass-panel" style="margin-top:1.5rem;">
+                        <div class="products-table-header">
+                            <span>Ürün</span>
+                            <span>Platform</span>
+                            <span>SEO Skoru</span>
+                            <span>Tarih</span>
+                            <span>İşlem</span>
+                        </div>
+                        <div class="empty-state" style="padding:4rem 2rem;">
                             <i class="fa-solid fa-box-open"></i>
-                            <span>Paketleme Önerileri</span>
+                            <p>Henüz kaydedilmiş ürün yok.</p>
+                            <p style="font-size:0.8rem;opacity:0.6;">Kopilot ile analiz başlattığınızda ürünler burada görünür.</p>
+                            <button class="btn-primary" style="padding:0.6rem 1.5rem;font-size:0.85rem;" onclick="navigateTo('kopilot')">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>İlk Analizi Başlat</span>
+                            </button>
                         </div>
-                        <ul id="giftPackagingList" class="unanswered-list"></ul>
                     </div>
-                    <p id="giftDisclosure" class="strategy-text" style="margin-top: 1rem; font-style: italic; opacity: 0.75;"></p>
-                </div>
-            </div>
 
-            <!-- FAZ 3 ÇIKTI: Görseller -->
-            <div id="phaseImages" style="display: none;">
-                <div class="gallery-section mt-3">
-                    <div class="section-title">
-                        <h2>✨ Üretilen WOW Konseptleri</h2>
-                        <p>Müşteriyi büyülemek için özel olarak tasarlandı.</p>
+                    <!-- Locked features -->
+                    <div class="glass-panel" style="margin-top:1.5rem;">
+                        <div class="card-header">
+                            <i class="fa-solid fa-chart-bar"></i>
+                            <h2>Toplu İşlemler</h2>
+                        </div>
+                        <div class="locked-hint-items">
+                            <div class="locked-hint-item">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <div>
+                                    <strong>Toplu Analiz</strong>
+                                    <span>Tüm ürünleri tek seferde analiz et</span>
+                                </div>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                            <div class="locked-hint-item">
+                                <i class="fa-solid fa-file-export"></i>
+                                <div>
+                                    <strong>Excel / CSV Dışa Aktar</strong>
+                                    <span>Tüm verilerini indir</span>
+                                </div>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                            <div class="locked-hint-item">
+                                <i class="fa-solid fa-bell"></i>
+                                <div>
+                                    <strong>Skor Düşüşü Bildirimi</strong>
+                                    <span>Ürün skoru düşünce e-posta al</span>
+                                </div>
+                                <span class="yakinda-badge"><i class="fa-solid fa-lock"></i> Yakında</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="gallery-grid" id="imageGallery"></div>
                 </div>
             </div>
 
-            <!-- AI Chat (Faz 2'den sonra görünür) -->
-            <div id="phaseChatSection" class="glass-panel chat-card mt-3" style="display: none;">
-                <div class="card-header highlight">
-                    <i class="fa-solid fa-robot"></i>
-                    <h2>Bu Ürün Hakkında Asistana Sor</h2>
-                </div>
-                <p class="chat-subtitle">Analiz sonuçlarını bilen bir asistanla ürün stratejinizi geliştirin.</p>
-                <div class="quick-questions">
-                    <button class="quick-q-btn" onclick="askQuestion('Bu ürünün en büyük satış engeli ne?')"><i class="fa-solid fa-ban"></i> En büyük satış engeli?</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Başlığı daha premium hale getir.')"><i class="fa-solid fa-crown"></i> Başlığı premium yap</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Yorumlara göre açıklamada neyi vurgulamalıyım?')"><i class="fa-solid fa-magnifying-glass-chart"></i> Neyi vurgulayalım?</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Anneler için daha uygun bir açıklama yaz.')"><i class="fa-solid fa-heart"></i> Anneler için açıklama</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Trendyol için daha kısa bir başlık öner.')"><i class="fa-solid fa-scissors"></i> Daha kısa başlık</button>
-                    <button class="quick-q-btn" onclick="askQuestion('Olumsuz yorumları nasıl açıklamada ele alabilirim?')"><i class="fa-solid fa-shield-halved"></i> Olumsuzları ele al</button>
-                </div>
-                <div class="chat-messages" id="chatMessages"></div>
-                <div class="chat-input-row">
-                    <input type="text" id="chatInput" placeholder="Ürün hakkında bir şey sor..." class="chat-input">
-                    <button id="chatSendBtn" class="btn-send" onclick="sendChat()">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
+            <!-- ── Page: Yakında ──────────────────────────────────────── -->
+            <div id="page-yakinda" class="page">
+                <div class="page-inner">
+                    <!-- Hero -->
+                    <div class="yakinda-hero">
+                        <div class="yakinda-hero-badge">
+                            <i class="fa-solid fa-rocket"></i> Yol Haritası
+                        </div>
+                        <h1>Yakında Geliyor</h1>
+                        <p>Esnaf Kopilot sürekli büyüyor. Türkiye'deki esnafı dijitalde güçlendirecek yeni özellikler hazırlıyoruz.</p>
+                    </div>
+
+                    <!-- Section: Platformlar -->
+                    <div class="yakinda-section">
+                        <h3 class="yakinda-section-title"><i class="fa-solid fa-store"></i> Yeni Platformlar</h3>
+                        <div class="yakinda-grid">
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Çok Yakında</span>
+                                <div class="yakinda-card-icon" style="background:rgba(242,107,39,0.12);color:var(--primary);">
+                                    <i class="fa-solid fa-basket-shopping"></i>
+                                </div>
+                                <h3>Hepsiburada</h3>
+                                <p>Hepsiburada ürünlerinizi yapay zeka ile analiz edin, başlık ve açıklamalarınızı optimize edin.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Çok Yakında</span>
+                                <div class="yakinda-card-icon" style="background:rgba(242,107,39,0.12);color:var(--primary);">
+                                    <i class="fa-solid fa-tag"></i>
+                                </div>
+                                <h3>N11</h3>
+                                <p>N11 pazaryerinde ürün listelerinizi SEO açısından güçlendirin ve öne çıkın.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Planlanan</span>
+                                <div class="yakinda-card-icon" style="background:rgba(242,107,39,0.12);color:var(--primary);">
+                                    <i class="fa-brands fa-amazon"></i>
+                                </div>
+                                <h3>Amazon TR</h3>
+                                <p>Amazon Türkiye'deki ürünlerinizi küresel rekabete hazırlayın, A9 algoritması için optimize edin.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Analiz -->
+                    <div class="yakinda-section">
+                        <h3 class="yakinda-section-title"><i class="fa-solid fa-chart-pie"></i> Gelişmiş Analiz</h3>
+                        <div class="yakinda-grid">
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Çok Yakında</span>
+                                <div class="yakinda-card-icon" style="background:rgba(142,45,226,0.12);color:var(--secondary);">
+                                    <i class="fa-solid fa-layer-group"></i>
+                                </div>
+                                <h3>Toplu Ürün Analizi</h3>
+                                <p>50+ ürünü CSV ile yükleyin, tamamını bir gecede analiz edin. Zaman = para.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <div class="yakinda-card-icon" style="background:rgba(142,45,226,0.12);color:var(--secondary);">
+                                    <i class="fa-solid fa-trophy"></i>
+                                </div>
+                                <h3>Rakip Analizi</h3>
+                                <p>Aynı kategorideki rakip ürünleri karşılaştırın, zayıf noktalarını keşfedin ve öne geçin.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <div class="yakinda-card-icon" style="background:rgba(142,45,226,0.12);color:var(--secondary);">
+                                    <i class="fa-solid fa-fire-flame-curved"></i>
+                                </div>
+                                <h3>Kategori Trend Analizi</h3>
+                                <p>Kategorinizdeki arama trendlerini ve yükselen anahtar kelimeleri haftalık raporla takip edin.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Optimizasyon -->
+                    <div class="yakinda-section">
+                        <h3 class="yakinda-section-title"><i class="fa-solid fa-sliders"></i> Optimizasyon</h3>
+                        <div class="yakinda-grid">
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <div class="yakinda-card-icon" style="background:rgba(16,185,129,0.12);color:var(--success);">
+                                    <i class="fa-solid fa-turkish-lira-sign"></i>
+                                </div>
+                                <h3>Fiyat Optimizasyonu</h3>
+                                <p>Rakip fiyatlarını ve talep eğrilerini analiz ederek en karlı fiyat aralığını belirleyin.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <div class="yakinda-card-icon" style="background:rgba(16,185,129,0.12);color:var(--success);">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </div>
+                                <h3>Mağaza Sağlık Raporu</h3>
+                                <p>Tüm mağazanızın SEO durumunu, eksik alanları ve acil iyileştirme fırsatlarını tek raporda görün.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Planlanan</span>
+                                <div class="yakinda-card-icon" style="background:rgba(16,185,129,0.12);color:var(--success);">
+                                    <i class="fa-solid fa-clock"></i>
+                                </div>
+                                <h3>Otomatik Güncelleme</h3>
+                                <p>Belirlediğiniz aralıklarda ürün başlık ve açıklamalarını otomatik güncelleyin.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Pazarlama -->
+                    <div class="yakinda-section">
+                        <h3 class="yakinda-section-title"><i class="fa-solid fa-bullhorn"></i> Pazarlama</h3>
+                        <div class="yakinda-grid">
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Planlanan</span>
+                                <div class="yakinda-card-icon" style="background:rgba(251,191,36,0.12);color:#fbbf24;">
+                                    <i class="fa-solid fa-megaphone"></i>
+                                </div>
+                                <h3>Kampanya Asistanı</h3>
+                                <p>İndirim, flash sale ve özel gün kampanyalarınız için yapay zeka destekli içerik ve strateji üretin.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Planlanan</span>
+                                <div class="yakinda-card-icon" style="background:rgba(251,191,36,0.12);color:#fbbf24;">
+                                    <i class="fa-brands fa-instagram"></i>
+                                </div>
+                                <h3>Sosyal Medya İçerikleri</h3>
+                                <p>Ürün analizinden Instagram, TikTok ve Twitter için hazır içerik ve görsel setleri üretin.</p>
+                            </div>
+                            <div class="yakinda-card">
+                                <span class="yakinda-status-badge">Planlanan</span>
+                                <div class="yakinda-card-icon" style="background:rgba(251,191,36,0.12);color:#fbbf24;">
+                                    <i class="fa-solid fa-envelope-open-text"></i>
+                                </div>
+                                <h3>Müşteri E-posta Şablonları</h3>
+                                <p>Yorum analizine göre kişiselleştirilmiş müşteri iletişim şablonları oluşturun.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CTA -->
+                    <div class="yakinda-cta glass-panel">
+                        <i class="fa-solid fa-envelope"></i>
+                        <div>
+                            <h3>Özellikler çıktığında haberdar ol</h3>
+                            <p>Ayarlar sayfasından e-posta bildirimlerini aktif et.</p>
+                        </div>
+                        <button class="btn-primary" style="padding:0.7rem 1.4rem;font-size:0.9rem;flex-shrink:0;" onclick="navigateTo('ayarlar')">
+                            <i class="fa-solid fa-bell"></i>
+                            <span>Bildirimleri Aç</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-        </section>
-    </main>
+            <!-- ── Page: Ayarlar ──────────────────────────────────────── -->
+            <div id="page-ayarlar" class="page">
+                <div class="page-inner">
+                    <h2 class="section-heading">Ayarlar</h2>
+
+                    <!-- Profile -->
+                    <div class="glass-panel section-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-user-circle"></i>
+                            <h2>Profil</h2>
+                        </div>
+                        <div class="settings-row">
+                            <label class="settings-label">E-posta</label>
+                            <div class="settings-value" id="settingsEmail">—</div>
+                        </div>
+                        <div class="settings-row">
+                            <label class="settings-label">Plan</label>
+                            <div class="settings-value">
+                                <span class="plan-badge" id="planBadge">Yükleniyor...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mağaza Bilgileri -->
+                    <div class="glass-panel section-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-store"></i>
+                            <h2>Mağaza Bilgileri</h2>
+                        </div>
+                        <div class="settings-row">
+                            <label class="settings-label">Trendyol Mağaza Linki</label>
+                            <div class="settings-input-wrap">
+                                <input type="text" placeholder="https://www.trendyol.com/magaza/..." class="settings-input">
+                                <button class="btn-save" disabled>
+                                    <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                                    <span class="yakinda-badge" style="margin-left:0.5rem;"><i class="fa-solid fa-lock"></i> Yakında</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API Anahtarları -->
+                    <div class="glass-panel section-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-key"></i>
+                            <h2>Pazaryeri API Anahtarları</h2>
+                        </div>
+                        <p class="settings-note">
+                            <i class="fa-solid fa-circle-info"></i>
+                            API anahtarlarınız şifrelenmiş olarak saklanır. İleride otomatik ürün çekimi için kullanılacak.
+                        </p>
+                        <div id="apiKeysList" class="api-keys-list"></div>
+                        <div class="add-key-form">
+                            <select id="apiKeyPlatform" class="settings-input">
+                                <option value="">Platform seç...</option>
+                                <option value="trendyol">Trendyol</option>
+                                <option value="hepsiburada">Hepsiburada</option>
+                                <option value="n11">N11</option>
+                                <option value="amazon">Amazon</option>
+                                <option value="ebay">eBay</option>
+                                <option value="gittigidiyor">GittiGidiyor</option>
+                            </select>
+                            <input type="password" id="apiKeyValue" class="settings-input" placeholder="API anahtarı...">
+                            <button class="btn-primary" style="padding:0.65rem 1.2rem;font-size:0.85rem;white-space:nowrap;" onclick="saveApiKey()">
+                                <i class="fa-solid fa-plus"></i> Ekle
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bildirimler -->
+                    <div class="glass-panel section-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-bell"></i>
+                            <h2>Bildirimler</h2>
+                            <span class="yakinda-badge" style="margin-left:auto;"><i class="fa-solid fa-lock"></i> Yakında</span>
+                        </div>
+                        <div class="settings-locked-overlay">
+                            <div class="settings-row settings-row-locked">
+                                <label class="settings-label">Analiz tamamlandığında bildir</label>
+                                <div class="toggle-switch toggle-disabled"></div>
+                            </div>
+                            <div class="settings-row settings-row-locked">
+                                <label class="settings-label">Haftalık rapor e-postası</label>
+                                <div class="toggle-switch toggle-disabled"></div>
+                            </div>
+                            <div class="settings-row settings-row-locked">
+                                <label class="settings-label">Yeni özellik duyuruları</label>
+                                <div class="toggle-switch toggle-disabled"></div>
+                            </div>
+                            <div class="locked-overlay-msg">
+                                <i class="fa-solid fa-lock"></i>
+                                <span>Bu özellik yakında kullanıma açılacak</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="glass-panel section-card danger-card">
+                        <div class="card-header" style="color:#f87171;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <h2>Hesap</h2>
+                        </div>
+                        <div class="settings-row">
+                            <div>
+                                <strong style="font-size:0.9rem;">Çıkış Yap</strong>
+                                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">Mevcut oturumu sonlandır</p>
+                            </div>
+                            <button class="btn-logout" id="logoutBtn2" style="padding:0.5rem 1rem;border-radius:10px;font-size:0.85rem;">
+                                <i class="fa-solid fa-right-from-bracket"></i> Çıkış Yap
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
 
     <script>
         const firebaseConfig = {

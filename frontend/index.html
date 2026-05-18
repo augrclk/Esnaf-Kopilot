@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Esnaf Kopilot - AI Ajanınız</title>
+    <title>Esnaf Kopilot — AI Destekli Esnaf Asistanı</title>
+    <meta name="description" content="Trendyol ürün listelerinizi yapay zeka ile analiz edin. SEO & AEO optimizasyonu, rakip benchmark ve görsel iyileştirme — Esnaf Kopilot ile satışlarınızı artırın.">
+    <meta property="og:title" content="Esnaf Kopilot — AI Destekli Esnaf Asistanı">
+    <meta property="og:description" content="Ürün linkinizi yapıştırın, yapay zeka analiz etsin. SEO, AEO ve görsel optimizasyon.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="characters/robot-selam.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Esnaf Kopilot — AI Destekli Esnaf Asistanı">
+    <meta name="twitter:description" content="Ürün linkinizi yapıştırın, yapay zeka analiz etsin.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -167,6 +177,16 @@
             font-size: 24px;
             font-weight: bold;
         }
+
+        /* GSAP CDN fail → tüm içerik görünür kalır */
+        .no-gsap .char-img,
+        .no-gsap .feature-item,
+        .no-gsap .bubble-static,
+        .no-gsap .step-box,
+        .no-gsap .step-arrow,
+        .no-gsap nav,
+        .no-gsap #hero h1,
+        .no-gsap #cta > div { opacity: 1 !important; transform: none !important; }
     </style>
 </head>
 <body>
@@ -175,7 +195,7 @@
     <nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 py-4">
         <!-- Logo -->
         <div class="flex items-center">
-            <div id="nav-text" class="flex items-center font-extrabold text-2xl tracking-tight" style="font-family: 'Outfit', sans-serif;">
+            <div id="nav-text" class="flex items-center font-extrabold text-2xl tracking-tight cursor-pointer" style="font-family: 'Outfit', sans-serif;" onclick="window.scrollTo({top:0,behavior:'smooth'})">
                 <span style="color: var(--orange);">Esnaf</span>
                 <span style="color: var(--purple);" class="flex items-center ml-[2px]">
                     K
@@ -250,8 +270,8 @@
             </div>
 
             <!-- Scroll Indicator -->
-            <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 opacity-50 animate-bounce cursor-pointer" onclick="window.scrollBy({top: window.innerHeight, behavior: 'smooth'})">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 opacity-50 animate-bounce cursor-pointer" onclick="window.scrollBy({top: window.innerHeight, behavior: 'smooth'})" aria-label="Aşağı kaydır" role="button">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
             </div>
         </section>
 
@@ -263,7 +283,7 @@
                     <div class="bubble-static bubble-robot bottom-[85%] left-[50%] md:left-[60%] text-sm md:text-base max-w-[200px]">
                         Biz senin ürününü anlayıp analiz ederiz...
                     </div>
-                    <img src="characters/robot-gosteriyor.png" class="char-img" alt="Robot">
+                    <img src="characters/robot-gosteriyor.png" class="char-img" alt="Robot" loading="lazy">
                 </div>
             </div>
 
@@ -290,7 +310,7 @@
                     <div class="bubble-static bubble-man bottom-[95%] right-[50%] md:right-[10%] whitespace-nowrap text-sm md:text-base">
                         Peki nasıl çalışıyor?
                     </div>
-                    <img src="characters/adam-guvenli.png" class="char-img" alt="Adam">
+                    <img src="characters/adam-guvenli.png" class="char-img" alt="Adam" loading="lazy">
                 </div>
             </div>
         </section>
@@ -305,7 +325,7 @@
                         <div class="bubble-static bubble-robot bottom-[95%] left-[50%] whitespace-nowrap">
                             Bak böyle çalışır!
                         </div>
-                        <img src="characters/robot-gosteriyor.png" class="char-img" style="max-height: 40vh;" alt="Robot">
+                        <img src="characters/robot-gosteriyor.png" class="char-img" style="max-height: 40vh;" alt="Robot" loading="lazy">
                     </div>
                 </div>
 
@@ -320,7 +340,7 @@
                         <div class="bubble-static bubble-man bottom-[95%] right-[50%] whitespace-nowrap">
                             Hemen denemek isterim
                         </div>
-                        <img src="characters/adam-selam.png" class="char-img" style="max-height: 40vh;" alt="Adam">
+                        <img src="characters/adam-selam.png" class="char-img" style="max-height: 40vh;" alt="Adam" loading="lazy">
                     </div>
                 </div>
             </div>
@@ -361,20 +381,20 @@
             <!-- Left: Character Image Slideshow -->
             <div class="w-full md:w-1/2 flex flex-col justify-center items-center mt-10 md:mt-0">
                 <div class="relative w-[90%] max-w-[55vh] aspect-square flex justify-center items-center">
-                    <img src="characters/robot%20rate.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-100" alt="Esnaf Kopilot">
-                    <img src="characters/robot%20creativety.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
-                    <img src="characters/robot%20working.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
-                    <img src="characters/dreank_tea_with_esnaf.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
-                    <img src="characters/dene.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot">
+                    <img src="characters/robot%20rate.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-100" alt="Esnaf Kopilot" loading="lazy">
+                    <img src="characters/robot%20creativety.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot" loading="lazy">
+                    <img src="characters/robot%20working.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot" loading="lazy">
+                    <img src="characters/dreank_tea_with_esnaf.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot" loading="lazy">
+                    <img src="characters/dene.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot" loading="lazy">
                 </div>
 
                 <!-- Slideshow Indicators -->
                 <div class="flex justify-center gap-4 mt-6 z-10">
-                    <button class="slide-dot w-3 h-3 rounded-full bg-[var(--orange)] border-2 border-transparent transition-colors cursor-pointer" onclick="goToSlide(0)"></button>
-                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(1)"></button>
-                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(2)"></button>
-                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(3)"></button>
-                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(4)"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-[var(--orange)] border-2 border-transparent transition-colors cursor-pointer" onclick="goToSlide(0)" aria-label="Slayt 1"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(1)" aria-label="Slayt 2"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(2)" aria-label="Slayt 3"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(3)" aria-label="Slayt 4"></button>
+                    <button class="slide-dot w-3 h-3 rounded-full bg-white/30 border-2 border-transparent hover:bg-white/50 transition-colors cursor-pointer" onclick="goToSlide(4)" aria-label="Slayt 5"></button>
                 </div>
             </div>
 
@@ -452,6 +472,53 @@
         if(slides.length > 0) {
             slideInterval = setInterval(nextSlide, 2500); // Her 2.5 saniyede bir değiştir
         }
+    </script>
+
+    <!-- GSAP + ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" onerror="document.documentElement.classList.add('no-gsap')"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" onerror="document.documentElement.classList.add('no-gsap')"></script>
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // ── Hero (page load) ──────────────────────────────────────────
+        gsap.timeline({ defaults: { ease: 'power3.out' } })
+            .from('nav', { y: -60, opacity: 0, duration: 0.6 })
+            .from('#hero h1', { scale: 0.7, opacity: 0, duration: 1, ease: 'back.out(1.4)' }, '-=0.2')
+            .from('#hero > div:first-child .char-img', { x: -130, opacity: 0, duration: 0.9 }, '-=0.7')
+            .from('#hero > div:nth-child(3) .char-img', { x: 130, opacity: 0, duration: 0.9 }, '<')
+            .from('#hero .bubble-static', { opacity: 0, duration: 0.5, stagger: 0.2 }, '-=0.3')
+            .from('#hero .absolute.bottom-6', { opacity: 0, duration: 0.5 });
+
+        // ── Features ─────────────────────────────────────────────────
+        gsap.timeline({
+            scrollTrigger: { trigger: '#features', start: 'top 90%', once: true },
+            defaults: { ease: 'power3.out' }
+        })
+            .from('#features > div:first-child .char-img', { x: -110, opacity: 0, duration: 0.8 })
+            .from('#features > div:last-child .char-img', { x: 110, opacity: 0, duration: 0.8 }, '<')
+            .from('#features h2', { y: 40, opacity: 0, duration: 0.6 }, '-=0.5')
+            .from('#features .feature-item', { y: 35, opacity: 0, duration: 0.5, stagger: 0.15, clearProps: 'transform,opacity' }, '-=0.3')
+            .from('#features .bubble-static', { opacity: 0, duration: 0.45, stagger: 0.2 }, '-=0.4');
+
+        // ── How It Works ──────────────────────────────────────────────
+        gsap.timeline({
+            scrollTrigger: { trigger: '#how-it-works', start: 'top 90%', once: true },
+            defaults: { ease: 'power3.out' }
+        })
+            .from('#how-it-works h2', { y: 45, opacity: 0, duration: 0.7 })
+            .from('#how-it-works > div:first-child > div:first-child .char-img', { x: -110, opacity: 0, duration: 0.8 }, '-=0.5')
+            .from('#how-it-works > div:first-child > div:last-child .char-img', { x: 110, opacity: 0, duration: 0.8 }, '<')
+            .from('#how-it-works .bubble-static', { opacity: 0, duration: 0.4, stagger: 0.2 }, '-=0.3')
+            .from('#how-it-works .step-box', { y: 35, opacity: 0, duration: 0.4, stagger: 0.12 }, '-=0.2')
+            .from('#how-it-works .step-arrow', { opacity: 0, duration: 0.3, stagger: 0.1 }, '-=0.4');
+
+        // ── CTA ───────────────────────────────────────────────────────
+        gsap.timeline({
+            scrollTrigger: { trigger: '#cta', start: 'top 90%', once: true },
+            defaults: { ease: 'power3.out' }
+        })
+            .from('#cta > div:first-child', { x: -90, opacity: 0, duration: 0.9 })
+            .from('#cta .glass-card', { x: 90, opacity: 0, duration: 0.9 }, '-=0.6');
     </script>
 </body>
 </html>

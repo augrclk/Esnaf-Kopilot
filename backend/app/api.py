@@ -4,6 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 import json
 import re
+import csv
+import io
+import base64
 from pydantic import BaseModel
 import asyncio
 import logging
@@ -19,7 +22,7 @@ from app.analyzer.content import ContentAnalyzer
 from app.analyzer.image import ImageAnalyzer
 from app.analyzer.review import ReviewAnalyzer
 from app.analyzer.gift import GiftAdvisor
-from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatformError
+from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatformError, Review, Product
 from app.config import settings
 from app.auth import get_current_user, AuthUser
 from app import db
@@ -610,6 +613,296 @@ async def get_result(
     if result is None:
         raise HTTPException(status_code=404, detail="Sonuç bulunamadı.")
     return {"status": "success", "data": result}
+
+
+# ── Pazaryeri API Anahtarları ─────────────────────────────────────────────────
+
+SUPPORTED_PLATFORMS = {"trendyol", "hepsiburada", "n11", "amazon", "ebay", "gittigidiyor"}
+
+class ApiKeyRequest(BaseModel):
+    platform: str
+    api_key: str
+
+@router.get("/user/api-keys")
+async def get_api_keys(user: AuthUser = Depends(get_current_user)):
+    keys = await asyncio.to_thread(db.list_api_keys, user.uid)
+    return {"status": "success", "data": keys}
+
+@router.post("/user/api-keys")
+async def save_api_key(req: ApiKeyRequest, user: AuthUser = Depends(get_current_user)):
+    if req.platform not in SUPPORTED_PLATFORMS:
+        raise HTTPException(status_code=422, detail=f"Desteklenmeyen platform: {req.platform}")
+    if not req.api_key.strip():
+        raise HTTPException(status_code=422, detail="API anahtarı boş olamaz.")
+    await asyncio.to_thread(db.save_api_key, user.uid, req.platform, req.api_key.strip())
+    return {"status": "success"}
+
+@router.delete("/user/api-keys/{platform}")
+async def delete_api_key(platform: str, user: AuthUser = Depends(get_current_user)):
+    if platform not in SUPPORTED_PLATFORMS:
+        raise HTTPException(status_code=422, detail=f"Desteklenmeyen platform: {platform}")
+    await asyncio.to_thread(db.delete_api_key, user.uid, platform)
+    return {"status": "success"}
+
+
+# ── Manuel Ürün Analizi ───────────────────────────────────────────────────────
+
+class ManualAnalyzeRequest(BaseModel):
+    title: str
+    description: str = ""
+    reviews_csv: str = ""  # raw CSV text, optional
+
+class ManualImagesRequest(BaseModel):
+    title: str
+    description: str = ""
+    images_b64: list[str] = []  # list of base64-encoded images, max 5
+
+
+def _parse_reviews_csv(csv_text: str) -> list:
+    """CSV metnini Review listesine çevirir. Beklenen sütunlar: rating, text"""
+    reviews = []
+    try:
+        reader = csv.DictReader(io.StringIO(csv_text))
+        for i, row in enumerate(reader):
+            if i >= 50:  # max 50 reviews
+                break
+            text = (
+                row.get("text") or row.get("yorum") or row.get("comment") or
+                row.get("review") or row.get("içerik") or ""
+            ).strip()
+            rating_raw = row.get("rating") or row.get("puan") or row.get("score") or ""
+            try:
+                rating = float(rating_raw)
+            except (ValueError, TypeError):
+                rating = None
+            if text:
+                reviews.append(Review(
+                    review_id=str(i),
+                    rating=rating,
+                    title=None,
+                    text=text[:500],
+                    date=None,
+                    user=None,
+                    variant=None,
+                    helpful_count=None,
+                ))
+    except Exception as e:
+        log.warning("[ManualAnalyze] CSV parse hatası: %s", e)
+    return reviews
+
+
+@router.post("/phase/manual-analyze")
+async def phase_manual_analyze(
+    req: ManualAnalyzeRequest,
+    user: AuthUser = Depends(get_current_user),
+):
+    """
+    Manuel ürün analizi (URL olmadan).
+    Kullanıcı başlık + açıklama + opsiyonel CSV yorumları girer.
+    Phase/analyze ile aynı çıktı formatını döner.
+    """
+    if not req.title.strip():
+        raise HTTPException(status_code=422, detail="Ürün başlığı boş olamaz.")
+
+    await asyncio.to_thread(db.check_quota, user.uid, "analysis")
+    await asyncio.to_thread(db.get_or_create_user, user.uid, user.email)
+
+    product = Product(
+        url="manual",
+        product_id=None,
+        title=req.title.strip(),
+        description=req.description.strip(),
+    )
+    reviews = _parse_reviews_csv(req.reviews_csv) if req.reviews_csv.strip() else []
+
+    try:
+        score_result, ra = await asyncio.gather(
+            asyncio.to_thread(content_analyzer.score, product, reviews),
+            asyncio.to_thread(review_analyzer.analyze, product, reviews),
+        )
+        new_content, gift_suggestions = await asyncio.gather(
+            asyncio.to_thread(content_analyzer.generate, product, reviews, score_result.total_score, ra),
+            asyncio.to_thread(gift_advisor.suggest, product, ra),
+        )
+
+        result_data = {
+            "product": {
+                "original_title":       product.title,
+                "original_description": product.description,
+                "url":                  "manual",
+            },
+            "content_analysis": {
+                "score":         score_result.total_score,
+                "score_summary": score_result.summary,
+                "categories": [
+                    {"name": c.name, "score": c.score, "max_score": c.max_score, "notes": c.notes}
+                    for c in score_result.categories
+                ],
+                "new_title":       new_content.new_title,
+                "new_description": new_content.new_description,
+                "faq":             new_content.faq,
+                "keywords":        new_content.suggested_keywords,
+                "notes":           new_content.notes,
+            },
+            "review_analysis":  ra,
+            "gift_suggestions": gift_suggestions,
+            "review_count":     len(reviews),
+        }
+
+        try:
+            await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
+            await asyncio.to_thread(db.save_result, user.uid, "manual", product.title, "", result_data)
+        except Exception as db_err:
+            log.warning("[DB] Manuel analiz kayıt hatası: %s", db_err)
+
+        return {"status": "success", "data": result_data}
+
+    except PermissionError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+    except Exception as e:
+        log.error("phase_manual_analyze error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/phase/manual-images")
+async def phase_manual_images(
+    req: ManualImagesRequest,
+    user: AuthUser = Depends(get_current_user),
+):
+    """
+    Manuel görsel analizi — SSE stream.
+    Base64 görseller alır, tempfile'a yazar, image_analyzer ile işler.
+    phase/images ile aynı event formatını döner.
+    """
+    def _sse(event: dict) -> str:
+        return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+    async def _stream():
+        if not req.images_b64:
+            yield _sse({"type": "done", "count": 0, "total": 0})
+            return
+
+        try:
+            await asyncio.to_thread(db.check_quota, user.uid, "image")
+        except PermissionError as e:
+            yield _sse({"type": "error", "message": str(e)})
+            return
+
+        product = Product(url="manual", product_id=None, title=req.title, description=req.description)
+        out_dir = _make_output_dir(user.uid)
+
+        # Decode base64 images → temp files → ProductImage list
+        from app.models import ProductImage
+        valid_images = []
+        for idx, b64 in enumerate(req.images_b64[:5]):  # max 5 images
+            try:
+                # Strip data URL prefix if present
+                if "," in b64:
+                    b64 = b64.split(",", 1)[1]
+                img_bytes = base64.b64decode(b64)
+                ext = "jpg"
+                # Detect PNG from magic bytes
+                if img_bytes[:4] == b"\x89PNG":
+                    ext = "png"
+                path = os.path.join(out_dir, f"manual_img_{idx}.{ext}")
+                with open(path, "wb") as f:
+                    f.write(img_bytes)
+                valid_images.append(ProductImage(
+                    url=f"manual_{idx}",
+                    image_id=f"manual_{idx}",
+                    position=idx,
+                    local_path=path,
+                ))
+            except Exception as e:
+                log.warning("[ManualImages] Görsel %d decode hatası: %s", idx, e)
+
+        if not valid_images:
+            yield _sse({"type": "done", "count": 0, "total": 0})
+            return
+
+        try:
+            analysis = await asyncio.to_thread(image_analyzer.plan_strategy, product, valid_images)
+            strategy_note = analysis.issues.get("analysis_note", "")
+            total = len(analysis.edit_tasks)
+            yield _sse({"type": "start", "total": total, "strategy_note": strategy_note})
+
+            TASK_TIMEOUT = 120
+            MAX_ATTEMPTS = 4
+            RETRY_DELAYS = [10, 20, 40]
+            queue = asyncio.Queue()
+            count = 0
+
+            async def _enhance_task(idx: int, task):
+                safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
+                out_path = os.path.join(out_dir, f"manual_KONSEPT_{idx}_{safe_name}.jpg")
+                dummy = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
+                for attempt in range(MAX_ATTEMPTS):
+                    try:
+                        async with _IMAGE_SEM:
+                            async with _image_lock:
+                                global _image_last_call
+                                elapsed = asyncio.get_running_loop().time() - _image_last_call
+                                if elapsed < _IMAGE_MIN_INTERVAL:
+                                    await asyncio.sleep(_IMAGE_MIN_INTERVAL - elapsed)
+                                _image_last_call = asyncio.get_running_loop().time()
+                            enhanced = await asyncio.wait_for(
+                                asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
+                                timeout=TASK_TIMEOUT
+                            )
+                        rel_path = os.path.relpath(enhanced.local_path, _OUTPUTS_DIR)
+                        return {"idx": idx, "concept": task.concept_name, "path": rel_path}
+                    except asyncio.TimeoutError:
+                        log.warning("Manuel konsept %d timeout", idx)
+                    except Exception as e:
+                        err = str(e)
+                        if "429" in err or "RESOURCE_EXHAUSTED" in err or "503" in err:
+                            if attempt < MAX_ATTEMPTS - 1:
+                                await asyncio.sleep(RETRY_DELAYS[attempt])
+                                continue
+                        log.error("Manuel konsept %d hata: %s", idx, e)
+                    break
+                return None
+
+            async def _run_enqueue(idx, task):
+                try:
+                    result = await _enhance_task(idx, task)
+                except Exception as exc:
+                    log.error("Manuel konsept %d beklenmeyen: %s", idx, exc)
+                    result = None
+                finally:
+                    await queue.put((idx, result))
+
+            futures = [
+                asyncio.create_task(_run_enqueue(idx, task))
+                for idx, task in enumerate(analysis.edit_tasks, 1)
+            ]
+
+            for _ in range(total):
+                idx, result = await queue.get()
+                if result:
+                    count += 1
+                    try:
+                        await asyncio.to_thread(db.increment_usage, user.uid, "image")
+                    except Exception:
+                        pass
+                    yield _sse({"type": "image", "data": result})
+
+            await asyncio.gather(*futures)
+            yield _sse({"type": "done", "count": count, "total": total})
+
+        except Exception as e:
+            log.error("[ManualImages] HATA: %s", e, exc_info=True)
+            yield _sse({"type": "error", "message": str(e)})
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":     "no-cache",
+            "Connection":        "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 # ── Admin Endpoint'leri ──────────────────────────────────────────────────────

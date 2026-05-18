@@ -75,6 +75,49 @@ def set_user_tier(uid: str, tier: str) -> None:
     log.info("[DB] Tier güncellendi: %s → %s", uid, tier)
 
 
+# ── Pazaryeri API Anahtarları ─────────────────────────────────────────────────
+
+SUPPORTED_PLATFORMS = {"trendyol", "hepsiburada", "n11", "amazon", "ebay", "gittigidiyor"}
+
+def save_api_key(uid: str, platform: str, api_key: str) -> None:
+    """Pazaryeri API anahtarını Firestore'a kaydeder."""
+    db = _db()
+    ref = db.collection("users").document(uid).collection("api_keys").document(platform)
+    ref.set({
+        "platform": platform,
+        "api_key": api_key,
+        "updated_at": firestore.SERVER_TIMESTAMP,
+    }, merge=True)
+    log.info("[DB] API key kaydedildi: uid=%s, platform=%s", uid, platform)
+
+
+def list_api_keys(uid: str) -> list[dict]:
+    """Kullanıcının kayıtlı API anahtarlarını döner (key maskeli)."""
+    db = _db()
+    docs = db.collection("users").document(uid).collection("api_keys").stream()
+    result = []
+    for doc in docs:
+        d = doc.to_dict()
+        # Mask the key: show first 4 + last 4 chars
+        key = d.get("api_key", "")
+        if len(key) > 8:
+            d["api_key_masked"] = key[:4] + "•" * (len(key) - 8) + key[-4:]
+        else:
+            d["api_key_masked"] = "•" * len(key)
+        d.pop("api_key", None)  # Never return the real key
+        if hasattr(d.get("updated_at"), "isoformat"):
+            d["updated_at"] = d["updated_at"].isoformat()
+        result.append(d)
+    return result
+
+
+def delete_api_key(uid: str, platform: str) -> None:
+    """Pazaryeri API anahtarını siler."""
+    db = _db()
+    db.collection("users").document(uid).collection("api_keys").document(platform).delete()
+    log.info("[DB] API key silindi: uid=%s, platform=%s", uid, platform)
+
+
 # ── Kota Kontrolü ────────────────────────────────────────────────────────────
 
 def check_quota(uid: str, action: str) -> None:
