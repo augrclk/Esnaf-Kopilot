@@ -7,139 +7,125 @@ Gerçek bir pazaryeri API'si gibi davranır:
   PUT  /api/test-commerce/products/{id}   ← iyileştirme deploy edilince buraya gelir
 
 İn-memory state: sunucu yeniden başlayınca sıfırlanır.
+Görseller /outputs/tc_images/ üzerinden servis edilir.
 """
 from __future__ import annotations
 import copy
 
+_IMG = "/outputs/tc_images"
+
 _CATALOG: list[dict] = [
     {
         "id": "tc-001",
-        "title": "Ergonomik Ofis Koltuğu Bel Destekli 360° Döner Bilgisayar Sandalyesi",
-        "description": "Uzun çalışma saatlerinde sırt ve bel sağlığınızı koruyan ergonomik ofis koltuğu. Yükseklik ayarlı kolçaklar ve lümber desteği ile tam konfor sağlar. %100 nefes alabilen mesh kumaş yapısı sırt terlemesini önler.",
-        "price": 2499.90,
-        "category": "Mobilya > Sandalye > Ofis Sandalyesi",
-        "brand": "ErgoPro",
-        "rating": 4.2,
-        "review_count": 328,
+        "title": "FARGIN Mango Hand Cream 75 ml – Mango Aromalı Nemlendirici El Kremi",
+        "description": (
+            "Elleri gün boyu nemlendirmeye yardımcı olan hafif ve hızlı emilen bir el kremidir. "
+            "Ferah mango aroması ile hoş bir koku bırakır ve yağlı bir his oluşturmaz. "
+            "Düzenli kullanımda ellerin daha yumuşak, pürüzsüz ve bakımlı görünmesine destek olur. "
+            "Günlük kullanıma uygun formülü sayesinde ihtiyaç oldukça uygulanabilir. "
+            "Çanta boy tasarımı ile her yerde kolayca taşınabilir ve kullanımı pratiktir."
+        ),
+        "price": 89.90,
+        "category": "Kişisel Bakım > El & Ayak Bakımı > El Kremi",
+        "brand": "FARGIN",
+        "rating": 4.3,
+        "review_count": 214,
         "images": [
-            "https://picsum.photos/seed/ergochr1/800/800",
-            "https://picsum.photos/seed/ergochr2/800/800",
+            f"{_IMG}/tc001_1.png",
         ],
         "reviews": [
-            {"rating": 5, "text": "Çok rahat, bel ağrılarım geçti. Kesinlikle tavsiye ederim."},
-            {"rating": 4, "text": "Montajı biraz uğraştırdı ama ürün kaliteli. Mesh kumaş gerçekten nefes aldırıyor."},
-            {"rating": 3, "text": "Kolçaklar biraz sert, ama genel olarak memnunum."},
-            {"rating": 5, "text": "Ofiste saatler geçiyor, bel ağrısı hiç olmadı."},
-            {"rating": 2, "text": "Beklediğimden daha küçük geldi, büyük beden için uygun değil."},
-            {"rating": 4, "text": "Fiyat performans açısından iyi bir tercih."},
+            {"rating": 5, "text": "Koku çok güzel, elleri yumuşatıyor."},
+            {"rating": 4, "text": "Küçük boy çantaya çok uygun. Yağlı his bırakmıyor."},
+            {"rating": 3, "text": "Koku biraz hafif, daha yoğun olmasını tercih ederdim."},
+            {"rating": 5, "text": "Günde birkaç kez kullanıyorum, elleri kurutmuyor."},
         ],
     },
     {
         "id": "tc-002",
-        "title": "Akıllı Spor Bilekliği Adım Sayar Kalp Ritmi Uyku Takibi IP67",
-        "description": "Günlük aktivitelerinizi takip eden akıllı spor bilekliği. Adım sayar, kalp atış hızı monitörü, uyku analizi ve spor modları ile sağlıklı yaşam yolculuğunuzda yanınızda. 10 gün pil ömrü.",
-        "price": 899.00,
-        "category": "Elektronik > Giyilebilir Teknoloji > Akıllı Bileklik",
-        "brand": "FitBand",
+        "title": "Escabel Avokadolu Soft El Yüz Ve Vücut Kremi 250 ml",
+        "description": (
+            "Avokado yağı, cildi derinlemesine nemlendirir ve yumuşatır. Kuru ve çatlamış eller için ideal bir çözümdür. "
+            "İçerdiği E Vitamini ve çeşitli antioksidanlar sayesinde cildi besler ve cilt bariyerini güçlendirir. "
+            "Anti-aging etkisiyle cildin yaşlanma belirtilerini azaltmaya yardımcı olur. "
+            "Avokado yağı cilt hücrelerinin yenilenmesini destekler. "
+            "Düzenli kullanımda cildin yumuşak ve pürüzsüz kalmasını sağlar. "
+            "Kuru ve hassas ciltler için etkili bir bakım ürünüdür."
+        ),
+        "price": 129.00,
+        "category": "Kişisel Bakım > Vücut Bakımı > Vücut Kremi",
+        "brand": "Escabel",
         "rating": 4.5,
-        "review_count": 1247,
+        "review_count": 387,
         "images": [
-            "https://picsum.photos/seed/fitband1/800/800",
-            "https://picsum.photos/seed/fitband2/800/800",
+            f"{_IMG}/tc002_1.png",
         ],
         "reviews": [
-            {"rating": 5, "text": "Batarya ömrü mükemmel, 10 gün gidiyor. Ekran net görünüyor."},
-            {"rating": 5, "text": "Kalp ritmi ölçümü çok doğru, doktor ölçümüyle karşılaştırdım neredeyse aynı."},
-            {"rating": 4, "text": "Uygulama Türkçe değil ama adapte olmak kolay."},
-            {"rating": 3, "text": "GPS özelliği yok, bu konuda biraz hayal kırıklığı yaşadım."},
-            {"rating": 5, "text": "Spor yaparken bile hiç rahatsız etmiyor, hafif ve şık."},
-            {"rating": 4, "text": "Su geçirmezlik testi yaptım, sorun yok."},
+            {"rating": 5, "text": "Avokadolu kremler arasında en iyisi. Cilt gerçekten yumuşuyor."},
+            {"rating": 5, "text": "250 ml boyutuyla uzun süre gidiyor, fiyat performans süper."},
+            {"rating": 4, "text": "Koku biraz yoğun ama kalıcı değil, genel olarak memnunum."},
+            {"rating": 3, "text": "Yüz için biraz ağır geldi, vücut için daha uygun."},
+            {"rating": 5, "text": "Kışın çatlamış ellerime ilaç gibi geldi."},
         ],
     },
     {
         "id": "tc-003",
-        "title": "Kablosuz Bluetooth Kulaklık 40 Saat Pil Aktif Gürültü Engelleme",
-        "description": "Kristal netliğinde ses kalitesi sunan over-ear Bluetooth kulaklık. Aktif gürültü engelleme teknolojisi ile konsantrasyonunuzu artırın. 40 saate kadar kesintisiz müzik dinleyin. Hızlı şarj: 10 dakikada 3 saat.",
-        "price": 1299.00,
-        "category": "Elektronik > Ses Sistemleri > Kulaklık",
-        "brand": "SoundMax",
-        "rating": 4.3,
-        "review_count": 856,
+        "title": "H2O Humidifier Taşınabilir Ultrasonik Hava Nemlendirici Buhar Makinesi ve Aroma Difüzörü",
+        "description": (
+            "Taşınabilir tasarımı sayesinde evde, ofiste veya seyahatlerde kolayca taşınabilir ve her yerde rahatlıkla kullanılabilir. "
+            "Ultrasonik teknolojisi ile havaya nem verirken aynı zamanda hoş kokuların yayılmasını sağlar, "
+            "böylece hem nemlendirici hem de aroma difüzörü olarak işlev görür. "
+            "Uzun süreli kullanım için idealdir. "
+            "Düşük enerji tüketimiyle ekonomik bir seçenek sunar ve enerji tasarrufu sağlar. "
+            "Not: Yanında koku gelmemektedir."
+        ),
+        "price": 249.90,
+        "category": "Ev & Yaşam > Hava Nemlendirici > Ultrasonik Nemlendirici",
+        "brand": "H2O",
+        "rating": 4.1,
+        "review_count": 562,
         "images": [
-            "https://picsum.photos/seed/headph1/800/800",
-            "https://picsum.photos/seed/headph2/800/800",
+            f"{_IMG}/tc003_1.png",
+            f"{_IMG}/tc003_2.png",
+            f"{_IMG}/tc003_3.png",
         ],
         "reviews": [
-            {"rating": 5, "text": "Ses kalitesi inanılmaz, bas sesi çok dolu."},
-            {"rating": 4, "text": "Gürültü engelleme gerçekten işe yarıyor, metroda bile rahat dinliyorum."},
-            {"rating": 3, "text": "Uzun kullanımda kulak sıkıştırıyor, 2 saatten fazla takmak rahatsız edici."},
-            {"rating": 5, "text": "Pil ömrü reklamdan bile iyi çıktı, çok memnunum."},
-            {"rating": 4, "text": "Kılıfı şık ve dayanıklı görünüyor."},
+            {"rating": 5, "text": "Ofisimde kullanıyorum, ses yok denecek kadar sessiz."},
+            {"rating": 4, "text": "Aroma difüzörü kısmı harika, koku yayılımı çok iyi."},
+            {"rating": 3, "text": "Su deposu biraz küçük, sık doldurmak gerekiyor."},
+            {"rating": 4, "text": "Tasarımı çok şık, masaya yakışıyor."},
+            {"rating": 2, "text": "Yanında koku gelmediğini ürün açıklamasında göremedim, paket bozuldu."},
+            {"rating": 5, "text": "Kışın evdeki kuruluğa gerçekten çözüm oldu."},
         ],
     },
     {
         "id": "tc-004",
-        "title": "El Yapımı Seramik Kahve Fincanı Seti 6'lı Türk Kahvesi Takımı",
-        "description": "Geleneksel Türk motiflerinden ilham alan el yapımı seramik kahve fincanı seti. Kurşun ve kadmiyum içermez. Bulaşık makinesinde yıkanabilir. Özel hediye kutusunda sunulur.",
-        "price": 349.90,
-        "category": "Ev & Yaşam > Mutfak > Kahve & Çay Ekipmanları",
-        "brand": "ÇiniCraft",
-        "rating": 4.7,
-        "review_count": 2341,
+        "title": "Tala Hindistan Cevizi Yağı %100 Saf ve Doğal Soğuk Sıkım 150 ml",
+        "description": (
+            "Tala Hindistan Cevizi Yağı, doğallığı ve saflığıyla cildinize, saçınıza ve vücudunuza eşsiz bir bakım sunar. "
+            "%100 saf ve soğuk sıkım yöntemiyle elde edilen bu yağ, cildinizi nemlendirir, saçlarınıza parlaklık katar "
+            "ve sağlıklı bir görünüm kazandırır. "
+            "Doğal antioksidanlarla dolu yapısı sayesinde besleyici, yatıştırıcı ve onarıcı etkisiyle "
+            "her kullanımda kendinizi tazelenmiş hissedersiniz. "
+            "Tamamen doğal, katkısız ve saf formülüyle hem cildiniz hem de saçınız için güvenle kullanabilirsiniz. "
+            "Kuru ciltler ve yıpranmış saçlar için derinlemesine nemlendirme sağlar. "
+            "Güzellik rutininizin yanı sıra mutfakta da sağlıklı bir alternatif olarak kullanabilirsiniz."
+        ),
+        "price": 179.00,
+        "category": "Kişisel Bakım > Saç Bakımı > Saç & Cilt Yağı",
+        "brand": "Tala",
+        "rating": 4.6,
+        "review_count": 1089,
         "images": [
-            "https://picsum.photos/seed/ceramic1/800/800",
-            "https://picsum.photos/seed/ceramic2/800/800",
+            f"{_IMG}/tc004_1.png",
+            f"{_IMG}/tc004_2.png",
         ],
         "reviews": [
-            {"rating": 5, "text": "Düğün hediyesi olarak aldım, herkes çok beğendi. Kutu gerçekten özel."},
-            {"rating": 5, "text": "Motifler çok güzel, fotoğrafta daha iyi görünüyor bile."},
-            {"rating": 4, "text": "Bir tanesi hafif çatlak geldi ama müşteri hizmetleri hemen yenisini gönderdi."},
-            {"rating": 5, "text": "Bulaşık makinesinde hiç solmadı, 3 aydır kullanıyorum."},
-            {"rating": 5, "text": "Anne günü hediyesi olarak aldım, çok sevindi."},
-            {"rating": 4, "text": "Ağırlık iyi, sağlam hissettiriyor."},
-        ],
-    },
-    {
-        "id": "tc-005",
-        "title": "Organik Zeytinyağlı Doğal El Sabunu Seti 5'li Hediye Paketi",
-        "description": "Ege zeytinlerinden elde edilen saf zeytinyağı ile üretilen %100 doğal el sabunu. Parabensiz, SLS içermez. Hassas ciltler için uygundur. Lavanta, gül, nane, çay ağacı ve bal kokuları.",
-        "price": 189.90,
-        "category": "Kişisel Bakım > Sabun & Duş Jeli > El Sabunu",
-        "brand": "EgeNatura",
-        "rating": 4.8,
-        "review_count": 4521,
-        "images": [
-            "https://picsum.photos/seed/soap001/800/800",
-            "https://picsum.photos/seed/soap002/800/800",
-        ],
-        "reviews": [
-            {"rating": 5, "text": "Koku harika, elleri kurutmuyor. Hediye olarak da çok şık."},
-            {"rating": 5, "text": "Kimyasal içermediği için çocuklarım için de kullanıyorum."},
-            {"rating": 4, "text": "Lavanta kokulu en iyisi, diğerleri biraz hafif kalıyor."},
-            {"rating": 5, "text": "Dermatoloğum önerdi, gerçekten fark yarattı."},
-            {"rating": 5, "text": "Her ay tekrar sipariş veriyorum, vazgeçemedim."},
-            {"rating": 3, "text": "Beklenenden daha küçük, gramaj biraz az geldi."},
-        ],
-    },
-    {
-        "id": "tc-006",
-        "title": "Masaüstü Kablosuz Şarj Standı 3'ü 1 Arada iPhone Samsung Uyumlu",
-        "description": "Telefon, akıllı saat ve kulaklığınızı aynı anda şarj eden kablosuz şarj standı. 15W hızlı şarj destekli. Anti-kayma tabanı ile masanızda güvenle durur. LED gösterge ile şarj durumunu takip edin.",
-        "price": 649.00,
-        "category": "Elektronik > Şarj Cihazları > Kablosuz Şarj",
-        "brand": "ChargeHub",
-        "rating": 4.1,
-        "review_count": 673,
-        "images": [
-            "https://picsum.photos/seed/charger1/800/800",
-            "https://picsum.photos/seed/charger2/800/800",
-        ],
-        "reviews": [
-            {"rating": 5, "text": "3 cihazı aynı anda şarj ediyor, masa çok temiz kaldı."},
-            {"rating": 4, "text": "Hızlı şarj gerçekten hızlı, 1 saatte %80 doldu."},
-            {"rating": 3, "text": "Samsung uyumluluğu bazen sorunlu, bağlantı kesiyor."},
-            {"rating": 4, "text": "Tasarımı çok şık, masaya çok yakışıyor."},
-            {"rating": 2, "text": "Beklediğim kadar iyi değildi, ısınma problemi var."},
+            {"rating": 5, "text": "Saçlarımda muhteşem fark yarattı, parlaklık inanılmaz."},
+            {"rating": 5, "text": "Soğuk sıkım olduğu için kalitesi gerçekten yüksek."},
+            {"rating": 4, "text": "Cilt nemlendiricisi olarak kullanıyorum, çok memnunum."},
+            {"rating": 5, "text": "Hem mutfakta hem bakımda kullanıyorum, çok yönlü ürün."},
+            {"rating": 3, "text": "Şişenin kapağı biraz sıkı, açmak uğraştırıyor."},
+            {"rating": 5, "text": "Anneme aldım, o da sipariş verdi artık. Kesinlikle tavsiye ederim."},
         ],
     },
 ]
