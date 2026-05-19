@@ -76,38 +76,6 @@ _CATALOG: list[dict] = [
         ],
     },
     {
-        "id": "tc-003",
-        "title": "Tom Ford Lost Cherry Eau de Parfum 100 ml",
-        "description": (
-            "Tom Ford Lost Cherry, ikonik Private Blend koleksiyonunun en baştan çıkarıcı parçalarından biridir. "
-            "Kiraz likörü, acı badem ve tatlı kahveyle açılan koku, sıcak vanilya ve tonka fasulyesi notalarıyla derinleşir. "
-            "Unisex bir parfüm olan Lost Cherry; hem erkek hem kadın kullanıcılar için uygundur. "
-            "Yoğun ve uzun süre kalıcı EDP formülü, özel gecelere ve kışın derin bir kokuya ihtiyaç duyulan anlara hitap eder. "
-            "100 ml Eau de Parfum — Vaporisateur Spray. "
-            "Menşei: ABD. Garanti: Orijinal satıcı garantisi."
-        ),
-        "price": 8450.00,
-        "category": "Kozmetik & Kişisel Bakım > Parfüm > Erkek Parfümü",
-        "brand": "Tom Ford",
-        "rating": 4.8,
-        "review_count": 341,
-        "images": [
-            f"{_IMG}/tc003_tf_1.png",
-        ],
-        "reviews": [
-            {"rating": 5, "text": "Koku inanılmaz, kiraz ve vanilya dengesi mükemmel. Gece kıyafetlerime çok yakışıyor."},
-            {"rating": 5, "text": "Orijinal olduğuna dair her şey yerli yerinde. Seri numarası doğrulandı. Kalıcılık 10 saat üzeri."},
-            {"rating": 4, "text": "Bu fiyata Tom Ford bulmak zor, satıcı güvenilir. Kutu ve şişe hasarsız geldi."},
-            {"rating": 5, "text": "Eşime aldım, kendisi de benden sipariş vermemi istedi. En sevdiği parfüm oldu."},
-            {"rating": 2, "text": "Kargo süreci çok yavaş, 8 günde geldi. Ürün orijinal ama teslimat hayal kırıklığı."},
-            {"rating": 5, "text": "Kış parfümlerinin zirvesi bu. Sıcak ortamda daha çok açılıyor, yoğun ama rahatsız etmiyor."},
-            {"rating": 4, "text": "Lost Cherry klasik bir koku ama bu fiyat bandında teslimat hızı artırılmalı."},
-            {"rating": 1, "text": "Bana gelen ürünün barkodu başka bir ürüne aitti. Satıcıyla çözüldü ama süreç yorucuydu."},
-            {"rating": 5, "text": "Parfüm tutkunları için mutlaka denenmesi gereken bir koku. Sillage çok iyi, odaya girdiğimde herkes hissediyor."},
-            {"rating": 3, "text": "Koku orijinal ve güzel ama aynı fiyata başka satıcıdan daha hızlı teslimat aldım. Tercih edersiniz."},
-        ],
-    },
-    {
         "id": "tc-004",
         "title": "Tala Hindistan Cevizi Yağı %100 Saf ve Doğal Soğuk Sıkım 150 ml",
         "description": (

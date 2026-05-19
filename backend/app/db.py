@@ -300,13 +300,10 @@ def get_stats(uid: str) -> dict:
     )
     total_products = len(products)
     total_improved = 0
-    total_analyses = 0
     scores = []
     for doc in products:
         d = doc.to_dict() or {}
         status = d.get("status", "draft")
-        if status in ("analyzed", "improved"):
-            total_analyses += 1
         if status == "improved":
             total_improved += 1
         # Skor: doğrudan products alanından veya data.content_analysis.score
@@ -315,6 +312,10 @@ def get_stats(uid: str) -> dict:
             score = (d.get("data") or {}).get("content_analysis", {}).get("score")
         if isinstance(score, (int, float)):
             scores.append(score)
+
+    # Toplam analiz: tüm zamanlardaki usage sayacı toplamı (ürün silince sıfırlanmaz)
+    all_usage_docs = db.collection("users").document(uid).collection("usage").stream()
+    total_analyses = sum((d.to_dict() or {}).get("analyses", 0) for d in all_usage_docs)
 
     return {
         "total_analyses": total_analyses,
