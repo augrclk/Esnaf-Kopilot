@@ -849,16 +849,8 @@ function dpShowTab(tab) {
 function deployActiveProduct() {
     const product = _activeDetailProduct;
     if (!product) return;
-    const ca = product.data?.content_analysis || {};
-    const origTitle = product.scraped_data?.title || product.product_title || '';
-    const origDesc  = product.scraped_data?.description || '';
-    const newTitle  = ca.new_title  || origTitle;
-    const newDesc   = ca.new_description || origDesc;
-
-    _renderDpCard('Before', product, origTitle, origDesc);
-    _renderDpCard('After',  product, newTitle,  newDesc);
-    dpShowTab('after');
-    document.getElementById('deployPreviewModal').style.display = 'flex';
+    sessionStorage.setItem('deployPreviewProduct', JSON.stringify(product));
+    window.open('preview.html', '_blank');
 }
 
 function closeDeployPreview() {

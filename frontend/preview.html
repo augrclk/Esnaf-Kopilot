@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Commerce — Ürün Önizleme</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg: #f5f5f5;
+    --bg-card: #ffffff;
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --border: #e5e5e5;
+    --accent: #ff6000;
+    --accent-hover: #e55500;
+    --star: #ffa500;
+    --badge-bg: #fff3ec;
+    --badge-color: #ff6000;
+}
+
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+/* ── Topbar ──────────────────────────────────────────────────────────────── */
+.tc-topbar {
+    background: #fff;
+    border-bottom: 2px solid var(--accent);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.tc-logo { font-size: 1.3rem; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+.tc-preview-badge {
+    background: var(--badge-bg);
+    color: var(--badge-color);
+    border: 1px solid rgba(255,96,0,0.3);
+    padding: 0.3rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* ── Breadcrumb ─────────────────────────────────────────────────────────── */
+.tc-breadcrumb {
+    max-width: 1200px;
+    margin: 0.75rem auto;
+    padding: 0 1.5rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.tc-breadcrumb span { cursor: pointer; }
+.tc-breadcrumb span:hover { color: var(--accent); }
+
+/* ── Product Layout ─────────────────────────────────────────────────────── */
+.tc-product {
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 440px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* ── Gallery ────────────────────────────────────────────────────────────── */
+.tc-gallery {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: sticky;
+    top: 72px;
+}
+.tc-gallery-main {
+    position: relative;
+    background: #fff;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.tc-gallery-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+    transition: opacity 0.25s;
+}
+.tc-gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #333;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    transition: background 0.15s;
+    z-index: 5;
+    user-select: none;
+}
+.tc-gallery-nav:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tc-gallery-nav.prev { left: 10px; }
+.tc-gallery-nav.next { right: 10px; }
+.tc-gallery-nav:disabled { opacity: 0.3; cursor: default; }
+.tc-gallery-nav:disabled:hover { background: rgba(255,255,255,0.92); color: #333; border-color: var(--border); }
+
+.tc-gallery-thumbs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    border-top: 1px solid var(--border);
+    background: #fafafa;
+}
+.tc-gallery-thumbs::-webkit-scrollbar { height: 4px; }
+.tc-gallery-thumbs::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+.tc-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+.tc-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.tc-thumb.active { border-color: var(--accent); }
+.tc-img-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 14px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+/* "İyileştirilmiş" badge on gallery */
+.tc-improved-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+    box-shadow: 0 2px 6px rgba(74,222,128,0.4);
+}
+
+/* ── Product Info ────────────────────────────────────────────────────────── */
+.tc-info { display: flex; flex-direction: column; gap: 0; }
+.tc-info-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.tc-brand {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+}
+.tc-brand:hover { text-decoration: underline; }
+
+.tc-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.45;
+    color: #1a1a1a;
+    margin-bottom: 0.9rem;
+}
+
+.tc-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.9rem;
+}
+.tc-stars { display: flex; align-items: center; gap: 0.3rem; }
+.tc-star-icon { color: var(--star); font-size: 0.85rem; }
+.tc-rating-val { font-size: 0.9rem; font-weight: 700; color: #333; }
+.tc-review-count { font-size: 0.82rem; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.tc-sold-count { font-size: 0.8rem; color: var(--text-muted); }
+
+.tc-price-section { margin-bottom: 1rem; }
+.tc-price-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+.tc-price { font-size: 2rem; font-weight: 800; color: #1a1a1a; }
+.tc-price-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+.tc-actions { display: flex; gap: 0.75rem; flex-direction: column; }
+.btn-cart {
+    background: #fff;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 0.9rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.btn-cart:hover { background: var(--badge-bg); }
+.btn-buy {
+    background: var(--accent);
+    border: 2px solid var(--accent);
+    color: #fff;
+    padding: 0.9rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.btn-buy:hover { background: var(--accent-hover); }
+
+/* Delivery info */
+.tc-delivery {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    font-size: 0.82rem;
+    color: #444;
+}
+.tc-delivery-row { display: flex; align-items: center; gap: 0.5rem; }
+.tc-delivery-row i { color: var(--accent); width: 16px; }
+
+/* ── Description Section ────────────────────────────────────────────────── */
+.tc-section {
+    max-width: 1200px;
+    margin: 0 auto 1.5rem;
+    padding: 0 1.5rem;
+}
+.tc-section-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+}
+.tc-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.tc-desc-text {
+    font-size: 0.9rem;
+    line-height: 1.85;
+    color: #333;
+    white-space: pre-wrap;
+}
+
+/* Keywords */
+.tc-kw-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tc-kw-tag {
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    color: #555;
+}
+
+/* Reviews sample */
+.tc-reviews-list { display: flex; flex-direction: column; gap: 1rem; }
+.tc-review-item { padding: 1rem; background: #fafafa; border-radius: 10px; border: 1px solid var(--border); }
+.tc-review-stars { color: var(--star); font-size: 0.82rem; margin-bottom: 0.3rem; }
+.tc-review-text { font-size: 0.85rem; color: #444; line-height: 1.6; }
+
+/* Gift suggestions */
+.tc-gift-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.tc-gift-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; background: #fafafa; border-radius: 10px; border: 1px solid var(--border); }
+.tc-gift-icon { font-size: 1.1rem; color: var(--accent); margin-top: 0.1rem; }
+.tc-gift-name { font-size: 0.88rem; font-weight: 600; color: #1a1a1a; }
+.tc-gift-why { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+/* No data state */
+.tc-empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+
+@media (max-width: 768px) {
+    .tc-product { grid-template-columns: 1fr; }
+    .tc-gallery { position: static; }
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="tc-topbar">
+    <div class="tc-logo"><i class="fa-solid fa-store"></i> Test Commerce</div>
+    <div class="tc-preview-badge"><i class="fa-solid fa-flask"></i> Kopilot Önizleme — Değişiklik Yapılmaz</div>
+</div>
+
+<!-- Breadcrumb -->
+<div class="tc-breadcrumb">
+    <span>Ana Sayfa</span>
+    <i class="fa-solid fa-chevron-right" style="font-size:0.65rem;"></i>
+    <span id="bcCategory">Ürünler</span>
+    <i class="fa-solid fa-chevron-right" style="font-size:0.65rem;"></i>
+    <span id="bcTitle" style="color:#333;font-weight:500;"></span>
+</div>
+
+<!-- Product Layout -->
+<div class="tc-product">
+    <!-- Gallery -->
+    <div class="tc-gallery">
+        <div class="tc-gallery-main">
+            <div class="tc-improved-badge" id="improvedBadge" style="display:none;">
+                <i class="fa-solid fa-sparkles"></i> İyileştirilmiş Görsel
+            </div>
+            <button class="tc-gallery-nav prev" id="prevBtn" onclick="galleryNav(-1)">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <img id="mainImg" src="" alt="">
+            <button class="tc-gallery-nav next" id="nextBtn" onclick="galleryNav(1)">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="tc-img-counter" id="imgCounter">1 / 1</div>
+        </div>
+        <div class="tc-gallery-thumbs" id="thumbsRow"></div>
+    </div>
+
+    <!-- Info -->
+    <div class="tc-info">
+        <!-- Main info card -->
+        <div class="tc-info-card">
+            <div class="tc-brand" id="brand"></div>
+            <h1 class="tc-title" id="title"></h1>
+
+            <div class="tc-meta-row">
+                <div class="tc-stars" id="starsEl"></div>
+                <span class="tc-review-count" id="reviewCount"></span>
+                <span class="tc-sold-count" id="soldCount"></span>
+            </div>
+
+            <div class="tc-price-section">
+                <div class="tc-price-label">Fiyat</div>
+                <div class="tc-price" id="price"></div>
+                <div class="tc-price-sub">KDV dahil</div>
+            </div>
+
+            <div class="tc-actions">
+                <button class="btn-cart"><i class="fa-solid fa-cart-plus"></i> Sepete Ekle</button>
+                <button class="btn-buy"><i class="fa-solid fa-bolt"></i> Hemen Al</button>
+            </div>
+        </div>
+
+        <!-- Delivery -->
+        <div class="tc-info-card">
+            <div class="tc-delivery">
+                <div class="tc-delivery-row"><i class="fa-solid fa-truck-fast"></i> Yarın kargoya verilir</div>
+                <div class="tc-delivery-row"><i class="fa-solid fa-rotate-left"></i> 15 gün ücretsiz iade</div>
+                <div class="tc-delivery-row"><i class="fa-solid fa-shield-halved"></i> Güvenli alışveriş</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Description -->
+<div class="tc-section">
+    <div class="tc-section-card">
+        <div class="tc-section-title">Ürün Açıklaması</div>
+        <div class="tc-desc-text" id="description"></div>
+    </div>
+</div>
+
+<!-- Keywords -->
+<div class="tc-section" id="kwSection" style="display:none;">
+    <div class="tc-section-card">
+        <div class="tc-section-title">Etiketler</div>
+        <div class="tc-kw-list" id="keywords"></div>
+    </div>
+</div>
+
+<!-- Reviews -->
+<div class="tc-section" id="reviewsSection" style="display:none;">
+    <div class="tc-section-card">
+        <div class="tc-section-title">Müşteri Yorumları</div>
+        <div class="tc-reviews-list" id="reviewsList"></div>
+    </div>
+</div>
+
+<!-- Gift Suggestions -->
+<div class="tc-section" id="giftSection" style="display:none;">
+    <div class="tc-section-card">
+        <div class="tc-section-title"><i class="fa-solid fa-gift" style="color:var(--accent);margin-right:0.4rem;"></i> Birlikte Alınabilir</div>
+        <div id="giftStrategy" style="font-size:0.85rem;color:#555;margin-bottom:1rem;"></div>
+        <div class="tc-gift-list" id="giftList"></div>
+    </div>
+</div>
+
+<div style="height:3rem;"></div>
+
+<script>
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+
+let _images = [];
+let _imgIdx = 0;
+
+function esc(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderStars(rating) {
+    if (!rating) return '';
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+    let h = '';
+    for (let i = 0; i < 5; i++) {
+        if (i < full) h += `<i class="fa-solid fa-star tc-star-icon"></i>`;
+        else if (i === full && half) h += `<i class="fa-solid fa-star-half-stroke tc-star-icon"></i>`;
+        else h += `<i class="fa-regular fa-star tc-star-icon" style="color:#ddd;"></i>`;
+    }
+    return `${h} <span class="tc-rating-val">${parseFloat(rating).toFixed(1)}</span>`;
+}
+
+function buildGallery(urls) {
+    _images = urls;
+    _imgIdx = 0;
+    updateMainImg();
+
+    const thumbs = document.getElementById('thumbsRow');
+    thumbs.innerHTML = '';
+    urls.forEach((url, i) => {
+        const d = document.createElement('div');
+        d.className = 'tc-thumb' + (i === 0 ? ' active' : '');
+        d.onclick = () => setImg(i);
+        d.innerHTML = `<img src="${esc(url)}" onerror="this.src='https://placehold.co/60x60/f5f5f5/ccc?text=?'">`;
+        thumbs.appendChild(d);
+    });
+
+    document.getElementById('thumbsRow').style.display = urls.length <= 1 ? 'none' : '';
+}
+
+function updateMainImg() {
+    const img = document.getElementById('mainImg');
+    img.style.opacity = '0';
+    setTimeout(() => {
+        img.src = _images[_imgIdx] || '';
+        img.onerror = () => { img.src = 'https://placehold.co/440x440/f5f5f5/ccc?text=Görsel+Yok'; };
+        img.style.opacity = '1';
+    }, 120);
+
+    document.getElementById('imgCounter').textContent = `${_imgIdx + 1} / ${_images.length}`;
+    document.getElementById('prevBtn').disabled = _imgIdx === 0;
+    document.getElementById('nextBtn').disabled = _imgIdx === _images.length - 1;
+
+    document.querySelectorAll('.tc-thumb').forEach((t, i) => {
+        t.classList.toggle('active', i === _imgIdx);
+    });
+}
+
+function setImg(idx) {
+    _imgIdx = idx;
+    updateMainImg();
+}
+
+function galleryNav(dir) {
+    const next = _imgIdx + dir;
+    if (next >= 0 && next < _images.length) setImg(next);
+}
+
+function init() {
+    const raw = sessionStorage.getItem('deployPreviewProduct');
+    if (!raw) {
+        document.body.innerHTML = '<div class="tc-empty"><p>Ürün verisi bulunamadı. Bu sayfayı uygulamadan açın.</p></div>';
+        return;
+    }
+    const product = JSON.parse(raw);
+    const sd  = product.scraped_data || {};
+    const ca  = (product.data || {}).content_analysis || {};
+    const ra  = (product.data || {}).review_analysis || {};
+    const gs  = (product.data || {}).gift_suggestions || null;
+
+    const title      = ca.new_title || sd.title || product.product_title || 'Başlıksız Ürün';
+    const desc       = ca.new_description || sd.description || '';
+    const keywords   = ca.keywords || [];
+    const brand      = sd.brand || '';
+    const rating     = sd.rating;
+    const reviewCount= sd.review_count || 0;
+    const price      = sd.price;
+    const category   = sd.category || 'Ürünler';
+
+    // Images: improved first, then originals
+    const improvedUrls = (product.image_paths || []).map(p => `${API_BASE}/outputs/${p}`);
+    const origUrls     = (sd.image_urls || []).slice(0, 4);
+    const allImages    = improvedUrls.length ? [...improvedUrls, ...origUrls] : origUrls;
+
+    document.title = title + ' — Test Commerce';
+    document.getElementById('bcCategory').textContent = category.split('>')[0].trim();
+    document.getElementById('bcTitle').textContent = title.slice(0, 50) + (title.length > 50 ? '...' : '');
+    document.getElementById('brand').textContent = brand;
+    document.getElementById('title').textContent = title;
+    document.getElementById('starsEl').innerHTML = renderStars(rating);
+    document.getElementById('reviewCount').textContent = reviewCount ? `${reviewCount.toLocaleString('tr-TR')} değerlendirme` : '';
+    document.getElementById('price').textContent = price
+        ? price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+        : '';
+
+    if (improvedUrls.length) {
+        document.getElementById('improvedBadge').style.display = '';
+    }
+
+    buildGallery(allImages.length ? allImages : ['https://placehold.co/440x440/f5f5f5/ccc?text=Görsel+Yok']);
+
+    // Description — bullet formatting
+    document.getElementById('description').textContent = desc;
+
+    // Keywords
+    if (keywords.length) {
+        document.getElementById('kwSection').style.display = '';
+        document.getElementById('keywords').innerHTML = keywords
+            .map(k => `<span class="tc-kw-tag">${esc(k)}</span>`).join('');
+    }
+
+    // Reviews
+    const reviews = sd.review_sample || [];
+    if (reviews.length) {
+        document.getElementById('reviewsSection').style.display = '';
+        document.getElementById('reviewsList').innerHTML = reviews.slice(0, 6).map(r => `
+            <div class="tc-review-item">
+                <div class="tc-review-stars">${'★'.repeat(Math.round(r.rating || 0))}${'☆'.repeat(5 - Math.round(r.rating || 0))}</div>
+                <div class="tc-review-text">${esc(r.text || '')}</div>
+            </div>`).join('');
+    }
+
+    // Gift suggestions
+    if (gs && gs.suggestions && gs.suggestions.length) {
+        document.getElementById('giftSection').style.display = '';
+        if (gs.gift_strategy) document.getElementById('giftStrategy').textContent = gs.gift_strategy;
+        document.getElementById('giftList').innerHTML = (gs.suggestions || []).slice(0, 5).map(s => `
+            <div class="tc-gift-item">
+                <i class="fa-solid fa-gift tc-gift-icon"></i>
+                <div>
+                    <div class="tc-gift-name">${esc(s.gift)}</div>
+                    <div class="tc-gift-why">${esc(s.why)}</div>
+                </div>
+            </div>`).join('');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
