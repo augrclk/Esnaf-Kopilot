@@ -1,78 +1,153 @@
 # Esnaf Kopilot
 
-Trendyol satıcılarının ürün listelerini otomatik analiz edip iyileştiren SaaS backend.
+E-ticaret satıcıları için yapay zeka destekli ürün optimizasyon platformu.
 
-Kullanıcı bir Trendyol ürün linki girer. Sistem:
-1. Ürün başlığını, açıklamasını, yorumlarını ve görsellerini çeker
-2. Gemini API ile SEO + AEO puanı verir (100 üzerinden)
-3. Optimize edilmiş başlık ve açıklama üretir
-4. Görselleri analiz edip iyileştirilmiş versiyonlarını üretir
+Mağazanızı bağlayın, ürünlerinizi analiz ettirin, AI ile içerik ve görselleri iyileştirin, satışlarınızı artırın.
+
+---
+
+## Ne Yapar?
+
+1. **Mağaza Bağlantısı** — Pazaryeri mağazanızı bağlayın, ürünlerinizi otomatik içe aktarın
+2. **Akıllı Analiz** — SEO/AEO puanlama (100 üzerinden), kategori bazlı kriterler, yorum analizi
+3. **İçerik İyileştirme** — AI ile optimize edilmiş başlık, açıklama, anahtar kelimeler ve SSS üretimi
+4. **Görsel İyileştirme** — Ürün görselleri profesyonel sahnelere yerleştirilerek yeniden üretilir (ürün birebir korunur)
+5. **Hediye Önerileri** — Yorum analizine dayalı akıllı hediye paketi önerileri
+6. **Deploy Önizleme** — İyileştirmeleri gerçek e-ticaret sayfası görünümünde önizleyin
+
+---
+
+## Ürün Yaşam Döngüsü
+
+```
+Mağaza Bağla → Ürün İçe Aktar → Analiz Et → İyileştir → Önizle & Deploy
+```
+
+| Aşama | Ne Olur |
+|-------|---------|
+| **İçe Aktar** | Mağazadan ürün verileri, görseller ve yorumlar çekilir |
+| **Analiz Et** | Gemini AI ile SEO/AEO puanı + yorum analizi yapılır |
+| **İyileştir** | Yeni başlık, açıklama, görseller, hediye önerileri üretilir |
+| **Önizle** | Gerçek e-ticaret sayfası formatında tam sayfa önizleme |
 
 ---
 
 ## Mimari
 
 ```
+frontend/
+├── dashboard.html     # Ana dashboard (SPA)
+├── app.js             # Uygulama mantığı
+├── preview.html       # Ürün önizleme sayfası
+└── style.css          # Stiller
+
 backend/
 ├── app/
 │   ├── config.py          # Ortam değişkeni yönetimi
-│   ├── models.py          # Tüm veri modelleri
-│   ├── api.py             # FastAPI endpoint'leri
-│   ├── pipeline.py        # Ana iş akışı
-│   ├── scraper/
-│   │   ├── http_client.py    # Rate-limited HTTP istemci
-│   │   ├── html_parsing.py   # HTML/JSON parsing yardımcıları
-│   │   └── trendyol.py       # Trendyol veri çekici
-│   └── analyzer/
-│       ├── gemini_client.py  # Gemini API wrapper
-│       ├── prompts.py        # Prompt şablonları
-│       ├── content.py        # SEO/AEO analiz ve içerik üretimi
-│       └── image.py          # Görsel analiz ve iyileştirme
-├── criteria/              # Puanlama kriterleri (txt)
-└── tests/                 # Testler
+│   ├── models.py          # Veri modelleri
+│   ├── api.py             # FastAPI endpoint'leri + SSE streaming
+│   ├── auth.py            # Firebase Authentication
+│   ├── db.py              # Firestore veritabanı işlemleri
+│   ├── test_commerce.py   # Mock e-ticaret mağazası (MVP)
+│   ├── analyzer/
+│   │   ├── gemini_client.py  # Gemini API wrapper (Vertex AI)
+│   │   ├── content.py        # SEO/AEO analiz ve içerik üretimi
+│   │   ├── image.py          # Görsel strateji ve iyileştirme
+│   │   ├── review.py         # Yorum analizi
+│   │   └── gift.py           # Hediye önerisi motoru
+│   └── scraper/
+│       ├── http_client.py    # Rate-limited HTTP istemci
+│       └── trendyol.py       # Pazaryeri scraper
+└── outputs/               # Üretilen görseller
 ```
 
 ## Teknoloji
 
 | Katman | Teknoloji |
 |--------|-----------|
-| Backend | Python 3.12 + FastAPI |
-| AI | Google Gemini API |
-| Scraping | urllib + regex (sıfır ek bağımlılık) |
-| Config | pydantic-settings |
+| Frontend | Vanilla JS + Firebase Auth |
+| Backend | Python 3.12 + FastAPI + SSE Streaming |
+| AI | Google Gemini (Vertex AI) — metin + görsel |
+| Veritabanı | Google Firestore |
+| Auth | Firebase Authentication |
+| Altyapı | GCP Compute Engine |
+
+---
+
+## Temel Özellikler
+
+### Akıllı Puanlama
+- 100 puan üzerinden SEO/AEO skoru
+- Kategori bazlı dinamik kriterler (Kozmetik, Elektronik, Gıda vb.)
+- Her kategoriye özel ağırlıklandırma
+
+### Yorum Analizi
+- Müşteri yorumlarından duygu analizi
+- Tekrar eden şikayet ve övgü tespiti
+- Yorum içgörülerinin içerik üretimine yansıtılması
+
+### AI Görsel Üretimi
+- Ürün birebir korunur, sahne tamamen değiştirilir
+- Kategori bazlı sahne stratejisi (kozmetik → spa, elektronik → masa üstü, gıda → mutfak)
+- İnfografik görseller için akıllı redesign
+- 5-10 farklı konsept (stüdyo beyaz, yaşam tarzı, origin world vb.)
+
+### Kuyruk Sistemi
+- MVP API limitleri için akıllı kuyruk yönetimi
+- Kullanıcıya gerçek zamanlı kuyruk durumu bildirimi
+- 429 hatalarında otomatik exponential backoff retry
+
+### Kullanıcı Yönetimi
+- Firebase Auth (email/Google login)
+- Tier bazlı kota sistemi (Free / Pro / Admin)
+- Aylık analiz ve görsel üretim limitleri
+
+---
+
+## MVP — Test Commerce
+
+MVP aşamasında gerçek pazaryeri API entegrasyonları yerine, test amaçlı **mock e-ticaret mağazası** hazırlanmıştır.
+
+6 gerçek ürün (kozmetik, elektronik, aksesuar), gerçekçi müşteri yorumları ve ürün görselleriyle tam akışın test edilmesini sağlar.
+
+Production'da Trendyol, Hepsiburada, Amazon gibi pazaryeri entegrasyonları eklenecektir.
 
 ---
 
 ## Kurulum
 
-### 1. Gereksinimler
-
+### Gereksinimler
 - Python 3.12+
-- Google Gemini API key ([buradan alınır](https://aistudio.google.com/apikey))
+- Google Cloud hesabı (Vertex AI + Firestore + Firebase Auth)
+- Node.js (opsiyonel, frontend dev server için)
 
-### 2. Kurulum
+### Backend
 
 ```bash
 cd backend
 python3.12 -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -e .
 ```
 
-### 3. API Key
+### Ortam Değişkenleri
 
 ```bash
 cp .env.example .env
-# .env dosyasını aç, GEMINI_API_KEY alanını doldur
+# .env dosyasını düzenle:
+#   VERTEX_PROJECT=your-gcp-project
+#   VERTEX_LOCATION=europe-west1
+#   GEMINI_TEXT_MODEL=gemini-3.1-flash-lite
+#   GEMINI_IMAGE_MODEL=gemini-3.1-flash-image-preview
 ```
 
-### 4. Çalıştır
+### Çalıştır
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-API dokümantasyonu: http://localhost:8000/docs
+Dashboard: `http://localhost:8000/dashboard.html`
 
 ---
 
@@ -80,104 +155,16 @@ API dokümantasyonu: http://localhost:8000/docs
 
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
-| `POST` | `/api/analyze` | Tam analiz (scrape + puan + içerik + görsel) |
-| `POST` | `/api/scrape` | Sadece veri çekme |
-| `POST` | `/api/score` | Sadece SEO/AEO puanlama |
-| `POST` | `/api/generate-content` | Başlık + açıklama üretimi |
-| `POST` | `/api/analyze-images` | Görsel analiz |
-| `POST` | `/api/enhance-image` | Tek görsel iyileştirme |
-| `GET` | `/api/health` | Sağlık kontrolü |
-
-### Örnek İstek
-
-```bash
-curl -X POST http://localhost:8000/api/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.trendyol.com/urun-linki"}'
-```
-
-### Örnek Yanıt
-
-```json
-{
-  "product": {
-    "title": "...",
-    "description": "..."
-  },
-  "score": {
-    "total_score": 67,
-    "max_score": 100,
-    "categories": [...]
-  },
-  "content": {
-    "new_title": "...",
-    "new_description": "...",
-    "suggested_keywords": [...],
-    "faq": [...]
-  },
-  "image_analyses": [...],
-  "generated_images": [...]
-}
-```
+| `POST` | `/api/products/{id}/analyze` | Ürün analizi (SEO/AEO skor + yorum) |
+| `GET` | `/api/products/{id}/improve` | SSE stream — içerik + görsel iyileştirme |
+| `GET` | `/api/products` | Kullanıcının ürün listesi |
+| `POST` | `/api/stores/{id}/import/{pid}` | Mağazadan ürün içe aktar |
+| `GET` | `/api/queue/status` | Kuyruk durumu |
+| `GET` | `/api/user/stats` | Dashboard metrikleri |
+| `GET` | `/api/test-commerce/products` | Mock mağaza ürünleri |
 
 ---
 
-## Puanlama Sistemi
+## Lisans
 
-### SEO / Pazaryeri Arama Uyumu — 50 Puan
-
-| # | Kriter | Puan |
-|---|--------|------|
-| 1 | Başlık kalitesi | 12 |
-| 2 | Açıklama kalitesi | 12 |
-| 3 | Anahtar kelime uyumu | 10 |
-| 4 | Ürün özellik tamlığı | 10 |
-| 5 | Kategori/marka tutarlılığı | 6 |
-
-### AEO / AI Okunabilirlik — 50 Puan
-
-| # | Kriter | Puan |
-|---|--------|------|
-| 6 | Cevap-öncelikli tanım | 10 |
-| 7 | Yapılandırılmış bilgi düzeni | 10 |
-| 8 | SSS uygunluğu | 8 |
-| 9 | Yorum içgörüleri kullanımı | 10 |
-| 10 | Varlık tutarlılığı | 7 |
-| 11 | Doğrulanabilirlik | 5 |
-
----
-
-## Görsel İyileştirme
-
-Sistem görselleri **değiştirmez, iyileştirir**.
-
-- Orijinal ürün 1:1 korunur (renk, form, materyal asla değişmez)
-- ANA_GORSEL için 3 konsept üretilir:
-  - **Profesyonel Beyaz Fon** — Platform listeleme standardı
-  - **Tematik Sahne** — Ürüne uygun yaşam tarzı görseli
-  - **Sosyal Medya** — Reklam için dikkat çekici kompozisyon
-- DIGER_GORSEL için teknik kalite iyileştirmesi yapılır
-
----
-
-## Veri Kaynakları
-
-Trendyol scraper çok katmanlı fallback zinciri kullanır:
-
-**Ürün bilgisi:**
-JSON-LD → __NEXT_DATA__ → Trendyol API → HTML parsing → Playwright (opsiyonel)
-
-**Yorumlar:**
-Trendyol Review API (çok sayfalı, 30 yorum/sayfa)
-
-**Görseller:**
-JSON-LD → og:image meta → __NEXT_DATA__ → Script JSON → CDN regex
-
----
-
-## Geliştirme Notları
-
-- `Scrape Test Moduls/` — Geliştirme sürecinde test edilen ham scraper modülleri
-- `criteria/` — Gemini prompt'larında kullanılan puanlama kriterleri
-- `Log.md` — Adım adım geliştirme logu
-- `Task List.md` — Görev takip listesi
+Proprietary — Tüm hakları saklıdır.
