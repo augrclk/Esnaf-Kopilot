@@ -92,7 +92,7 @@ _CATALOG: list[dict] = [
         "rating": 4.8,
         "review_count": 341,
         "images": [
-            f"{_IMG}/tc003_1.png",
+            f"{_IMG}/tc003_tf_1.png",
         ],
         "reviews": [
             {"rating": 5, "text": "Koku inanılmaz, kiraz ve vanilya dengesi mükemmel. Gece kıyafetlerime çok yakışıyor."},
