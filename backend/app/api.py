@@ -851,18 +851,29 @@ async def analyze_product(product_id: str, user: AuthUser = Depends(get_current_
             asyncio.to_thread(content_analyzer.score, product_obj, reviews),
             asyncio.to_thread(review_analyzer.analyze, product_obj, reviews),
         )
-        new_content, gift_suggestions = await asyncio.gather(
-            asyncio.to_thread(content_analyzer.generate, product_obj, reviews, score_result.total_score, ra),
-            asyncio.to_thread(gift_advisor.suggest, product_obj, ra),
-        )
     except Exception as e:
         log.error("analyze_product error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-    result_data = _analysis_payload(product_doc, score_result, new_content, ra, gift_suggestions)
+    sd = product_doc.get("scraped_data") or {}
+    result_data = {
+        "product": {
+            "original_title": sd.get("title", ""),
+            "original_description": sd.get("description", ""),
+            "url": product_doc.get("url", ""),
+        },
+        "content_analysis": {
+            "score": score_result.total_score,
+            "score_summary": score_result.summary,
+            "categories": [
+                {"name": c.name, "score": c.score, "max_score": c.max_score, "notes": c.notes}
+                for c in score_result.categories
+            ],
+        },
+        "review_analysis": ra,
+    }
     await asyncio.to_thread(db.update_product_analyzed, user.uid, product_id, result_data, score_result.total_score)
     await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
-    await asyncio.to_thread(db.save_result, user.uid, product_doc.get("url") or "manual", product_obj.title, "", result_data)
     return {"status": "success", "data": result_data, "product_id": product_id, "cached": False}
 
 
@@ -881,40 +892,101 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             yield _sse({"type": "done", "count": len(product_doc.get("image_paths") or []), "cached": True})
             return
 
+        # ── Adım 1: Skor analizi yoksa önce yap ──────────────────────────────
         if not product_doc.get("data"):
-            yield _sse({"type": "step", "step": 1, "message": "Analiz hazırlanıyor..."})
+            yield _sse({"type": "step", "step": 1, "message": "Skor analizi yapılıyor..."})
             try:
                 await analyze_product(product_id, user)
             except HTTPException as e:
                 yield _sse({"type": "error", "message": str(e.detail)})
                 return
             product_doc = await asyncio.to_thread(db.get_product, user.uid, product_id)
-            yield _sse({"type": "analyze_done", "data": {"score": product_doc.get("score")}})
 
-        url = product_doc.get("url") or ""
-        if not url or url == "manual":
+        # ── Adım 2: Yeni içerik üret (başlık / açıklama / hediyeler) ─────────
+        yield _sse({"type": "step", "step": 2, "message": "Yeni içerik üretiliyor..."})
+        product_obj, reviews = _product_review_models(product_doc)
+        ra = (product_doc.get("data") or {}).get("review_analysis") or {}
+        score = product_doc.get("score") or 0
+        try:
+            new_content, gift_suggestions = await asyncio.gather(
+                asyncio.to_thread(content_analyzer.generate, product_obj, reviews, score, ra),
+                asyncio.to_thread(gift_advisor.suggest, product_obj, ra),
+            )
+        except Exception as e:
+            log.error("improve content gen error: %s", e, exc_info=True)
+            yield _sse({"type": "error", "message": str(e)})
+            return
+
+        content_update = {
+            "new_title": new_content.new_title,
+            "new_description": new_content.new_description,
+            "keywords": new_content.suggested_keywords,
+            "faq": new_content.faq,
+            "notes": getattr(new_content, "notes", ""),
+        }
+        await asyncio.to_thread(db.update_product_content, user.uid, product_id, content_update, gift_suggestions)
+        yield _sse({"type": "content_done", "data": {
+            "new_title": new_content.new_title,
+            "new_description": new_content.new_description,
+            "keywords": new_content.suggested_keywords,
+        }})
+
+        # ── Adım 3: Görsel iyileştirme ────────────────────────────────────────
+        try:
+            await asyncio.to_thread(db.check_quota, user.uid, "image")
+        except PermissionError as e:
+            await asyncio.to_thread(db.update_product_improved, user.uid, product_id, [])
+            yield _sse({"type": "done", "count": 0})
+            return
+
+        yield _sse({"type": "step", "step": 3, "message": "Görseller iyileştiriliyor..."})
+        out_dir = _make_output_dir(user.uid)
+        valid_images = []
+
+        try:
+            url = product_doc.get("url") or ""
+            if url and url != "manual":
+                # Trendyol / dış URL — scrape + indir
+                scraped = await asyncio.to_thread(scraper.scrape, url, max_review_pages=1)
+                downloaded = await asyncio.to_thread(scraper.download_images, scraped.images[:3], out_dir)
+                valid_images = [img for img in downloaded if img.local_path]
+            else:
+                # Mağazadan içe aktarılmış — scraped_data.image_urls kullan
+                import httpx
+                image_urls = (product_doc.get("scraped_data") or {}).get("image_urls") or []
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    for i, img_url in enumerate(image_urls[:3]):
+                        try:
+                            if img_url.startswith("/outputs/"):
+                                local_path = os.path.join(_OUTPUTS_DIR, img_url[len("/outputs/"):].lstrip("/"))
+                                if os.path.exists(local_path):
+                                    valid_images.append(ProductImage(
+                                        url=img_url, image_id=str(i), position=i, local_path=local_path
+                                    ))
+                            else:
+                                r = await client.get(img_url)
+                                r.raise_for_status()
+                                p = os.path.join(out_dir, f"image_{i:02d}.jpg")
+                                with open(p, "wb") as f:
+                                    f.write(r.content)
+                                valid_images.append(ProductImage(
+                                    url=img_url, image_id=str(i), position=i, local_path=p
+                                ))
+                        except Exception as ex:
+                            log.warning("image prep skip %s: %s", img_url, ex)
+        except Exception as e:
+            log.error("improve image prep error: %s", e, exc_info=True)
+            await asyncio.to_thread(db.update_product_improved, user.uid, product_id, [])
+            yield _sse({"type": "done", "count": 0})
+            return
+
+        if not valid_images:
             await asyncio.to_thread(db.update_product_improved, user.uid, product_id, [])
             yield _sse({"type": "done", "count": 0})
             return
 
         try:
-            await asyncio.to_thread(db.check_quota, user.uid, "image")
-        except PermissionError as e:
-            yield _sse({"type": "error", "message": str(e)})
-            return
-
-        yield _sse({"type": "step", "step": 2, "message": "Görseller hazırlanıyor..."})
-        try:
-            scraped = await asyncio.to_thread(scraper.scrape, url, max_review_pages=1)
-            out_dir = _make_output_dir(user.uid)
-            downloaded = await asyncio.to_thread(scraper.download_images, scraped.images[:3], out_dir)
-            valid_images = [img for img in downloaded if img.local_path]
-            if not valid_images:
-                await asyncio.to_thread(db.update_product_improved, user.uid, product_id, [])
-                yield _sse({"type": "done", "count": 0})
-                return
-
-            analysis = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
+            analysis = await asyncio.to_thread(image_analyzer.plan_strategy, product_obj, valid_images)
             yield _sse({"type": "start", "total": len(analysis.edit_tasks)})
             paths = []
             for idx, task in enumerate(analysis.edit_tasks, 1):
@@ -931,7 +1003,7 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             await asyncio.to_thread(db.update_product_improved, user.uid, product_id, paths)
             yield _sse({"type": "done", "count": len(paths)})
         except Exception as e:
-            log.error("improve_product error: %s", e, exc_info=True)
+            log.error("improve_product image error: %s", e, exc_info=True)
             yield _sse({"type": "error", "message": str(e)})
 
     return StreamingResponse(_stream(), media_type="text/event-stream", headers={

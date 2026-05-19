@@ -438,16 +438,63 @@ function renderProductDetail(product) {
 
 function renderAnalysisBlock(product) {
     const ca = product.data?.content_analysis || {};
-    return `
+    const ra = product.data?.review_analysis || null;
+    const gs = product.data?.gift_suggestions || null;
+
+    let html = `
         <section class="detail-section">
             <h3>Analiz Sonucu</h3>
             <div class="detail-analysis-card">
                 <strong>Skor: ${product.score}/100</strong><br>
                 ${escHtml(ca.score_summary || '')}
-                <br><br><strong>Yeni Başlık:</strong><br>${escHtml(ca.new_title || '')}
-                <br><br><strong>Yeni Açıklama:</strong><br>${escHtml(ca.new_description || '')}
             </div>
         </section>`;
+
+    if (ra?.sentiment_summary) {
+        const pos = (ra.positives || []).map(p => escHtml(p.title)).join(' · ');
+        const neg = (ra.negatives || []).map(n => escHtml(n.title)).join(' · ');
+        html += `
+        <section class="detail-section">
+            <h3>Yorum Analizi</h3>
+            <div class="detail-analysis-card">
+                <p>${escHtml(ra.sentiment_summary)}</p>
+                ${pos ? `<p style="color:#4ade80;font-size:0.83rem;margin-top:0.5rem;"><strong>Güçlü:</strong> ${pos}</p>` : ''}
+                ${neg ? `<p style="color:#f87171;font-size:0.83rem;margin-top:0.3rem;"><strong>Zayıf:</strong> ${neg}</p>` : ''}
+            </div>
+        </section>`;
+    }
+
+    if (ca.new_title) {
+        const kw = (ca.keywords || []).map(k => `<span class="keyword-tag">${escHtml(k)}</span>`).join(' ');
+        html += `
+        <section class="detail-section">
+            <h3>İyileştirilmiş İçerik</h3>
+            <div class="detail-analysis-card">
+                <strong>Yeni Başlık:</strong><br>${escHtml(ca.new_title)}
+                <br><br><strong>Yeni Açıklama:</strong><br>${escHtml(ca.new_description || '')}
+                ${kw ? `<br><br><strong>Anahtar Kelimeler:</strong><br><div style="margin-top:0.4rem;">${kw}</div>` : ''}
+            </div>
+        </section>`;
+    }
+
+    if (gs?.suggestions?.length) {
+        const items = (gs.suggestions || []).slice(0, 4).map(s =>
+            `<div style="margin:0.5rem 0;padding:0.5rem 0.75rem;background:rgba(255,255,255,0.04);border-radius:8px;">
+                <strong style="font-size:0.88rem;">${escHtml(s.gift)}</strong>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin:0.2rem 0 0;">${escHtml(s.why)}</p>
+            </div>`
+        ).join('');
+        html += `
+        <section class="detail-section">
+            <h3>Hediye Önerileri</h3>
+            <div class="detail-analysis-card">
+                ${gs.gift_strategy ? `<p style="margin-bottom:0.5rem;">${escHtml(gs.gift_strategy)}</p>` : ''}
+                ${items}
+            </div>
+        </section>`;
+    }
+
+    return html;
 }
 
 function renderImprovedImages(paths) {
@@ -506,6 +553,7 @@ async function improveActiveProduct() {
             const event = JSON.parse(line.slice(6));
             if (event.type === 'error') throw new Error(event.message);
             if (event.message) statusText = event.message;
+            if (event.type === 'content_done') statusText = 'İçerik hazır — görseller işleniyor...';
             if (event.type === 'start') statusText = `${event.total || 0} görsel iyileştiriliyor...`;
             if (event.type === 'image') statusText = `${event.data?.idx || ''}. görsel hazırlandı...`;
             const el = document.getElementById('productImproveStatus');
@@ -731,32 +779,21 @@ async function confirmImportProducts() {
     }
 }
 
-async function deployActiveProduct() {
+function deployActiveProduct() {
     const product = _activeDetailProduct;
     if (!product) return;
-    if (!product.source_store_id) {
-        alert('Bu ürün bir mağazadan içe aktarılmamış, deploy edilecek hedef mağaza bilinmiyor.');
-        return;
-    }
-    const btn = document.getElementById('deployBtn');
-    btn.disabled = true;
-    btn.querySelector('span').textContent = 'Gönderiliyor...';
-    try {
-        await apiFetch(`/api/products/${encodeURIComponent(product.id)}/deploy`, { store_id: product.source_store_id });
-        btn.querySelector('span').textContent = '✓ Mağazaya Gönderildi';
-        btn.style.background = 'rgba(74,222,128,0.2)';
-        btn.style.borderColor = '#4ade80';
-        setTimeout(() => {
-            btn.querySelector('span').textContent = 'Mağazaya Gönder';
-            btn.style.background = '';
-            btn.style.borderColor = '';
-            btn.disabled = false;
-        }, 3000);
-    } catch (err) {
-        alert('Deploy hatası: ' + err.message);
-        btn.disabled = false;
-        btn.querySelector('span').textContent = 'Mağazaya Gönder';
-    }
+    const ca = product.data?.content_analysis || {};
+    document.getElementById('deployPreviewOrigTitle').textContent =
+        product.scraped_data?.title || product.product_title || '';
+    document.getElementById('deployPreviewNewTitle').textContent = ca.new_title || '(henüz üretilmedi)';
+    document.getElementById('deployPreviewOrigDesc').textContent =
+        product.scraped_data?.description || '';
+    document.getElementById('deployPreviewNewDesc').textContent = ca.new_description || '(henüz üretilmedi)';
+    document.getElementById('deployPreviewModal').style.display = 'flex';
+}
+
+function closeDeployPreview() {
+    document.getElementById('deployPreviewModal').style.display = 'none';
 }
 
 // ── Kullanıcı Planı ───────────────────────────────────────────────────────────

@@ -319,6 +319,15 @@ def update_product_analyzed(uid: str, product_id: str, analysis_data: dict, scor
     })
 
 
+def update_product_content(uid: str, product_id: str, content_update: dict, gift_suggestions) -> None:
+    """İyileştirme aşamasında üretilen içeriği (yeni başlık/açıklama/keywords) data alanına ekler."""
+    ref = _db().collection("users").document(uid).collection("products").document(product_id)
+    updates = {f"data.content_analysis.{k}": v for k, v in content_update.items()}
+    updates["data.gift_suggestions"] = gift_suggestions
+    updates["updated_at"] = firestore.SERVER_TIMESTAMP
+    ref.update(updates)
+
+
 def update_product_improved(uid: str, product_id: str, image_paths: list[str]) -> None:
     _db().collection("users").document(uid).collection("products").document(product_id).update({
         "image_paths": image_paths,
