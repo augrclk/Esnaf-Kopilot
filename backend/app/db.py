@@ -319,11 +319,13 @@ def update_product_analyzed(uid: str, product_id: str, analysis_data: dict, scor
     })
 
 
-def update_product_content(uid: str, product_id: str, content_update: dict, gift_suggestions) -> None:
+def update_product_content(uid: str, product_id: str, content_update: dict, gift_suggestions, new_score=None) -> None:
     """İyileştirme aşamasında üretilen içeriği (yeni başlık/açıklama/keywords) data alanına ekler."""
     ref = _db().collection("users").document(uid).collection("products").document(product_id)
     updates = {f"data.content_analysis.{k}": v for k, v in content_update.items()}
     updates["data.gift_suggestions"] = gift_suggestions
+    if new_score is not None:
+        updates["new_score"] = new_score
     updates["updated_at"] = firestore.SERVER_TIMESTAMP
     ref.update(updates)
 

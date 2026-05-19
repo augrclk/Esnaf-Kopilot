@@ -917,6 +917,19 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             yield _sse({"type": "error", "message": str(e)})
             return
 
+        # Yeni içerikle skor hesapla
+        new_product_obj = Product(
+            url=product_obj.url,
+            product_id=None,
+            title=new_content.new_title,
+            description=new_content.new_description,
+        )
+        try:
+            new_score_result = await asyncio.to_thread(content_analyzer.score, new_product_obj, reviews)
+            new_score = new_score_result.total_score
+        except Exception:
+            new_score = None
+
         content_update = {
             "new_title": new_content.new_title,
             "new_description": new_content.new_description,
@@ -924,11 +937,12 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             "faq": new_content.faq,
             "notes": getattr(new_content, "notes", ""),
         }
-        await asyncio.to_thread(db.update_product_content, user.uid, product_id, content_update, gift_suggestions)
+        await asyncio.to_thread(db.update_product_content, user.uid, product_id, content_update, gift_suggestions, new_score)
         yield _sse({"type": "content_done", "data": {
             "new_title": new_content.new_title,
             "new_description": new_content.new_description,
             "keywords": new_content.suggested_keywords,
+            "new_score": new_score,
         }})
 
         # ── Adım 3: Görsel iyileştirme ────────────────────────────────────────

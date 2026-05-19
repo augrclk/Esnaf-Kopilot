@@ -266,11 +266,24 @@ function _productImages(product) {
     return product.scraped_data?.image_urls || [];
 }
 
+function _scoreColor(score) {
+    if (score === null || score === undefined) return '';
+    if (score < 60) return 'color:#f87171;';
+    if (score < 80) return 'color:#fbbf24;';
+    return 'color:#4ade80;';
+}
+
 function _scorePill(product) {
-    if (product.score === null || product.score === undefined) {
+    const score = product.score;
+    const newScore = product.new_score;
+    if (score === null || score === undefined) {
         return '<span class="product-pill"><i class="fa-solid fa-hourglass-half"></i> Skor bekliyor</span>';
     }
-    return `<span class="product-pill product-score-ready"><i class="fa-solid fa-star"></i> ${product.score}/100</span>`;
+    const oldPill = `<span class="product-pill" style="${_scoreColor(score)}"><i class="fa-solid fa-star"></i> ${score}/100</span>`;
+    if (newScore !== null && newScore !== undefined) {
+        return oldPill + `<span class="product-pill" style="color:#4ade80;"><i class="fa-solid fa-arrow-trend-up"></i> ${newScore}/100</span>`;
+    }
+    return oldPill;
 }
 
 async function loadProducts() {
@@ -395,7 +408,16 @@ function renderProductDetail(product) {
     const title = _productTitle(product);
     document.getElementById('detailTitle').textContent = title;
     document.getElementById('detailPlatform').textContent = product.platform || 'Manuel';
-    document.getElementById('detailScore').textContent = product.score === null || product.score === undefined ? 'Skor bekliyor' : `${product.score}/100`;
+    const scoreEl = document.getElementById('detailScore');
+    if (product.score === null || product.score === undefined) {
+        scoreEl.textContent = 'Skor bekliyor';
+        scoreEl.style.color = '';
+    } else if (product.new_score !== null && product.new_score !== undefined) {
+        scoreEl.innerHTML = `<span style="${_scoreColor(product.score)}">${product.score}/100</span> <i class="fa-solid fa-arrow-right" style="font-size:0.7em;color:var(--text-muted);"></i> <span style="color:#4ade80;">${product.new_score}/100</span>`;
+    } else {
+        scoreEl.textContent = `${product.score}/100`;
+        scoreEl.style.color = _scoreColor(product.score).replace('color:', '').replace(';', '').trim();
+    }
 
     // Deploy butonu: mağazadan içe aktarılmış + analiz edilmiş ürünlerde görünür
     const deployBtn = document.getElementById('deployBtn');
