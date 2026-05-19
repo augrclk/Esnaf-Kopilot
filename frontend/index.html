@@ -528,45 +528,51 @@
     <script>
         gsap.registerPlugin(ScrollTrigger);
 
-        // ── Hero (page load) ──────────────────────────────────────────
-        gsap.timeline({ defaults: { ease: 'power3.out' } })
+        const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
+        // ── Hero (page load, always) ──────────────────────────────────
+        const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } })
             .from('nav', { y: -60, opacity: 0, duration: 0.6 })
             .from('#hero h1', { scale: 0.7, opacity: 0, duration: 1, ease: 'back.out(1.4)' }, '-=0.2')
-            .from('#hero > div:first-child .char-img', { x: -130, opacity: 0, duration: 0.9 }, '-=0.7')
-            .from('#hero > div:nth-child(3) .char-img', { x: 130, opacity: 0, duration: 0.9 }, '<')
-            .from('#hero .bubble-static', { opacity: 0, duration: 0.5, stagger: 0.2 }, '-=0.3')
             .from('#hero .absolute.bottom-6', { opacity: 0, duration: 0.5 });
 
-        // ── Features ─────────────────────────────────────────────────
-        gsap.timeline({
-            scrollTrigger: { trigger: '#features', start: 'top 90%', once: true },
-            defaults: { ease: 'power3.out' }
-        })
-            .from('#features > div:first-child .char-img', { x: -110, opacity: 0, duration: 0.8 })
-            .from('#features > div:last-child .char-img', { x: 110, opacity: 0, duration: 0.8 }, '<')
-            .from('#features h2', { y: 40, opacity: 0, duration: 0.6 }, '-=0.5')
-            .from('#features .feature-item', { y: 35, opacity: 0, duration: 0.5, stagger: 0.15, clearProps: 'transform,opacity' }, '-=0.3')
-            .from('#features .bubble-static', { opacity: 0, duration: 0.45, stagger: 0.2 }, '-=0.4');
+        if (isDesktop) {
+            heroTl
+                .from('#hero > div:first-child .char-img', { x: -130, opacity: 0, duration: 0.9 }, '-=1.5')
+                .from('#hero > div:nth-child(3) .char-img', { x: 130, opacity: 0, duration: 0.9 }, '<')
+                .from('#hero .bubble-static', { opacity: 0, duration: 0.5, stagger: 0.2 }, '-=0.3');
 
-        // ── How It Works ──────────────────────────────────────────────
-        gsap.timeline({
-            scrollTrigger: { trigger: '#how-it-works', start: 'top 90%', once: true },
-            defaults: { ease: 'power3.out' }
-        })
-            .from('#how-it-works h2', { y: 45, opacity: 0, duration: 0.7 })
-            .from('#how-it-works > div:first-child > div:first-child .char-img', { x: -110, opacity: 0, duration: 0.8 }, '-=0.5')
-            .from('#how-it-works > div:first-child > div:last-child .char-img', { x: 110, opacity: 0, duration: 0.8 }, '<')
-            .from('#how-it-works .bubble-static', { opacity: 0, duration: 0.4, stagger: 0.2 }, '-=0.3')
-            .from('#how-it-works .step-box', { y: 35, opacity: 0, duration: 0.4, stagger: 0.12 }, '-=0.2')
-            .from('#how-it-works .step-arrow', { opacity: 0, duration: 0.3, stagger: 0.1 }, '-=0.4');
+            // ── Features ─────────────────────────────────────────────
+            gsap.timeline({
+                scrollTrigger: { trigger: '#features', start: 'top 90%', once: true },
+                defaults: { ease: 'power3.out' }
+            })
+                .from('#features > div:first-child .char-img', { x: -110, opacity: 0, duration: 0.8 })
+                .from('#features > div:last-child .char-img', { x: 110, opacity: 0, duration: 0.8 }, '<')
+                .from('#features h2', { y: 40, opacity: 0, duration: 0.6 }, '-=0.5')
+                .from('#features .feature-item', { y: 35, opacity: 0, duration: 0.5, stagger: 0.15, clearProps: 'transform,opacity' }, '-=0.3')
+                .from('#features .bubble-static', { opacity: 0, duration: 0.45, stagger: 0.2 }, '-=0.4');
 
-        // ── CTA ───────────────────────────────────────────────────────
-        gsap.timeline({
-            scrollTrigger: { trigger: '#cta', start: 'top 90%', once: true },
-            defaults: { ease: 'power3.out' }
-        })
-            .from('#cta > div:first-child', { x: -90, opacity: 0, duration: 0.9 })
-            .from('#cta .glass-card', { x: 90, opacity: 0, duration: 0.9 }, '-=0.6');
+            // ── How It Works ──────────────────────────────────────────
+            gsap.timeline({
+                scrollTrigger: { trigger: '#how-it-works', start: 'top 90%', once: true },
+                defaults: { ease: 'power3.out' }
+            })
+                .from('#how-it-works h2', { y: 45, opacity: 0, duration: 0.7 })
+                .from('#how-it-works > div:first-child > div:first-child .char-img', { x: -110, opacity: 0, duration: 0.8 }, '-=0.5')
+                .from('#how-it-works > div:first-child > div:last-child .char-img', { x: 110, opacity: 0, duration: 0.8 }, '<')
+                .from('#how-it-works .bubble-static', { opacity: 0, duration: 0.4, stagger: 0.2 }, '-=0.3')
+                .from('#how-it-works .step-box', { y: 35, opacity: 0, duration: 0.4, stagger: 0.12 }, '-=0.2')
+                .from('#how-it-works .step-arrow', { opacity: 0, duration: 0.3, stagger: 0.1 }, '-=0.4');
+
+            // ── CTA ───────────────────────────────────────────────────
+            gsap.timeline({
+                scrollTrigger: { trigger: '#cta', start: 'top 90%', once: true },
+                defaults: { ease: 'power3.out' }
+            })
+                .from('#cta > div:first-child', { x: -90, opacity: 0, duration: 0.9 })
+                .from('#cta .glass-card', { x: 90, opacity: 0, duration: 0.9 }, '-=0.6');
+        }
     </script>
 </body>
 </html>
