@@ -441,12 +441,16 @@ function renderAnalysisBlock(product) {
     const ra = product.data?.review_analysis || null;
     const gs = product.data?.gift_suggestions || null;
 
+    const scoreSummaryHtml = escHtml(ca.score_summary || '')
+        .replace(/•/g, '<br>•')
+        .replace(/\n/g, '<br>');
+
     let html = `
         <section class="detail-section">
             <h3>Analiz Sonucu</h3>
             <div class="detail-analysis-card">
-                <strong>Skor: ${product.score}/100</strong><br>
-                ${escHtml(ca.score_summary || '')}
+                <strong style="font-size:1.1rem;">Skor: ${product.score}/100</strong>
+                <div style="margin-top:0.75rem;line-height:1.7;font-size:0.85rem;">${scoreSummaryHtml}</div>
             </div>
         </section>`;
 
@@ -466,13 +470,18 @@ function renderAnalysisBlock(product) {
 
     if (ca.new_title) {
         const kw = (ca.keywords || []).map(k => `<span class="keyword-tag">${escHtml(k)}</span>`).join(' ');
+        const newDescHtml = escHtml(ca.new_description || '')
+            .replace(/•/g, '<br>•')
+            .replace(/\n/g, '<br>');
         html += `
         <section class="detail-section">
             <h3>İyileştirilmiş İçerik</h3>
             <div class="detail-analysis-card">
-                <strong>Yeni Başlık:</strong><br>${escHtml(ca.new_title)}
-                <br><br><strong>Yeni Açıklama:</strong><br>${escHtml(ca.new_description || '')}
-                ${kw ? `<br><br><strong>Anahtar Kelimeler:</strong><br><div style="margin-top:0.4rem;">${kw}</div>` : ''}
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em;">Yeni Başlık</p>
+                <p style="font-size:0.92rem;font-weight:600;line-height:1.5;">${escHtml(ca.new_title)}</p>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin:1rem 0 0.3rem;text-transform:uppercase;letter-spacing:0.05em;">Yeni Açıklama</p>
+                <div style="font-size:0.85rem;line-height:1.75;">${newDescHtml}</div>
+                ${kw ? `<p style="font-size:0.75rem;color:var(--text-muted);margin:1rem 0 0.4rem;text-transform:uppercase;letter-spacing:0.05em;">Anahtar Kelimeler</p><div>${kw}</div>` : ''}
             </div>
         </section>`;
     }

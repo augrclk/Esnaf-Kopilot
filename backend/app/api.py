@@ -24,7 +24,7 @@ from app.analyzer.content import ContentAnalyzer
 from app.analyzer.image import ImageAnalyzer
 from app.analyzer.review import ReviewAnalyzer
 from app.analyzer.gift import GiftAdvisor
-from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatformError, Review, Product
+from app.models import ImageEditPrompt, ProductNotFoundError, UnsupportedPlatformError, Review, Product, ProductImage
 from app.config import settings
 from app.auth import get_current_user, AuthUser
 from app import db
