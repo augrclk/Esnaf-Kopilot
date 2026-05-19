@@ -1,3 +1,33 @@
+// ── Toast Bildirimleri ────────────────────────────────────────────────────────
+function showToast(type, title, msg, duration = 4000) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
+    const labels = { success: title || 'Başarılı', error: title || 'Hata', info: title || 'Bilgi', warning: title || 'Uyarı' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-icon"><i class="fa-solid ${icons[type] || icons.info}"></i></div>
+        <div class="toast-body">
+            <div class="toast-title">${labels[type]}</div>
+            ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
+        </div>
+        <div class="toast-progress" style="animation-duration:${duration}ms"></div>
+    `;
+    container.appendChild(toast);
+    requestAnimationFrame(() => { requestAnimationFrame(() => { toast.classList.add('toast-in'); }); });
+    const dismiss = () => {
+        toast.classList.add('toast-out');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    };
+    toast.addEventListener('click', dismiss);
+    setTimeout(dismiss, duration);
+}
+
 // ── Config ───────────────────────────────────────────────────────────────────
 const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
@@ -905,9 +935,10 @@ async function confirmImportProducts() {
         closeImportModal();
         await loadProducts();
         navigateTo('urunlerim');
-        alert(`${(res.imported || []).length} ürün başarıyla içe aktarıldı!`);
+        const count = (res.imported || []).length;
+        showToast('success', 'İçe Aktarma Tamamlandı', `${count} ürün başarıyla eklendi.`);
     } catch (err) {
-        alert('Hata: ' + err.message);
+        showToast('error', 'İçe Aktarma Başarısız', err.message);
     } finally {
         status.style.display = 'none';
         btn.disabled = false;
