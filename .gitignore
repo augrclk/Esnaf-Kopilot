@@ -4,6 +4,10 @@ firebase_credentials.json
 
 # macOS
 .DS_Store
+**/.DS_Store
+
+# Eski prompt versiyonları
+prompts/
 
 # Python
 __pycache__/

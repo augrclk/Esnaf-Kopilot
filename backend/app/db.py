@@ -156,6 +156,39 @@ def check_quota(uid: str, action: str) -> None:
             )
 
 
+def check_and_increment_quota(uid: str, action: str) -> None:
+    """Kota kontrolü ve artırımını atomik yapar (Firestore transaction)."""
+    db_client = _db()
+    month = _month_key()
+
+    user = db_client.collection("users").document(uid).get().to_dict() or {}
+    tier = user.get("tier", "free")
+    limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+
+    field_map = {
+        "analysis": ("analyses",     "analyses_per_month"),
+        "image":    ("images",       "images_per_month"),
+    }
+    if action not in field_map:
+        return
+
+    field, limit_key = field_map[action]
+    limit = limits[limit_key]
+    usage_ref = db_client.collection("users").document(uid).collection("usage").document(month)
+
+    @firestore.transactional
+    def _run(transaction):
+        snap = usage_ref.get(transaction=transaction)
+        current = (snap.to_dict() or {}).get(field, 0)
+        if current >= limit:
+            raise PermissionError(
+                f"Aylık {action} limitine ulaştınız ({limit}). Tier: {tier}."
+            )
+        transaction.set(usage_ref, {field: firestore.Increment(1)}, merge=True)
+
+    _run(db_client.transaction())
+
+
 def increment_usage(uid: str, action: str, amount: int = 1) -> None:
     """Kullanım sayacını artırır. Atomik."""
     db    = _db()

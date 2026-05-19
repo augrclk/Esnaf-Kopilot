@@ -153,9 +153,14 @@ async function apiFetch(path, body, method = 'POST') {
     if (body !== undefined) opts.body = JSON.stringify(body);
     const res = await fetch(API_BASE + path, opts);
     if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+        const ct = res.headers.get('content-type') || '';
+        const err = ct.includes('application/json') ? await res.json().catch(() => ({})) : {};
         if (res.status === 401) { _auth.signOut(); throw new Error('Oturum süresi doldu, lütfen tekrar giriş yapın.'); }
         throw new Error(`API Hatası (${res.status}): ${err.detail || 'Bilinmeyen hata'}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+        throw new Error(`Sunucudan beklenmeyen yanıt formatı (${res.status}). Deployment hatası olabilir.`);
     }
     return res.json();
 }

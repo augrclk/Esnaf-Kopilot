@@ -320,7 +320,7 @@ async def phase_analyze(
     _validate_url(req.url)
 
     # Kota kontrolü
-    await asyncio.to_thread(db.check_quota, user.uid, "analysis")
+    await asyncio.to_thread(db.check_and_increment_quota, user.uid, "analysis")
     await asyncio.to_thread(db.get_or_create_user, user.uid, user.email)
 
     try:
@@ -372,9 +372,8 @@ async def phase_analyze(
             "gift_suggestions": gift_suggestions,
         }
 
-        # Kullanım say + sonucu kaydet (hata olsa bile analiz dönülsün)
+        # Sonucu kaydet (hata olsa bile analiz dönülsün)
         try:
-            await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
             await asyncio.to_thread(
                 db.save_result,
                 user.uid,
@@ -512,17 +511,22 @@ async def phase_images(
                 for idx, task in enumerate(tasks, 1)
             ]
 
-            for _ in range(total):
-                idx, result = await queue.get()
-                if result:
-                    count += 1
-                    try:
-                        await asyncio.to_thread(db.increment_usage, user.uid, "image")
-                    except Exception as db_err:
-                        log.warning("[DB] Görsel usage artırma başarısız: %s", db_err)
-                    yield _sse({"type": "image", "data": result})
+            try:
+                for _ in range(total):
+                    idx, result = await queue.get()
+                    if result:
+                        count += 1
+                        try:
+                            await asyncio.to_thread(db.increment_usage, user.uid, "image")
+                        except Exception as db_err:
+                            log.warning("[DB] Görsel usage artırma başarısız: %s", db_err)
+                        yield _sse({"type": "image", "data": result})
+            except GeneratorExit:
+                for f in futures:
+                    f.cancel()
+                return
 
-            await asyncio.gather(*futures)
+            await asyncio.gather(*futures, return_exceptions=True)
 
             log.info("[Phase/Images] Tamamlandı: %d/%d görsel", count, total)
             yield _sse({"type": "done", "count": count, "total": total})
@@ -617,6 +621,11 @@ Genel Duygu: {review.get("sentiment_summary", "")}
             safe_name   = "".join(c if c.isalnum() else "_" for c in req.message[:40])
             out_path    = os.path.join(out_dir, f"chat_gorsel_{safe_name}.jpg")
             prompt_obj  = ImageEditPrompt(concept_name="Özel Görsel", prompt=req.message)
+
+            try:
+                await asyncio.to_thread(db.check_quota, user.uid, "image")
+            except PermissionError as _qe:
+                return {"status": "success", "answer": str(_qe)}
 
             async with _IMAGE_SEM:
                 async with _image_lock:
@@ -892,7 +901,7 @@ async def analyze_product(product_id: str, user: AuthUser = Depends(get_current_
     if product_doc is None:
         raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
     try:
-        await asyncio.to_thread(db.check_quota, user.uid, "analysis")
+        await asyncio.to_thread(db.check_and_increment_quota, user.uid, "analysis")
     except PermissionError as e:
         raise HTTPException(status_code=429, detail=str(e))
 
@@ -901,18 +910,20 @@ async def analyze_product(product_id: str, user: AuthUser = Depends(get_current_
         global _gemini_waiting
         async with _gemini_waiting_lock:
             _gemini_waiting += 1
+        _sem_acquired = False
         try:
             async with _GEMINI_SEM:
                 async with _gemini_waiting_lock:
                     _gemini_waiting -= 1
+                _sem_acquired = True
                 score_result, ra = await asyncio.gather(
                     asyncio.to_thread(content_analyzer.score, product_obj, reviews),
                     asyncio.to_thread(review_analyzer.analyze, product_obj, reviews),
                 )
-        except Exception:
-            async with _gemini_waiting_lock:
-                _gemini_waiting = max(0, _gemini_waiting - 1)
-            raise
+        finally:
+            if not _sem_acquired:
+                async with _gemini_waiting_lock:
+                    _gemini_waiting = max(0, _gemini_waiting - 1)
     except Exception as e:
         log.error("analyze_product error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -935,7 +946,6 @@ async def analyze_product(product_id: str, user: AuthUser = Depends(get_current_
         "review_analysis": ra,
     }
     await asyncio.to_thread(db.update_product_analyzed, user.uid, product_id, result_data, score_result.total_score)
-    await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
     return {"status": "success", "data": result_data, "product_id": product_id, "cached": False}
 
 
@@ -1216,7 +1226,7 @@ async def phase_manual_analyze(
     if not req.title.strip():
         raise HTTPException(status_code=422, detail="Ürün başlığı boş olamaz.")
 
-    await asyncio.to_thread(db.check_quota, user.uid, "analysis")
+    await asyncio.to_thread(db.check_and_increment_quota, user.uid, "analysis")
     await asyncio.to_thread(db.get_or_create_user, user.uid, user.email)
 
     product = Product(
@@ -1262,7 +1272,6 @@ async def phase_manual_analyze(
         }
 
         try:
-            await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
             await asyncio.to_thread(db.save_result, user.uid, "manual", product.title, "", result_data)
         except Exception as db_err:
             log.warning("[DB] Manuel analiz kayıt hatası: %s", db_err)
