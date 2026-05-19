@@ -216,31 +216,50 @@ def _parse_json_response(text: str) -> dict:
     """
     Gemini'nin yanıtından JSON çıkarır.
 
-    Gemini bazen JSON'u markdown code block içinde döner:
-      ```json
-      { ... }
-      ```
-    Bu fonksiyon her iki formatı da işler.
+    Gemini bazen JSON'u markdown code block içinde döner (kapanış ``` olmayabilir).
+    Çoklu strateji: code block → { } bounding → düz parse.
     """
     if not text:
         raise GeminiError("Gemini boş yanıt döndürdü")
 
-    # Markdown code block içindeki JSON'u çıkar
+    candidates: list[str] = []
+
+    # 1) Kapalı code block: ```json ... ```
     code_block = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
-    json_text = code_block.group(1).strip() if code_block else text.strip()
+    if code_block:
+        candidates.append(code_block.group(1).strip())
 
-    # Yanıt bazen { ile başlamıyor olabilir, ilk { konumunu bul
-    start = json_text.find("{")
-    if start > 0:
-        json_text = json_text[start:]
+    # 2) Açık code block: ```json ... (kapanış yok)
+    open_block = re.search(r"```(?:json)?\s*([\s\S]*)", text)
+    if open_block:
+        candidates.append(open_block.group(1).strip())
 
-    try:
-        return json.loads(json_text)
-    except json.JSONDecodeError:
-        # JSON parse edilemedi — ham metni debug için döndür
-        raise GeminiError(
-            f"Gemini yanıtı JSON olarak parse edilemedi.\nHam yanıt: {text[:500]}"
-        )
+    # 3) Ham metin — ilk { den son } e kadar
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidates.append(text[start:end + 1])
+
+    # 4) Düz metin
+    candidates.append(text.strip())
+
+    for candidate in candidates:
+        # İlk { den başlat
+        s = candidate.find("{")
+        if s > 0:
+            candidate = candidate[s:]
+        # Son } de bitir
+        e = candidate.rfind("}")
+        if e != -1:
+            candidate = candidate[:e + 1]
+        try:
+            return json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            continue
+
+    raise GeminiError(
+        f"Gemini yanıtı JSON olarak parse edilemedi.\nHam yanıt: {text[:500]}"
+    )
 
 
 def _mime_type(path: str) -> str:

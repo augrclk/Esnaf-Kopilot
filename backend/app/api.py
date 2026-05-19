@@ -70,6 +70,12 @@ _IMAGE_MIN_INTERVAL = 15.0  # saniye
 _image_last_call: float = 0.0
 _image_lock = asyncio.Lock()   # _image_last_call erişimi için
 
+# ── Gemini text API global kuyruk ────────────────────────────────────────────
+# MVP: preview modellerde sabit RPM limiti. Aynı anda max 2 text çağrısı.
+_GEMINI_SEM = asyncio.Semaphore(2)
+_gemini_waiting: int = 0  # kuyrukta bekleyen sayısı
+_gemini_waiting_lock = asyncio.Lock()
+
 
 async def _do_scrape(url: str, max_review_pages: int):
     """Bloklayan scrape işlemini thread pool'da çalıştırır, sonucu cache'e yazar."""
@@ -610,6 +616,18 @@ Genel Duygu: {review.get("sentiment_summary", "")}
 
 # ── Kullanıcı Endpoint'leri ──────────────────────────────────────────────────
 
+@router.get("/queue/status")
+async def get_queue_status():
+    """Gemini API kuyruğu — MVP: API'lar kısıtlı, kuyruk olabilir."""
+    return {
+        "status": "success",
+        "data": {
+            "waiting": _gemini_waiting,
+            "capacity": 2,
+        }
+    }
+
+
 @router.get("/user/me")
 async def get_me(user: AuthUser = Depends(get_current_user)):
     """Mevcut kullanıcı bilgisi + tier."""
@@ -837,9 +855,6 @@ async def analyze_product(product_id: str, user: AuthUser = Depends(get_current_
     product_doc = await asyncio.to_thread(db.get_product, user.uid, product_id)
     if product_doc is None:
         raise HTTPException(status_code=404, detail="Ürün bulunamadı.")
-    if product_doc.get("data") and product_doc.get("score") is not None:
-        return {"status": "success", "data": product_doc["data"], "product_id": product_id, "cached": True}
-
     try:
         await asyncio.to_thread(db.check_quota, user.uid, "analysis")
     except PermissionError as e:
@@ -847,10 +862,21 @@ async def analyze_product(product_id: str, user: AuthUser = Depends(get_current_
 
     product_obj, reviews = _product_review_models(product_doc)
     try:
-        score_result, ra = await asyncio.gather(
-            asyncio.to_thread(content_analyzer.score, product_obj, reviews),
-            asyncio.to_thread(review_analyzer.analyze, product_obj, reviews),
-        )
+        global _gemini_waiting
+        async with _gemini_waiting_lock:
+            _gemini_waiting += 1
+        try:
+            async with _GEMINI_SEM:
+                async with _gemini_waiting_lock:
+                    _gemini_waiting -= 1
+                score_result, ra = await asyncio.gather(
+                    asyncio.to_thread(content_analyzer.score, product_obj, reviews),
+                    asyncio.to_thread(review_analyzer.analyze, product_obj, reviews),
+                )
+        except Exception:
+            async with _gemini_waiting_lock:
+                _gemini_waiting = max(0, _gemini_waiting - 1)
+            raise
     except Exception as e:
         log.error("analyze_product error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -888,10 +914,6 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             yield _sse({"type": "error", "message": "Ürün bulunamadı."})
             return
 
-        if product_doc.get("status") == "improved":
-            yield _sse({"type": "done", "count": len(product_doc.get("image_paths") or []), "cached": True})
-            return
-
         # ── Adım 1: Skor analizi yoksa önce yap ──────────────────────────────
         if not product_doc.get("data"):
             yield _sse({"type": "step", "step": 1, "message": "Skor analizi yapılıyor..."})
@@ -903,16 +925,27 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             product_doc = await asyncio.to_thread(db.get_product, user.uid, product_id)
 
         # ── Adım 2: Yeni içerik üret (başlık / açıklama / hediyeler) ─────────
+        global _gemini_waiting
+        async with _gemini_waiting_lock:
+            _gemini_waiting += 1
+            queue_pos = _gemini_waiting
+        if queue_pos > 1:
+            yield _sse({"type": "queue", "position": queue_pos, "message": f"Kuyrukta bekleniyor... ({queue_pos}. sırada)"})
         yield _sse({"type": "step", "step": 2, "message": "Yeni içerik üretiliyor..."})
         product_obj, reviews = _product_review_models(product_doc)
         ra = (product_doc.get("data") or {}).get("review_analysis") or {}
         score = product_doc.get("score") or 0
         try:
-            new_content, gift_suggestions = await asyncio.gather(
-                asyncio.to_thread(content_analyzer.generate, product_obj, reviews, score, ra),
-                asyncio.to_thread(gift_advisor.suggest, product_obj, ra),
-            )
+            async with _GEMINI_SEM:
+                async with _gemini_waiting_lock:
+                    _gemini_waiting = max(0, _gemini_waiting - 1)
+                new_content, gift_suggestions = await asyncio.gather(
+                    asyncio.to_thread(content_analyzer.generate, product_obj, reviews, score, ra),
+                    asyncio.to_thread(gift_advisor.suggest, product_obj, ra),
+                )
         except Exception as e:
+            async with _gemini_waiting_lock:
+                _gemini_waiting = max(0, _gemini_waiting - 1)
             log.error("improve content gen error: %s", e, exc_info=True)
             yield _sse({"type": "error", "message": str(e)})
             return
@@ -999,6 +1032,8 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             yield _sse({"type": "done", "count": 0})
             return
 
+        _IMAGE_RETRY_WAITS = [20, 40, 60]  # 429 sonrası bekleme süreleri (saniye)
+
         try:
             analysis = await asyncio.to_thread(image_analyzer.plan_strategy, product_obj, valid_images)
             yield _sse({"type": "start", "total": len(analysis.edit_tasks)})
@@ -1007,8 +1042,34 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
                 safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
                 out_path = os.path.join(out_dir, f"product_{product_id}_{idx}_{safe_name}.jpg")
                 prompt_obj = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
-                async with _IMAGE_SEM:
-                    enhanced = await asyncio.to_thread(image_analyzer.enhance, task.source_image, prompt_obj, out_path)
+
+                # 429 → exponential backoff retry
+                last_err = None
+                enhanced = None
+                for attempt, wait in enumerate([0] + _IMAGE_RETRY_WAITS):
+                    if wait:
+                        log.warning("Görsel %d — 429, %ds bekleniyor (deneme %d/%d)",
+                                    idx, wait, attempt, len(_IMAGE_RETRY_WAITS) + 1)
+                        yield _sse({"type": "step", "step": 3,
+                                    "message": f"{idx}. görsel için {wait}s bekleniyor (API limit)..."})
+                        await asyncio.sleep(wait)
+                    try:
+                        async with _IMAGE_SEM:
+                            enhanced = await asyncio.to_thread(
+                                image_analyzer.enhance, task.source_image, prompt_obj, out_path
+                            )
+                        last_err = None
+                        break
+                    except Exception as exc:
+                        last_err = exc
+                        err_str = str(exc)
+                        if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                            continue
+                        raise  # 429 dışı hata → direkt fırlat
+
+                if last_err:
+                    raise last_err  # tüm retry tükendi
+
                 rel_path = os.path.relpath(enhanced.local_path, _OUTPUTS_DIR)
                 paths.append(rel_path)
                 await asyncio.to_thread(db.increment_usage, user.uid, "image")
