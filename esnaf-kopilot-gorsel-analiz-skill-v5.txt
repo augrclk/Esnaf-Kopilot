@@ -304,6 +304,11 @@ If any concept includes new text/typography added to the scene:
 ════════════════════════════════════════════════════════
 OUTPUT FORMAT
 ════════════════════════════════════════════════════════
+GENERATION CONSTRAINTS (applied automatically by the system at image generation time):
+- All output images are square (1:1 aspect ratio). Write your prompts with square composition in mind.
+- For regular product concepts: system prepends product preservation + scene transformation instructions automatically. Do NOT repeat product preservation in your prompts — focus only on the scene.
+- For infographic/feature concepts: system uses a redesign-focused prefix automatically. Your prompt should describe the layout and text hierarchy improvements.
+
 Return valid JSON only. No markdown, no comments, no text outside JSON.
 {
   "best_image_analysis": "<Türkçe. Ürün kategorisi, risk seviyesi, kaynak görsel değerlendirmesi, anchor stratejisi, seçilen/reddedilen konseptler ve nedenleri. Eksik kaynak görseller varsa belirt.>",
