@@ -132,6 +132,40 @@ def _validate_url(url: str) -> None:
 _OUTPUTS_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "outputs"))
 
 
+def _add_watermark(image_path: str) -> None:
+    """Görsel üzerine 'Esnaf Kopilot' yazısı ekler (sağ alt köşe)."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        img = Image.open(image_path).convert("RGBA")
+        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        text = "Esnaf Kopilot"
+        # Font boyutunu görsele göre ölçekle
+        font_size = max(20, img.width // 25)
+        font = None
+        for font_path in ["/System/Library/Fonts/Helvetica.ttc", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"]:
+            try:
+                font = ImageFont.truetype(font_path, font_size)
+                break
+            except Exception:
+                continue
+        if font is None:
+            font = ImageFont.load_default()
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        margin = 18
+        x = img.width - tw - margin
+        y = img.height - th - margin
+        # Gölge
+        draw.text((x + 2, y + 2), text, font=font, fill=(0, 0, 0, 160))
+        # Ana metin
+        draw.text((x, y), text, font=font, fill=(255, 255, 255, 220))
+        composited = Image.alpha_composite(img, overlay).convert("RGB")
+        composited.save(image_path)
+    except Exception as e:
+        log.warning("Watermark eklenemedi (%s): %s", image_path, e)
+
+
 def _make_output_dir(uid: str) -> str:
     """Kullanıcıya özel çıktı dizini oluşturur."""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -407,7 +441,8 @@ async def phase_images(
 
             analysis      = await asyncio.to_thread(image_analyzer.plan_strategy, scraped.product, valid_images)
             strategy_note = analysis.issues.get("analysis_note", "")
-            total         = len(analysis.edit_tasks)
+            tasks         = analysis.edit_tasks[:5]
+            total         = len(tasks)
             log.info("[Phase/Images] %d konsept — SSE stream başlıyor", total)
 
             # Strateji hazır — frontend bölümü açabilir
@@ -439,6 +474,7 @@ async def phase_images(
                                 timeout=TASK_TIMEOUT
                             )
                         log.info("  ✓ Konsept %d: %s", idx, task.concept_name)
+                        _add_watermark(enhanced.local_path)
                         rel_path = os.path.relpath(enhanced.local_path, _OUTPUTS_DIR)
                         return {"idx": idx, "concept": task.concept_name, "path": rel_path}
                     except asyncio.TimeoutError:
@@ -473,7 +509,7 @@ async def phase_images(
 
             futures = [
                 asyncio.create_task(_run_and_enqueue(idx, task))
-                for idx, task in enumerate(analysis.edit_tasks, 1)
+                for idx, task in enumerate(tasks, 1)
             ]
 
             for _ in range(total):
@@ -1037,9 +1073,10 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
 
         try:
             analysis = await asyncio.to_thread(image_analyzer.plan_strategy, product_obj, valid_images)
-            yield _sse({"type": "start", "total": len(analysis.edit_tasks)})
+            tasks = analysis.edit_tasks[:5]
+            yield _sse({"type": "start", "total": len(tasks)})
             paths = []
-            for idx, task in enumerate(analysis.edit_tasks, 1):
+            for idx, task in enumerate(tasks, 1):
                 safe_name = "".join(c if c.isalnum() else "_" for c in task.concept_name)
                 out_path = os.path.join(out_dir, f"product_{product_id}_{idx}_{safe_name}.jpg")
                 prompt_obj = ImageEditPrompt(concept_name=task.concept_name, prompt=task.prompt)
@@ -1071,6 +1108,7 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
                 if last_err:
                     raise last_err  # tüm retry tükendi
 
+                _add_watermark(enhanced.local_path)
                 rel_path = os.path.relpath(enhanced.local_path, _OUTPUTS_DIR)
                 paths.append(rel_path)
                 await asyncio.to_thread(db.increment_usage, user.uid, "image")
@@ -1297,7 +1335,8 @@ async def phase_manual_images(
         try:
             analysis = await asyncio.to_thread(image_analyzer.plan_strategy, product, valid_images)
             strategy_note = analysis.issues.get("analysis_note", "")
-            total = len(analysis.edit_tasks)
+            tasks = analysis.edit_tasks[:5]
+            total = len(tasks)
             yield _sse({"type": "start", "total": total, "strategy_note": strategy_note})
 
             TASK_TIMEOUT = 120
@@ -1323,6 +1362,7 @@ async def phase_manual_images(
                                 asyncio.to_thread(image_analyzer.enhance, task.source_image, dummy, out_path),
                                 timeout=TASK_TIMEOUT
                             )
+                        _add_watermark(enhanced.local_path)
                         rel_path = os.path.relpath(enhanced.local_path, _OUTPUTS_DIR)
                         return {"idx": idx, "concept": task.concept_name, "path": rel_path}
                     except asyncio.TimeoutError:
@@ -1348,7 +1388,7 @@ async def phase_manual_images(
 
             futures = [
                 asyncio.create_task(_run_enqueue(idx, task))
-                for idx, task in enumerate(analysis.edit_tasks, 1)
+                for idx, task in enumerate(tasks, 1)
             ]
 
             for _ in range(total):
@@ -1616,6 +1656,14 @@ async def deploy_to_store(
         payload["title"] = new_title
     if new_desc:
         payload["description"] = new_desc
+    # Üretilen görseller + orijinal ürün görselleri
+    gen_paths = product.get("image_paths") or []
+    gen_image_urls = [f"/outputs/{p}" for p in gen_paths]
+    scraped_data = (product.get("data") or {})
+    orig_image_urls = scraped_data.get("image_urls") or scraped_data.get("images") or []
+    all_images = gen_image_urls + list(orig_image_urls)
+    if all_images:
+        payload["images"] = all_images
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

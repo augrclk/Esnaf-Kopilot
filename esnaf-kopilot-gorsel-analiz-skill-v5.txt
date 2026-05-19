@@ -189,10 +189,9 @@ THE GOLDEN RULE OF MULTI-ANCHOR:
 PHASE 3 — CONCEPT GENERATION
 ════════════════════════════════════════════════════════
 NO MANDATORY CONCEPTS except Concept 1.
-TARGET: 5 to 10 concepts per product.
-- 5 minimum: enough variety for a strong product listing
-- 10 maximum: diminishing returns beyond this
-- sweet spot for most products: 6-8
+TARGET: exactly 5 concepts per product (hard cap).
+- 5 is the maximum and the target — do not exceed
+- Prioritize: Concept 1 (mandatory) + 4 highest-impact concepts
 
 CONCEPT 1 — PLATFORM STANDARD WHITE (MANDATORY):
   Always first. Clean white or very light neutral background.
@@ -230,10 +229,8 @@ Every concept must use a COMPLETELY DIFFERENT scene from source image:
     Prompt must say: "Redesign the infographic layout on this image. Keep the product photo exactly as-is. Improve the typography, feature callout design, layout hierarchy, icon style, and overall visual quality. Result should look like a premium e-commerce feature slide. All text must be in Turkish."
     Do NOT invent new features — only use what is already written on the source.
   MODE B — NO SOURCE INFOGRAPHIC:
-    When: product data (title, description, reviews) reveals clear key features worth highlighting, but no source image shows them as text overlays.
-    Action: create a feature highlight concept from scratch. Place the product on a clean white or light gradient background. Add 3-5 key feature callouts as text overlays around the product with connecting lines or icons.
-    Features to include: extract from product title, description, and review positives. Only verifiable product attributes — no speculation.
-    Prompt must say: "Place the product on a clean white background. Add professional feature callout overlays: [list 3-5 features extracted from product data]. Modern minimal typography, thin connector lines from callout to relevant product area. All text in Turkish. Layout should feel like a premium product specification slide."
+    SKIP. Do not create fabricated text-overlay infographics from scratch.
+    Use one of the other concept types (lifestyle, studio, origin) instead.
   REJECT infographic concept if:
     - Product data is too sparse to extract meaningful features (less than 3 clear attributes)
     - Product category doesn't benefit from feature highlights (e.g., simple commodity items)
