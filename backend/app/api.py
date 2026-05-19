@@ -64,9 +64,9 @@ _CACHE_TTL = 7200  # 2 saat
 # ── Görsel üretimde rate limiter ─────────────────────────────────────────────
 # Semaphore=1: tek eş zamanlı istek.
 # IMAGE_MIN_INTERVAL: ardışık istekler arası minimum süre (saniye).
-# gemini-3.1-flash-image-preview ~4 RPM → 15s gap güvenli.
+# gemini-3.1-flash-image-preview ~3 RPM → 20s gap güvenli, retry azalır.
 _IMAGE_SEM = asyncio.Semaphore(1)
-_IMAGE_MIN_INTERVAL = 15.0  # saniye
+_IMAGE_MIN_INTERVAL = 20.0  # saniye
 _image_last_call: float = 0.0
 _image_lock = asyncio.Lock()   # _image_last_call erişimi için
 
