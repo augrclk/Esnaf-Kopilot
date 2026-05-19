@@ -187,12 +187,48 @@
         .no-gsap nav,
         .no-gsap #hero h1,
         .no-gsap #cta > div { opacity: 1 !important; transform: none !important; }
+
+        /* ── Mobile overrides ───────────────────── */
+        @media (max-width: 767px) {
+            nav { padding-left: 1rem; padding-right: 1rem; }
+            .snap-section { padding-top: 64px; }
+
+            /* Hero: full height center */
+            #hero { justify-content: center; }
+
+            /* Features: full height scrollable */
+            #features { min-height: 100vh; overflow-y: auto; }
+            #features > div.w-full { max-height: none; overflow: visible; }
+
+            /* How-it-works: no fixed character height */
+            #how-it-works { justify-content: flex-start; padding-top: 80px; }
+
+            /* Steps grid: 2-col on small screens, last item spans full */
+            .step-box {
+                padding: 12px 10px;
+                min-height: 80px;
+            }
+
+            /* CTA: less padding */
+            #cta { padding-top: 1rem; padding-bottom: 2rem; gap: 1rem; }
+            #cta .glass-card { padding: 1.75rem 1.25rem; }
+            #cta h2 { font-size: 2rem; }
+            #cta p { font-size: 0.95rem; }
+
+            /* Nav links hidden on small */
+            .hidden.md\\:flex { display: none !important; }
+        }
+
+        @media (max-width: 480px) {
+            #cta h2 { font-size: 1.75rem; }
+            .step-box { padding: 10px 8px; min-height: 72px; }
+        }
     </style>
 </head>
 <body>
 
     <!-- Navbar -->
-    <nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 py-4">
+    <nav class="fixed top-0 w-full z-50 flex justify-between items-center px-4 md:px-8 py-4">
         <!-- Logo -->
         <div class="flex items-center">
             <div id="nav-text" class="flex items-center font-extrabold text-2xl tracking-tight cursor-pointer" style="font-family: 'Outfit', sans-serif;" onclick="window.scrollTo({top:0,behavior:'smooth'})">
@@ -227,10 +263,10 @@
 
         <!-- SECTION 1: HERO -->
         <section id="hero" class="snap-section flex items-center justify-between px-2 md:px-4">
-            <!-- Left: Robot -->
-            <div class="w-1/3 md:w-1/4 flex justify-start items-end h-full pb-[10vh]">
+            <!-- Left: Robot (hidden on mobile) -->
+            <div class="hidden md:flex w-1/4 justify-start items-end h-full pb-[10vh]">
                 <div class="relative">
-                    <div class="bubble-static bubble-robot bottom-[85%] left-[60%] md:left-[80%] whitespace-nowrap">
+                    <div class="bubble-static bubble-robot bottom-[85%] left-[80%] whitespace-nowrap">
                         Gel göstereyim!
                     </div>
                     <img src="characters/robot-selam.png" class="char-img" alt="Robot">
@@ -238,8 +274,8 @@
             </div>
 
             <!-- Center: Logo & Title -->
-            <div class="w-1/3 md:w-2/4 flex justify-center items-center h-full z-10">
-                <h1 class="text-[3rem] md:text-[5.5rem] lg:text-[7rem] font-extrabold tracking-tight flex items-center justify-center flex-wrap text-center" style="line-height: 1;">
+            <div class="w-full md:w-2/4 flex flex-col justify-center items-center h-full z-10 gap-6">
+                <h1 class="text-[3.5rem] sm:text-[4.5rem] md:text-[5.5rem] lg:text-[7rem] font-extrabold tracking-tight flex items-center justify-center flex-wrap text-center" style="line-height: 1;">
                     <span style="color: var(--orange);">Esnaf</span>
                     <span style="color: var(--purple); display: flex; align-items: center;">
                         K
@@ -257,12 +293,19 @@
                         pilot
                     </span>
                 </h1>
+                <!-- Mobile tagline -->
+                <p class="md:hidden text-center text-sm text-white/50 px-6">AI destekli ürün analizi & optimizasyon platformu</p>
+                <!-- Mobile CTA -->
+                <button onclick="window.location.href='dashboard.html'" class="md:hidden cta-btn text-white font-bold text-sm px-8 py-3 rounded-full inline-flex items-center gap-2">
+                    Hemen Başla
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </button>
             </div>
 
-            <!-- Right: Man -->
-            <div class="w-1/3 md:w-1/4 flex justify-end items-end h-full pb-[10vh]">
+            <!-- Right: Man (hidden on mobile) -->
+            <div class="hidden md:flex w-1/4 justify-end items-end h-full pb-[10vh]">
                 <div class="relative">
-                    <div class="bubble-static bubble-man bottom-[85%] right-[50%] md:right-[60%] whitespace-nowrap">
+                    <div class="bubble-static bubble-man bottom-[85%] right-[60%] whitespace-nowrap">
                         Ne hizmet sunuyorsunuz?
                     </div>
                     <img src="characters/adam-dusunuyor.png" class="char-img" alt="Adam">
@@ -277,10 +320,10 @@
 
         <!-- SECTION 2: FEATURES -->
         <section id="features" class="snap-section flex items-center justify-between px-2 md:px-4 bg-[#0c1222]">
-            <!-- Left: Robot -->
-            <div class="w-1/3 md:w-1/4 flex justify-start items-end h-full pb-[10vh]">
+            <!-- Left: Robot (hidden on mobile) -->
+            <div class="hidden md:flex w-1/4 justify-start items-end h-full pb-[10vh]">
                 <div class="relative">
-                    <div class="bubble-static bubble-robot bottom-[85%] left-[50%] md:left-[60%] text-sm md:text-base max-w-[200px]">
+                    <div class="bubble-static bubble-robot bottom-[85%] left-[60%] text-sm md:text-base max-w-[200px]">
                         Biz senin ürününü anlayıp analiz ederiz...
                     </div>
                     <img src="characters/robot-gosteriyor.png" class="char-img" alt="Robot" loading="lazy">
@@ -288,26 +331,26 @@
             </div>
 
             <!-- Center: Text Lines -->
-            <div class="w-1/3 md:w-2/4 flex flex-col justify-center h-full px-4 md:px-10 z-10">
-                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center"><span style="color: var(--orange)">Esnaf Kopilot</span> Özellikleri</h2>
+            <div class="w-full md:w-2/4 flex flex-col justify-center h-full px-4 md:px-10 z-10 py-8 md:py-0">
+                <h2 class="text-2xl md:text-4xl font-bold mb-6 text-center"><span style="color: var(--orange)">Esnaf Kopilot</span> Özellikleri</h2>
                 <div class="feature-item">
-                    <h3 class="text-lg md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-2xl">🔍</span> Ürün Analizi</h3>
+                    <h3 class="text-base md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-xl md:text-2xl">🔍</span> Ürün Analizi</h3>
                     <p class="text-gray-400 text-xs md:text-sm">Ürününüzü ekleyin — yapay zekamız başlık, açıklama, görseller ve müşteri yorumlarını derinlemesine analiz ederek 100 üzerinden puanlar.</p>
                 </div>
                 <div class="feature-item">
-                    <h3 class="text-lg md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-2xl">🚀</span> SEO & AEO Optimizasyonu</h3>
-                    <p class="text-gray-400 text-xs md:text-sm">Başlık, açıklama ve anahtar kelimelerinizi hem Google hem Trendyol hem de AI asistan aramalarına göre optimize eder. Kategori bazlı 100 puanlık skor sistemi ile tam olarak neyin eksik olduğunu görürsünüz.</p>
+                    <h3 class="text-base md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-xl md:text-2xl">🚀</span> SEO & AEO Optimizasyonu</h3>
+                    <p class="text-gray-400 text-xs md:text-sm">Başlık, açıklama ve anahtar kelimelerinizi Google, Trendyol ve AI asistan aramalarına göre optimize eder. 100 puanlık skor sistemi ile tam olarak neyin eksik olduğunu görürsünüz.</p>
                 </div>
                 <div class="feature-item">
-                    <h3 class="text-lg md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-2xl">🖼️</span> AI Görsel İyileştirme</h3>
+                    <h3 class="text-base md:text-xl font-semibold mb-1 flex items-center gap-2"><span class="text-xl md:text-2xl">🖼️</span> AI Görsel İyileştirme</h3>
                     <p class="text-gray-400 text-xs md:text-sm">Ürün görsellerinizi profesyonel sahnelere taşıyın. Orijinal ürün birebir korunur — arka plan, ışık ve sahne tamamen yenilenir. Stüdyo, yaşam tarzı ve infografik konseptler.</p>
                 </div>
             </div>
 
-            <!-- Right: Man -->
-            <div class="w-1/3 md:w-1/4 flex justify-end items-end h-full pb-[10vh]">
+            <!-- Right: Man (hidden on mobile) -->
+            <div class="hidden md:flex w-1/4 justify-end items-end h-full pb-[10vh]">
                 <div class="relative">
-                    <div class="bubble-static bubble-man bottom-[95%] right-[50%] md:right-[10%] whitespace-nowrap text-sm md:text-base">
+                    <div class="bubble-static bubble-man bottom-[95%] right-[10%] whitespace-nowrap text-sm md:text-base">
                         Peki nasıl çalışıyor?
                     </div>
                     <img src="characters/adam-guvenli.png" class="char-img" alt="Adam" loading="lazy">
@@ -317,10 +360,10 @@
 
         <!-- SECTION 3: HOW IT WORKS -->
         <section id="how-it-works" class="snap-section flex flex-col justify-center px-2 md:px-4">
-            <!-- Top: Characters & Title -->
-            <div class="flex justify-between items-end h-[45vh] w-full">
-                <!-- Left: Robot -->
-                <div class="w-1/3 flex justify-start items-end">
+            <!-- Top: Characters & Title (characters hidden on mobile) -->
+            <div class="flex justify-between items-end w-full md:h-[45vh]">
+                <!-- Left: Robot (hidden on mobile) -->
+                <div class="hidden md:flex w-1/3 justify-start items-end">
                     <div class="relative">
                         <div class="bubble-static bubble-robot bottom-[95%] left-[50%] whitespace-nowrap">
                             Bak böyle çalışır!
@@ -330,12 +373,12 @@
                 </div>
 
                 <!-- Center: Title -->
-                <div class="w-1/3 text-center mb-8 z-10">
-                    <h2 class="text-4xl md:text-5xl font-bold">Nasıl Çalışır?</h2>
+                <div class="w-full md:w-1/3 text-center py-8 md:mb-8 z-10">
+                    <h2 class="text-3xl md:text-5xl font-bold">Nasıl Çalışır?</h2>
                 </div>
 
-                <!-- Right: Man -->
-                <div class="w-1/3 flex justify-end items-end">
+                <!-- Right: Man (hidden on mobile) -->
+                <div class="hidden md:flex w-1/3 justify-end items-end">
                     <div class="relative">
                         <div class="bubble-static bubble-man bottom-[95%] right-[50%] whitespace-nowrap">
                             Hemen denemek isterim
@@ -346,35 +389,35 @@
             </div>
 
             <!-- Bottom: 5 Steps Timeline -->
-            <div class="w-full max-w-5xl mx-auto bg-black/30 p-6 md:p-8 rounded-3xl border border-white/5 shadow-2xl mt-4 z-10">
-                <div class="flex flex-wrap md:flex-nowrap justify-between items-center w-full gap-2 md:gap-4">
-                    <div class="step-box flex-1">
-                        <span class="text-2xl">📦</span>
-                        <span class="text-xs md:text-sm font-bold">Ürünü Ekle</span>
+            <div class="w-full max-w-5xl mx-auto bg-black/30 p-4 md:p-8 rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl z-10 mb-8 md:mb-0">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-nowrap justify-between items-center w-full gap-2 md:gap-4">
+                    <div class="step-box">
+                        <span class="text-xl md:text-2xl">📦</span>
+                        <span class="text-xs font-bold">Ürünü Ekle</span>
                         <span class="text-xs text-white/40 hidden md:block text-center leading-tight">Mağazandan içe aktar</span>
                     </div>
                     <div class="step-arrow hidden md:block">→</div>
-                    <div class="step-box flex-1">
-                        <span class="text-2xl">🤖</span>
-                        <span class="text-xs md:text-sm font-bold">AI Analizi</span>
+                    <div class="step-box">
+                        <span class="text-xl md:text-2xl">🤖</span>
+                        <span class="text-xs font-bold">AI Analizi</span>
                         <span class="text-xs text-white/40 hidden md:block text-center leading-tight">Skor, yorumlar, görseller</span>
                     </div>
                     <div class="step-arrow hidden md:block">→</div>
-                    <div class="step-box flex-1">
-                        <span class="text-2xl">💡</span>
-                        <span class="text-xs md:text-sm font-bold">Öneriler</span>
+                    <div class="step-box">
+                        <span class="text-xl md:text-2xl">💡</span>
+                        <span class="text-xs font-bold">Öneriler</span>
                         <span class="text-xs text-white/40 hidden md:block text-center leading-tight">Yeni başlık, açıklama, görseller</span>
                     </div>
                     <div class="step-arrow hidden md:block">→</div>
-                    <div class="step-box flex-1">
-                        <span class="text-2xl">✅</span>
-                        <span class="text-xs md:text-sm font-bold">Uygula</span>
+                    <div class="step-box">
+                        <span class="text-xl md:text-2xl">✅</span>
+                        <span class="text-xs font-bold">Uygula</span>
                         <span class="text-xs text-white/40 hidden md:block text-center leading-tight">Mağazana deploy et</span>
                     </div>
                     <div class="step-arrow hidden md:block">→</div>
-                    <div class="step-box flex-1" style="border-color: var(--orange); background: rgba(247,148,29,0.1);">
-                        <span class="text-2xl">📈</span>
-                        <span class="text-xs md:text-sm font-bold" style="color:var(--orange);">Kazan</span>
+                    <div class="step-box col-span-2 sm:col-span-1" style="border-color: var(--orange); background: rgba(247,148,29,0.1);">
+                        <span class="text-xl md:text-2xl">📈</span>
+                        <span class="text-xs font-bold" style="color:var(--orange);">Kazan</span>
                         <span class="text-xs text-white/40 hidden md:block text-center leading-tight">Daha fazla tıklama & satış</span>
                     </div>
                 </div>
@@ -382,10 +425,10 @@
         </section>
 
         <!-- SECTION 4: CTA -->
-        <section id="cta" class="snap-section flex flex-col md:flex-row items-center justify-center bg-[#0c1222] px-4 md:px-10 gap-8">
-            <!-- Left: Character Image Slideshow -->
-            <div class="w-full md:w-1/2 flex flex-col justify-center items-center mt-10 md:mt-0">
-                <div class="relative w-[90%] max-w-[55vh] aspect-square flex justify-center items-center">
+        <section id="cta" class="snap-section flex flex-col md:flex-row items-center justify-center bg-[#0c1222] px-4 md:px-10 gap-6 md:gap-8">
+            <!-- Left: Character Image Slideshow (smaller on mobile) -->
+            <div class="w-full md:w-1/2 flex flex-col justify-center items-center mt-6 md:mt-0">
+                <div class="relative w-[70%] sm:w-[80%] max-w-[55vh] aspect-square flex justify-center items-center">
                     <img src="characters/robot%20rate.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-100" alt="Esnaf Kopilot" loading="lazy">
                     <img src="characters/robot%20creativety.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot" loading="lazy">
                     <img src="characters/robot%20working.png" class="slideshow-img absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 opacity-0" alt="Esnaf Kopilot" loading="lazy">

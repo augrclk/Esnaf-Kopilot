@@ -2041,31 +2041,71 @@ input[type="text"]:focus {
     .product-thumb { width: 76px; height: 76px; }
     .product-card-actions { grid-column: 1 / -1; justify-content: stretch; }
     .product-action-btn { flex: 1; }
+    .products-table-header { display: none; }
 }
 
 @media (max-width: 600px) {
+    /* Layout */
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .platform-grid { grid-template-columns: repeat(2, 1fr); }
     .page-inner { padding: 1rem; }
     .topbar { padding: 0.75rem 1rem; }
-    .yakinda-grid { grid-template-columns: 1fr; }
+
+    /* Dashboard */
     .welcome-title { font-size: 1.4rem; }
-    .yakinda-hero h1 { font-size: 1.7rem; }
-    .locked-hint-item { flex-wrap: wrap; }
-    .kopilot-chat-shell { min-height: calc(100vh - 130px); padding: 1.2rem; }
-    .product-context-select { max-width: none; width: 100%; }
+    .welcome-row { flex-direction: column; align-items: flex-start; }
+    .btn-new-analysis { width: 100%; justify-content: center; }
+
+    /* Products page header */
+    .products-header { flex-direction: column; align-items: flex-start; }
+    .products-header > div:last-child { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+    .products-header .btn-primary { width: 100%; justify-content: center; }
+
+    /* Product cards */
     .product-card { grid-template-columns: 64px 1fr; gap: 0.8rem; }
     .product-thumb { width: 64px; height: 64px; }
     .product-card-actions { flex-direction: column; }
-    .platform-choice-row,
-    .product-detail-actions { grid-template-columns: 1fr; }
-    .product-detail-topbar,
-    .product-detail-body,
-    .product-detail-actions { padding-left: 1rem; padding-right: 1rem; }
+    .locked-hint-item { flex-wrap: wrap; }
+
+    /* Kopilot / chat */
+    .kopilot-chat-shell { min-height: calc(100vh - 130px); padding: 1rem; }
+    .kopilot-chat-head { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .product-context-select { max-width: none; width: 100%; }
+    .quick-questions { flex-wrap: wrap; gap: 0.4rem; }
+    .quick-q-btn { font-size: 0.78rem; padding: 0.45rem 0.7rem; }
+
+    /* Modals */
+    .modal-overlay { padding: 0.75rem; align-items: flex-end; }
+    .modal-card { padding: 1.2rem; border-radius: 16px 16px 0 0; width: 100%; }
+    .platform-choice-row { grid-template-columns: 1fr; }
+
+    /* Product detail panel */
+    .product-detail-overlay { align-items: flex-end; }
+    .product-detail-shell { width: 100%; min-height: 85vh; border-radius: 20px 20px 0 0; }
+    .product-detail-topbar { padding: 1rem; gap: 0.75rem; }
+    .product-detail-topbar h2 { font-size: 1rem; }
+    .product-detail-body { padding: 1rem; }
+    .product-detail-actions { grid-template-columns: 1fr; padding: 0.75rem 1rem; gap: 0.6rem; }
+    .detail-action-btn { min-height: 48px; }
+    .detail-gallery img { width: 88px; height: 88px; }
+
+    /* Yakında */
+    .yakinda-grid { grid-template-columns: 1fr; }
+    .yakinda-hero h1 { font-size: 1.7rem; }
+    .yakinda-cta { flex-direction: column; align-items: flex-start; }
+
+    /* MVP banner */
+    .mvp-banner { padding: 0.5rem 1rem; font-size: 0.78rem; flex-wrap: wrap; gap: 0.4rem; }
+    .mvp-banner span:first-of-type { flex-basis: 100%; }
 }
 
 @media (max-width: 400px) {
     .stats-grid { grid-template-columns: 1fr; }
+    .stat-card { padding: 1rem; gap: 0.75rem; }
+    .stat-number { font-size: 1.5rem; }
+    .page-inner { padding: 0.75rem; }
+    .welcome-title { font-size: 1.25rem; }
+    .product-detail-topbar h2 { font-size: 0.95rem; }
 }
 
 /* ── Sidebar: always dark ───────────────────────────────────────── */
