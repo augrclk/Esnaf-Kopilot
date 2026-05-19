@@ -163,6 +163,7 @@ async function sendChat() {
         appendMessage(messagesEl, 'ai', 'Bağlantı hatası: ' + err.message);
     } finally {
         sendBtn.disabled = false;
+        saveChatHistory();
     }
 }
 
@@ -325,6 +326,7 @@ async function loadProducts() {
         _products = res.data || [];
         renderProducts();
         initKopilotPage();
+        renderDashboardRecent(_products);
     } catch (err) {
         if (list) {
             list.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Ürünler yüklenemedi: ${escHtml(err.message)}</p></div>`;
@@ -379,19 +381,55 @@ function renderProducts() {
     }).join('');
 }
 
+function _chatStorageKey() {
+    return `ek_chat_${_currentUser?.uid || 'anon'}`;
+}
+
+function saveChatHistory() {
+    try {
+        const msgs = document.getElementById('chatMessages');
+        if (!msgs) return;
+        const items = [...msgs.querySelectorAll('.chat-msg')].map(el => ({
+            role: el.classList.contains('chat-msg-user') ? 'user' : 'ai',
+            html: el.querySelector('.chat-msg-bubble')?.innerHTML || '',
+        }));
+        localStorage.setItem(_chatStorageKey(), JSON.stringify(items.slice(-40)));
+    } catch (_) {}
+}
+
+function loadChatHistory() {
+    try {
+        const msgs = document.getElementById('chatMessages');
+        if (!msgs) return;
+        const raw = localStorage.getItem(_chatStorageKey());
+        if (!raw) return;
+        const items = JSON.parse(raw);
+        msgs.innerHTML = '';
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = `chat-msg ${item.role === 'user' ? 'chat-msg-user' : 'chat-msg-ai'}`;
+            const icon = item.role === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
+            div.innerHTML = `<div class="chat-msg-icon">${icon}</div><div class="chat-msg-bubble">${item.html}</div>`;
+            msgs.appendChild(div);
+        });
+        msgs.scrollTop = msgs.scrollHeight;
+    } catch (_) {}
+}
+
 function initKopilotPage() {
     const select = document.getElementById('copilotProductSelect');
     const empty = document.getElementById('copilotEmptyState');
     const chatInput = document.getElementById('chatInput');
     if (select) {
         const current = select.value;
-        select.innerHTML = '<option value="">Tüm ürünler</option>' + _products.map(p =>
+        select.innerHTML = '<option value="">Genel sohbet</option>' + _products.map(p =>
             `<option value="${p.id}">${escHtml(_productTitle(p))}</option>`
         ).join('');
         if (_products.some(p => p.id === current)) select.value = current;
     }
-    if (empty) empty.style.display = _products.length ? 'none' : 'flex';
-    if (chatInput) chatInput.disabled = !_products.length;
+    if (empty) empty.style.display = 'none';
+    if (chatInput) chatInput.disabled = false;
+    loadChatHistory();
 }
 
 
@@ -631,7 +669,48 @@ async function loadDashboardStats() {
         document.getElementById('statThisMonth').textContent = s.this_month ?? 0;
         document.getElementById('statAvgScore').textContent = s.avg_score ?? '—';
         document.getElementById('statImages').textContent = s.images_this_month ?? 0;
+        document.getElementById('statTotalProducts').textContent = s.total_products ?? 0;
+        document.getElementById('statImproved').textContent = s.total_improved ?? 0;
     } catch (_) {}
+}
+
+function renderDashboardRecent(products) {
+    const grid = document.getElementById('recentGrid');
+    if (!grid) return;
+
+    const analyzed = products
+        .filter(p => p.score !== null && p.score !== undefined)
+        .slice(0, 4);
+    const improved = products
+        .filter(p => p.status === 'improved')
+        .slice(0, 4);
+
+    if (!analyzed.length && !improved.length) {
+        grid.style.display = 'none';
+        return;
+    }
+    grid.style.display = 'grid';
+
+    const renderList = (items, emptyText) => {
+        if (!items.length) return `<p class="recent-empty">${emptyText}</p>`;
+        return items.map(p => `
+            <div class="recent-item" onclick="openProductDetail('${escHtml(p.id)}')">
+                <div class="recent-item-thumb">
+                    ${p.scraped_data?.image_urls?.[0]
+                        ? `<img src="${escHtml(p.scraped_data.image_urls[0])}" alt="" loading="lazy">`
+                        : `<i class="fa-solid fa-box"></i>`}
+                </div>
+                <div class="recent-item-info">
+                    <span class="recent-item-title">${escHtml(p.title || 'İsimsiz ürün')}</span>
+                    ${p.score !== null && p.score !== undefined ? `<span class="recent-item-score">${p.score}/100</span>` : ''}
+                </div>
+            </div>`).join('');
+    };
+
+    const raEl = document.getElementById('recentAnalyses');
+    const riEl = document.getElementById('recentImprovements');
+    if (raEl) raEl.innerHTML = renderList(analyzed, 'Henüz analiz yok');
+    if (riEl) riEl.innerHTML = renderList(improved, 'Henüz iyileştirme yok');
 }
 
 // ── API Anahtarları ───────────────────────────────────────────────────────────

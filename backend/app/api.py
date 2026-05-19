@@ -971,6 +971,7 @@ async def improve_product_stream(product_id: str, user: AuthUser = Depends(get_c
             "notes": getattr(new_content, "notes", ""),
         }
         await asyncio.to_thread(db.update_product_content, user.uid, product_id, content_update, gift_suggestions, new_score)
+        await asyncio.to_thread(db.increment_usage, user.uid, "analysis")
         yield _sse({"type": "content_done", "data": {
             "new_title": new_content.new_title,
             "new_description": new_content.new_description,

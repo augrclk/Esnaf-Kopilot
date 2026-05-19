@@ -48,7 +48,7 @@
 
         <!-- Sidebar -->
         <nav id="sidebar">
-            <div class="sidebar-logo">
+            <div class="sidebar-logo" style="cursor:pointer;" onclick="window.location.href='index.html'" title="Ana Sayfaya Dön">
                 <img src="characters/logo.svg" alt="Esnaf Kopilot" class="sidebar-logo-img">
             </div>
 
@@ -137,6 +137,20 @@
                     <!-- Stats -->
                     <div class="stats-grid">
                         <div class="stat-card glass-panel">
+                            <div class="stat-icon"><i class="fa-solid fa-box"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="statTotalProducts">0</div>
+                                <div class="stat-label">Toplam Ürün</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-icon stat-icon-purple"><i class="fa-solid fa-star"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="statAvgScore">—</div>
+                                <div class="stat-label">Ort. Skor</div>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-panel">
                             <div class="stat-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
                             <div class="stat-body">
                                 <div class="stat-number" id="statTotalAnalyses">0</div>
@@ -144,17 +158,10 @@
                             </div>
                         </div>
                         <div class="stat-card glass-panel">
-                            <div class="stat-icon stat-icon-green"><i class="fa-solid fa-calendar-check"></i></div>
+                            <div class="stat-icon stat-icon-green"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                             <div class="stat-body">
-                                <div class="stat-number" id="statThisMonth">0</div>
-                                <div class="stat-label">Bu Ay</div>
-                            </div>
-                        </div>
-                        <div class="stat-card glass-panel">
-                            <div class="stat-icon stat-icon-purple"><i class="fa-solid fa-star"></i></div>
-                            <div class="stat-body">
-                                <div class="stat-number" id="statAvgScore">—</div>
-                                <div class="stat-label">Ort. SEO Skoru</div>
+                                <div class="stat-number" id="statImproved">0</div>
+                                <div class="stat-label">İyileştirilen Ürün</div>
                             </div>
                         </div>
                         <div class="stat-card glass-panel">
@@ -164,8 +171,26 @@
                                 <div class="stat-label">Üretilen Görsel</div>
                             </div>
                         </div>
+                        <div class="stat-card glass-panel">
+                            <div class="stat-icon stat-icon-green"><i class="fa-solid fa-calendar-check"></i></div>
+                            <div class="stat-body">
+                                <div class="stat-number" id="statThisMonth">0</div>
+                                <div class="stat-label">Bu Ay Analiz</div>
+                            </div>
+                        </div>
                     </div>
 
+                    <!-- Son Aktivite -->
+                    <div class="recent-grid" id="recentGrid" style="display:none;">
+                        <div class="recent-col glass-panel">
+                            <h3 class="recent-col-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Son Analizler</h3>
+                            <div id="recentAnalyses" class="recent-list"></div>
+                        </div>
+                        <div class="recent-col glass-panel">
+                            <h3 class="recent-col-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Son İyileştirmeler</h3>
+                            <div id="recentImprovements" class="recent-list"></div>
+                        </div>
+                    </div>
 
                 </div>
             </div>
@@ -249,31 +274,15 @@
 
                     <!-- Section: Platformlar -->
                     <div class="yakinda-section">
-                        <h3 class="yakinda-section-title"><i class="fa-solid fa-store"></i> Yeni Platformlar</h3>
+                        <h3 class="yakinda-section-title"><i class="fa-solid fa-store"></i> Çoklu Pazaryeri Desteği</h3>
                         <div class="yakinda-grid">
                             <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Çok Yakında</span>
+                                <span class="yakinda-status-badge">Yakında</span>
                                 <div class="yakinda-card-icon" style="background:rgba(242,107,39,0.12);color:var(--primary);">
-                                    <i class="fa-solid fa-basket-shopping"></i>
+                                    <i class="fa-solid fa-store"></i>
                                 </div>
-                                <h3>Hepsiburada</h3>
-                                <p>Hepsiburada ürünlerinizi yapay zeka ile analiz edin, başlık ve açıklamalarınızı optimize edin.</p>
-                            </div>
-                            <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Çok Yakında</span>
-                                <div class="yakinda-card-icon" style="background:rgba(242,107,39,0.12);color:var(--primary);">
-                                    <i class="fa-solid fa-tag"></i>
-                                </div>
-                                <h3>N11</h3>
-                                <p>N11 pazaryerinde ürün listelerinizi SEO açısından güçlendirin ve öne çıkın.</p>
-                            </div>
-                            <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Planlanan</span>
-                                <div class="yakinda-card-icon" style="background:rgba(242,107,39,0.12);color:var(--primary);">
-                                    <i class="fa-brands fa-amazon"></i>
-                                </div>
-                                <h3>Amazon TR</h3>
-                                <p>Amazon Türkiye'deki ürünlerinizi küresel rekabete hazırlayın, A9 algoritması için optimize edin.</p>
+                                <h3>Çoklu Pazaryeri Desteği</h3>
+                                <p>Hepsiburada, N11, Amazon TR ve daha fazlası. Tüm mağazalarınızı tek platformdan yönetin, AI ile optimize edin.</p>
                             </div>
                         </div>
                     </div>
@@ -283,7 +292,7 @@
                         <h3 class="yakinda-section-title"><i class="fa-solid fa-chart-pie"></i> Gelişmiş Analiz</h3>
                         <div class="yakinda-grid">
                             <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Çok Yakında</span>
+                                <span class="yakinda-status-badge">Yakında</span>
                                 <div class="yakinda-card-icon" style="background:rgba(142,45,226,0.12);color:var(--secondary);">
                                     <i class="fa-solid fa-layer-group"></i>
                                 </div>
@@ -291,7 +300,7 @@
                                 <p>50+ ürünü CSV ile yükleyin, tamamını bir gecede analiz edin. Zaman = para.</p>
                             </div>
                             <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <span class="yakinda-status-badge">Yakında</span>
                                 <div class="yakinda-card-icon" style="background:rgba(142,45,226,0.12);color:var(--secondary);">
                                     <i class="fa-solid fa-trophy"></i>
                                 </div>
@@ -299,7 +308,7 @@
                                 <p>Aynı kategorideki rakip ürünleri karşılaştırın, zayıf noktalarını keşfedin ve öne geçin.</p>
                             </div>
                             <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <span class="yakinda-status-badge">Yakında</span>
                                 <div class="yakinda-card-icon" style="background:rgba(142,45,226,0.12);color:var(--secondary);">
                                     <i class="fa-solid fa-fire-flame-curved"></i>
                                 </div>
@@ -314,7 +323,7 @@
                         <h3 class="yakinda-section-title"><i class="fa-solid fa-sliders"></i> Optimizasyon</h3>
                         <div class="yakinda-grid">
                             <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <span class="yakinda-status-badge">Yakında</span>
                                 <div class="yakinda-card-icon" style="background:rgba(16,185,129,0.12);color:var(--success);">
                                     <i class="fa-solid fa-turkish-lira-sign"></i>
                                 </div>
@@ -322,7 +331,7 @@
                                 <p>Rakip fiyatlarını ve talep eğrilerini analiz ederek en karlı fiyat aralığını belirleyin.</p>
                             </div>
                             <div class="yakinda-card">
-                                <span class="yakinda-status-badge">Bu Yıl</span>
+                                <span class="yakinda-status-badge">Yakında</span>
                                 <div class="yakinda-card-icon" style="background:rgba(16,185,129,0.12);color:var(--success);">
                                     <i class="fa-solid fa-chart-line"></i>
                                 </div>

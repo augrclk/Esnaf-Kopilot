@@ -273,11 +273,21 @@ def get_stats(uid: str) -> dict:
         if isinstance(score, (int, float)):
             scores.append(score)
 
+    products = list(
+        db.collection("users").document(uid)
+          .collection("products")
+          .stream()
+    )
+    total_products = len(products)
+    total_improved = sum(1 for p in products if (p.to_dict() or {}).get("status") == "improved")
+
     return {
         "total_analyses": len(results),
         "this_month": usage.get("analyses", 0),
         "images_this_month": usage.get("images", 0),
         "avg_score": round(sum(scores) / len(scores)) if scores else None,
+        "total_products": total_products,
+        "total_improved": total_improved,
         "tier": usage.get("tier", "free"),
         "limits": usage.get("limits", TIER_LIMITS["free"]),
     }
