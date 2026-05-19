@@ -77,36 +77,34 @@ _CATALOG: list[dict] = [
     },
     {
         "id": "tc-003",
-        "title": "H2O Humidifier Taşınabilir Ultrasonik Hava Nemlendirici Buhar Makinesi ve Aroma Difüzörü",
+        "title": "Tom Ford Lost Cherry Eau de Parfum 100 ml",
         "description": (
-            "Taşınabilir tasarımı sayesinde evde, ofiste veya seyahatlerde kolayca taşınabilir ve her yerde rahatlıkla kullanılabilir. "
-            "Ultrasonik teknolojisi ile havaya nem verirken aynı zamanda hoş kokuların yayılmasını sağlar, "
-            "böylece hem nemlendirici hem de aroma difüzörü olarak işlev görür. "
-            "Uzun süreli kullanım için idealdir. "
-            "Düşük enerji tüketimiyle ekonomik bir seçenek sunar ve enerji tasarrufu sağlar. "
-            "Not: Yanında koku gelmemektedir."
+            "Tom Ford Lost Cherry, ikonik Private Blend koleksiyonunun en baştan çıkarıcı parçalarından biridir. "
+            "Kiraz likörü, acı badem ve tatlı kahveyle açılan koku, sıcak vanilya ve tonka fasulyesi notalarıyla derinleşir. "
+            "Unisex bir parfüm olan Lost Cherry; hem erkek hem kadın kullanıcılar için uygundur. "
+            "Yoğun ve uzun süre kalıcı EDP formülü, özel gecelere ve kışın derin bir kokuya ihtiyaç duyulan anlara hitap eder. "
+            "100 ml Eau de Parfum — Vaporisateur Spray. "
+            "Menşei: ABD. Garanti: Orijinal satıcı garantisi."
         ),
-        "price": 249.90,
-        "category": "Ev & Yaşam > Hava Nemlendirici > Ultrasonik Nemlendirici",
-        "brand": "H2O",
-        "rating": 4.1,
-        "review_count": 562,
+        "price": 8450.00,
+        "category": "Kozmetik & Kişisel Bakım > Parfüm > Erkek Parfümü",
+        "brand": "Tom Ford",
+        "rating": 4.8,
+        "review_count": 341,
         "images": [
             f"{_IMG}/tc003_1.png",
-            f"{_IMG}/tc003_2.png",
-            f"{_IMG}/tc003_3.png",
         ],
         "reviews": [
-            {"rating": 5, "text": "Ofisimde kullanıyorum, ses yok denecek kadar sessiz. Çalışma arkadaşlarım fark bile etmiyor."},
-            {"rating": 4, "text": "Aroma difüzörü kısmı harika, koku yayılımı çok iyi. Lavanta yağıyla denedim süper."},
-            {"rating": 2, "text": "Su deposu çok küçük, 3-4 saatte bitiyor. Gece boyunca kullanmak isteyenler için yetersiz."},
-            {"rating": 4, "text": "Tasarımı çok şık, masaya yakışıyor. USB ile çalışması büyük avantaj."},
-            {"rating": 1, "text": "2 hafta sonra buhar çıkışı durdu. İade ettim ama kargo ücretini ben ödedim, 45 TL gitti."},
-            {"rating": 5, "text": "Kışın evdeki kuruluğa gerçekten çözüm oldu. Bebeğin odasında kullanıyoruz."},
-            {"rating": 3, "text": "Yanında koku gelmediğini ürün açıklamasında göremedim. Ayrı almak zorunda kaldım."},
-            {"rating": 2, "text": "Kargoda hasar görmüş, kutu ezik geldi. Ürün çalışıyor ama çizikler var üzerinde."},
-            {"rating": 4, "text": "İkinci kez aldım, ilki 8 ay sorunsuz çalıştı. Fiyatına göre iyi."},
-            {"rating": 1, "text": "Açıklamada 'uzun süreli kullanım' yazıyor ama 4 saat bile dayanmıyor. Yanıltıcı bilgi."},
+            {"rating": 5, "text": "Koku inanılmaz, kiraz ve vanilya dengesi mükemmel. Gece kıyafetlerime çok yakışıyor."},
+            {"rating": 5, "text": "Orijinal olduğuna dair her şey yerli yerinde. Seri numarası doğrulandı. Kalıcılık 10 saat üzeri."},
+            {"rating": 4, "text": "Bu fiyata Tom Ford bulmak zor, satıcı güvenilir. Kutu ve şişe hasarsız geldi."},
+            {"rating": 5, "text": "Eşime aldım, kendisi de benden sipariş vermemi istedi. En sevdiği parfüm oldu."},
+            {"rating": 2, "text": "Kargo süreci çok yavaş, 8 günde geldi. Ürün orijinal ama teslimat hayal kırıklığı."},
+            {"rating": 5, "text": "Kış parfümlerinin zirvesi bu. Sıcak ortamda daha çok açılıyor, yoğun ama rahatsız etmiyor."},
+            {"rating": 4, "text": "Lost Cherry klasik bir koku ama bu fiyat bandında teslimat hızı artırılmalı."},
+            {"rating": 1, "text": "Bana gelen ürünün barkodu başka bir ürüne aitti. Satıcıyla çözüldü ama süreç yorucuydu."},
+            {"rating": 5, "text": "Parfüm tutkunları için mutlaka denenmesi gereken bir koku. Sillage çok iyi, odaya girdiğimde herkes hissediyor."},
+            {"rating": 3, "text": "Koku orijinal ve güzel ama aynı fiyata başka satıcıdan daha hızlı teslimat aldım. Tercih edersiniz."},
         ],
     },
     {
@@ -211,6 +209,46 @@ _CATALOG: list[dict] = [
             {"rating": 3, "text": "Alarm özelliği var yazıyor ama nasıl ayarlanacağı hakkında Türkçe kılavuz yok. İngilizce bile kısa."},
             {"rating": 5, "text": "Bu fiyata çelik kasa ve kordon bulmak zor. Çin menşeli ama işçilik iyi."},
             {"rating": 2, "text": "Fotoğraftaki renk ile gelen ürün arasında fark var. Kadran daha koyu mavi, metalik gri daha mat geldi."},
+        ],
+    },
+    {
+        "id": "tc-007",
+        "title": "Philips 5000 Serisi Türk Kahvesi Makinesi, Közde Türk Kahvesi Pişirme Fonksiyonu, HDA150/60",
+        "description": (
+            "Philips HDA150/60, geleneksel Türk kahvesi lezzetini modern teknoloji ile sunar. "
+            "Közde pişirme fonksiyonu, kahveyi tıpkı eski usulde hazırlanmış gibi yoğun aroma ve kıvamla pişirir. "
+            "4 fincan kapasitesi hem günlük kullanım hem de misafir ağırlamak için idealdir. "
+            "Akıllı taşma önleyici sensörler, kahvenin kıvamını korurken taşma riskini ortadan kaldırır. "
+            "Şık, kompakt ve modern tasarımı her mutfağa uyum sağlar. "
+            "Dokunmatik kontrol paneli ile tek tuşla kullanım; karmaşık ayarlara gerek kalmadan pratik deneyim sunar. "
+            "Kolay çıkarılabilen ve temizlenebilir parçaları sayesinde bakım hızlı ve zahmetsizdir. "
+            "Enerji verimli çalışma prensibi ile hem zaman hem enerji tasarrufu sağlar. "
+            "Garanti: 2 Yıl Philips Türkiye Garantisi."
+        ),
+        "price": 3299.00,
+        "category": "Ev & Yaşam > Kahve & Çay Makineleri > Türk Kahve Makinesi",
+        "brand": "Philips",
+        "rating": 4.5,
+        "review_count": 728,
+        "images": [
+            f"{_IMG}/tc007_1.png",
+            f"{_IMG}/tc007_2.png",
+            f"{_IMG}/tc007_3.png",
+            f"{_IMG}/tc007_4.png",
+        ],
+        "reviews": [
+            {"rating": 5, "text": "Közde pişirme modu gerçekten fark yaratıyor. Normal moddan çok daha yoğun ve köpüklü kahve çıkıyor."},
+            {"rating": 5, "text": "Annem çarşıda pişirilmiş kahve gibi diyor. Bu övgünün üstüne ne söylenir ki."},
+            {"rating": 4, "text": "Dokunmatik panel çok kullanışlı, temizliği de kolay. Tek eksi: su haznesi biraz küçük."},
+            {"rating": 5, "text": "Philips kalitesi beklentimi karşıladı. 4 fincan kapasitesi misafir ağırlama için ideal."},
+            {"rating": 3, "text": "Közde mod gerçekten iyi ama 4 fincan için pişirme süresi biraz uzun, 6-7 dakika beklemek gerekiyor."},
+            {"rating": 2, "text": "Kargoda kutunun bir köşesi ezilmiş geldi. Makine çalışıyor ama hediye edecektim, kutu hasar görmüş."},
+            {"rating": 5, "text": "Taşma önleyici sensör gerçekten çalışıyor, hiç taşma olmadı. Eski makinemde sürekli taşıyordu."},
+            {"rating": 4, "text": "Tasarımı çok şık, mutfak tezgahında çok iyi duruyor. Siyah-bakır renk kombinasyonu güzel."},
+            {"rating": 1, "text": "2 ay sonra ısıtma elemanında sorun çıktı. Servise gönderdim, 3 haftadır haber bekliyorum."},
+            {"rating": 5, "text": "Fiyat-performans olarak bu kategorinin en iyisi. Rakip markalardan 500 TL pahalı ama farkı hissettiriyor."},
+            {"rating": 3, "text": "Türkçe kullanım kılavuzu var ama közde mod için açıklama çok kısa. Youtube'dan video izlemek gerekti."},
+            {"rating": 5, "text": "Ofisimize aldık, herkes ortak kullanıyor. Günde 10+ kez kullanılıyor, 6 aydır sorunsuz."},
         ],
     },
 ]

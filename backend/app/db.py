@@ -260,29 +260,31 @@ def get_stats(uid: str) -> dict:
     db = _db()
     usage = get_usage(uid)
 
-    results = list(
-        db.collection("users").document(uid)
-          .collection("results")
-          .stream()
-    )
-    scores = []
-    for doc in results:
-        data = (doc.to_dict() or {}).get("data") or {}
-        ca = data.get("content_analysis") or {}
-        score = ca.get("score")
-        if isinstance(score, (int, float)):
-            scores.append(score)
-
     products = list(
         db.collection("users").document(uid)
           .collection("products")
           .stream()
     )
     total_products = len(products)
-    total_improved = sum(1 for p in products if (p.to_dict() or {}).get("status") == "improved")
+    total_improved = 0
+    total_analyses = 0
+    scores = []
+    for doc in products:
+        d = doc.to_dict() or {}
+        status = d.get("status", "draft")
+        if status in ("analyzed", "improved"):
+            total_analyses += 1
+        if status == "improved":
+            total_improved += 1
+        # Skor: doğrudan products alanından veya data.content_analysis.score
+        score = d.get("score")
+        if score is None:
+            score = (d.get("data") or {}).get("content_analysis", {}).get("score")
+        if isinstance(score, (int, float)):
+            scores.append(score)
 
     return {
-        "total_analyses": len(results),
+        "total_analyses": total_analyses,
         "this_month": usage.get("analyses", 0),
         "images_this_month": usage.get("images", 0),
         "avg_score": round(sum(scores) / len(scores)) if scores else None,
