@@ -8,6 +8,27 @@ let _currentUser     = null;
 let _products        = [];
 let _activeDetailProduct = null;
 
+// ── Kuyruk Durumu ─────────────────────────────────────────────────────────────
+function _updateQueueBadge(waiting) {
+    const el = document.getElementById('mvpQueueStatus');
+    if (!el) return;
+    if (waiting > 0) {
+        el.textContent = `⏳ ${waiting} istek kuyrukta`;
+        el.classList.add('active');
+    } else {
+        el.classList.remove('active');
+    }
+}
+
+async function _pollQueueStatus() {
+    try {
+        const res = await fetch(`${API_BASE}/api/queue/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+        _updateQueueBadge(data?.data?.waiting || 0);
+    } catch (_) {}
+}
+
 // ── Firebase Auth ─────────────────────────────────────────────────────────────
 const _auth = firebase.auth();
 
@@ -18,6 +39,10 @@ async function _getToken() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    // Kuyruk durumu her 10 saniyede bir güncelle
+    _pollQueueStatus();
+    setInterval(_pollQueueStatus, 10000);
+
     // Auth state listener — show/hide login overlay
     _auth.onAuthStateChanged(async user => {
         _currentUser = user;
@@ -541,10 +566,6 @@ function renderImprovedImages(paths) {
 async function analyzeActiveProduct() {
     const product = _activeDetailProduct;
     if (!product) return;
-    if (product.data && product.score !== null && product.score !== undefined) {
-        renderProductDetail(product);
-        return;
-    }
     const body = document.getElementById('productDetailBody');
     body.innerHTML = `<div class="product-loading"><i class="fa-solid fa-circle-notch"></i><span>Ürün analiz ediliyor...</span></div>`;
     const res = await apiFetch(`/api/products/${encodeURIComponent(product.id)}/analyze`, {});
@@ -583,8 +604,12 @@ async function improveActiveProduct() {
             if (!line.startsWith('data: ')) continue;
             const event = JSON.parse(line.slice(6));
             if (event.type === 'error') throw new Error(event.message);
-            if (event.message) statusText = event.message;
-            if (event.type === 'content_done') statusText = 'İçerik hazır — görseller işleniyor...';
+            if (event.type === 'queue') {
+                statusText = event.message || `Kuyrukta bekleniyor... (${event.position}. sırada)`;
+                _updateQueueBadge(event.position);
+            }
+            if (event.message && event.type !== 'queue') statusText = event.message;
+            if (event.type === 'content_done') { statusText = 'İçerik hazır — görseller işleniyor...'; _updateQueueBadge(0); }
             if (event.type === 'start') statusText = `${event.total || 0} görsel iyileştiriliyor...`;
             if (event.type === 'image') statusText = `${event.data?.idx || ''}. görsel hazırlandı...`;
             const el = document.getElementById('productImproveStatus');

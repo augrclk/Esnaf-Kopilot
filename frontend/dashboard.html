@@ -104,6 +104,13 @@
 
         <!-- Page Content -->
         <main id="pageContent">
+            <!-- MVP Duyuru Banner -->
+            <div id="mvpBanner" class="mvp-banner">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>MVP aşamasındayız — API'lar kısıtlı olduğu için analiz ve iyileştirme işlemleri kuyrukla çalışır, kısa bekleme olabilir.</span>
+                <span id="mvpQueueStatus"></span>
+                <button onclick="document.getElementById('mvpBanner').style.display='none'" class="mvp-banner-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
             <!-- Topbar -->
             <div class="topbar">
                 <button class="hamburger" id="hamburgerBtn">

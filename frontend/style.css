@@ -1025,6 +1025,43 @@ input[type="text"]:focus {
     flex-direction: column;
 }
 
+/* ── MVP Duyuru Banner ───────────────────────────────────────────────────── */
+.mvp-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: linear-gradient(90deg, rgba(245,158,11,0.12), rgba(245,158,11,0.06));
+    border-bottom: 1px solid rgba(245,158,11,0.3);
+    padding: 0.55rem 1.5rem;
+    font-size: 0.82rem;
+    color: #92600a;
+    flex-shrink: 0;
+}
+.mvp-banner i.fa-circle-info { color: #d97706; font-size: 0.9rem; flex-shrink: 0; }
+.mvp-banner span { flex: 1; }
+#mvpQueueStatus {
+    flex: 0 0 auto;
+    font-weight: 600;
+    background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 20px;
+    padding: 0.15rem 0.7rem;
+    font-size: 0.78rem;
+    display: none;
+}
+#mvpQueueStatus.active { display: inline-block; }
+.mvp-banner-close {
+    background: none;
+    border: none;
+    color: #b45309;
+    cursor: pointer;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+.mvp-banner-close:hover { opacity: 1; }
+
 .topbar {
     position: sticky;
     top: 0;
