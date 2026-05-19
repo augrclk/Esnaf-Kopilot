@@ -1493,11 +1493,17 @@ async def import_from_store(
                 product_id = await asyncio.to_thread(
                     db.create_product, user.uid, "", title, platform_name, "inspected"
                 )
+                ratings = [r.get("rating") for r in reviews_raw if r.get("rating")]
+                avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else item.get("rating")
                 scraped_data = {
                     "title":        title,
                     "description":  description,
                     "image_urls":   images[:8],
-                    "review_count": len(reviews_raw),
+                    "review_count": item.get("review_count") or len(reviews_raw),
+                    "rating":       avg_rating,
+                    "price":        item.get("price"),
+                    "brand":        item.get("brand", ""),
+                    "category":     item.get("category", ""),
                     "review_sample": [
                         {"rating": r.get("rating"), "text": r.get("text", "")}
                         for r in reviews_raw[:10]

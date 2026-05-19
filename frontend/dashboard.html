@@ -506,40 +506,75 @@
     </div>
 
     <!-- Deploy Preview Modal -->
-    <div id="deployPreviewModal" class="modal-overlay" style="display:none;">
-        <div class="modal-card" style="max-width:680px;width:95%;">
-            <div class="modal-head">
+    <div id="deployPreviewModal" class="modal-overlay" style="display:none;align-items:flex-start;padding-top:2rem;">
+        <div class="modal-card" style="max-width:960px;width:97%;max-height:90vh;overflow-y:auto;">
+            <div class="modal-head" style="position:sticky;top:0;background:var(--bg-card);z-index:10;padding-bottom:0.75rem;border-bottom:1px solid rgba(255,255,255,0.07);">
                 <div>
                     <h2>Test Deploy Önizleme</h2>
-                    <p style="color:var(--text-muted);font-size:0.83rem;">Gerçek mağazaya gönderilecek içerik — sadece önizleme, değişiklik yapılmaz.</p>
+                    <p style="color:var(--text-muted);font-size:0.8rem;margin-top:0.2rem;">Mağaza verisi değiştirilmez — sadece önizleme</p>
                 </div>
                 <button class="icon-btn" onclick="closeDeployPreview()" title="Kapat">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
-                <div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">Mevcut Başlık</p>
-                    <div id="deployPreviewOrigTitle" style="font-size:0.85rem;padding:0.75rem;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);line-height:1.5;"></div>
+
+            <!-- Tab seçici -->
+            <div style="display:flex;gap:0.5rem;margin:1rem 0 0.5rem;">
+                <button id="dpTabBefore" onclick="dpShowTab('before')"
+                    style="padding:0.5rem 1.2rem;border-radius:20px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;font-size:0.85rem;font-weight:600;">
+                    Mevcut Hal
+                </button>
+                <button id="dpTabAfter" onclick="dpShowTab('after')"
+                    style="padding:0.5rem 1.2rem;border-radius:20px;border:1px solid #4ade80;background:rgba(74,222,128,0.15);color:#4ade80;cursor:pointer;font-size:0.85rem;font-weight:600;">
+                    ✓ Yeni Hal
+                </button>
+            </div>
+
+            <!-- Ürün kartı: MEVCUT -->
+            <div id="dpCardBefore" class="dp-product-card">
+                <div class="dp-product-layout">
+                    <div class="dp-product-gallery" id="dpGalleryBefore"></div>
+                    <div class="dp-product-info">
+                        <div id="dpBrandBefore" class="dp-brand"></div>
+                        <h2 id="dpTitleBefore" class="dp-title"></h2>
+                        <div class="dp-meta">
+                            <span id="dpRatingBefore" class="dp-rating"></span>
+                            <span id="dpReviewsBefore" class="dp-reviews"></span>
+                        </div>
+                        <div id="dpPriceBefore" class="dp-price"></div>
+                    </div>
                 </div>
-                <div>
-                    <p style="font-size:0.75rem;color:#4ade80;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">Yeni Başlık ✓</p>
-                    <div id="deployPreviewNewTitle" style="font-size:0.85rem;padding:0.75rem;background:rgba(74,222,128,0.07);border-radius:8px;border:1px solid rgba(74,222,128,0.25);line-height:1.5;"></div>
-                </div>
-                <div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">Mevcut Açıklama</p>
-                    <div id="deployPreviewOrigDesc" style="font-size:0.82rem;padding:0.75rem;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);line-height:1.6;max-height:160px;overflow-y:auto;"></div>
-                </div>
-                <div>
-                    <p style="font-size:0.75rem;color:#4ade80;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">Yeni Açıklama ✓</p>
-                    <div id="deployPreviewNewDesc" style="font-size:0.82rem;padding:0.75rem;background:rgba(74,222,128,0.07);border-radius:8px;border:1px solid rgba(74,222,128,0.25);line-height:1.6;max-height:160px;overflow-y:auto;"></div>
+                <div class="dp-desc-section">
+                    <h3 class="dp-desc-title">Ürün Açıklaması</h3>
+                    <div id="dpDescBefore" class="dp-desc-text"></div>
                 </div>
             </div>
-            <div style="margin-top:1.2rem;padding:0.75rem 1rem;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;font-size:0.82rem;color:#fbbf24;">
-                <i class="fa-solid fa-flask"></i> Bu önizleme modundadır — mağaza verisi değiştirilmez.
+
+            <!-- Ürün kartı: YENİ -->
+            <div id="dpCardAfter" class="dp-product-card" style="display:none;border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.03);">
+                <div class="dp-product-layout">
+                    <div class="dp-product-gallery" id="dpGalleryAfter"></div>
+                    <div class="dp-product-info">
+                        <div id="dpBrandAfter" class="dp-brand"></div>
+                        <h2 id="dpTitleAfter" class="dp-title" style="color:#4ade80;"></h2>
+                        <div class="dp-meta">
+                            <span id="dpRatingAfter" class="dp-rating"></span>
+                            <span id="dpReviewsAfter" class="dp-reviews"></span>
+                        </div>
+                        <div id="dpPriceAfter" class="dp-price"></div>
+                    </div>
+                </div>
+                <div class="dp-desc-section">
+                    <h3 class="dp-desc-title" style="color:#4ade80;">Yeni Açıklama ✓</h3>
+                    <div id="dpDescAfter" class="dp-desc-text"></div>
+                </div>
+            </div>
+
+            <div style="margin-top:1rem;padding:0.65rem 1rem;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;font-size:0.8rem;color:#fbbf24;">
+                <i class="fa-solid fa-flask"></i> Önizleme modu — gerçek mağaza güncellenmez.
             </div>
             <button class="btn-primary modal-submit" onclick="closeDeployPreview()" style="margin-top:1rem;">
-                <span>Tamam, Anladım</span>
+                <span>Kapat</span>
             </button>
         </div>
     </div>

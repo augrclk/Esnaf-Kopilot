@@ -810,16 +810,54 @@ async function confirmImportProducts() {
     }
 }
 
+function _renderDpCard(side, product, title, description) {
+    const sd = product.scraped_data || {};
+    const imgUrl = (sd.image_urls || [])[0] || '';
+    const rating = sd.rating;
+    const reviews = sd.review_count || 0;
+    const price = sd.price;
+    const brand = sd.brand || '';
+
+    const galleryEl = document.getElementById(`dpGallery${side}`);
+    galleryEl.innerHTML = imgUrl
+        ? `<img src="${escHtml(imgUrl)}" alt="${escHtml(title)}">`
+        : `<div style="width:200px;height:200px;background:rgba(255,255,255,0.06);border-radius:12px;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-image" style="font-size:2rem;color:rgba(255,255,255,0.2);"></i></div>`;
+
+    document.getElementById(`dpBrand${side}`).textContent = brand;
+    document.getElementById(`dpTitle${side}`).textContent = title;
+
+    const stars = rating
+        ? `<i class="fa-solid fa-star"></i> ${rating.toFixed(1)}`
+        : '';
+    document.getElementById(`dpRating${side}`).innerHTML = stars;
+    document.getElementById(`dpReviews${side}`).textContent = reviews ? `${reviews.toLocaleString('tr-TR')} değerlendirme` : '';
+    document.getElementById(`dpPrice${side}`).textContent = price
+        ? price.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+        : '';
+
+    document.getElementById(`dpDesc${side}`).textContent = description || '';
+}
+
+function dpShowTab(tab) {
+    const isBefore = tab === 'before';
+    document.getElementById('dpCardBefore').style.display = isBefore ? '' : 'none';
+    document.getElementById('dpCardAfter').style.display  = isBefore ? 'none' : '';
+    document.getElementById('dpTabBefore').style.opacity = isBefore ? '1' : '0.45';
+    document.getElementById('dpTabAfter').style.opacity  = isBefore ? '0.45' : '1';
+}
+
 function deployActiveProduct() {
     const product = _activeDetailProduct;
     if (!product) return;
     const ca = product.data?.content_analysis || {};
-    document.getElementById('deployPreviewOrigTitle').textContent =
-        product.scraped_data?.title || product.product_title || '';
-    document.getElementById('deployPreviewNewTitle').textContent = ca.new_title || '(henüz üretilmedi)';
-    document.getElementById('deployPreviewOrigDesc').textContent =
-        product.scraped_data?.description || '';
-    document.getElementById('deployPreviewNewDesc').textContent = ca.new_description || '(henüz üretilmedi)';
+    const origTitle = product.scraped_data?.title || product.product_title || '';
+    const origDesc  = product.scraped_data?.description || '';
+    const newTitle  = ca.new_title  || origTitle;
+    const newDesc   = ca.new_description || origDesc;
+
+    _renderDpCard('Before', product, origTitle, origDesc);
+    _renderDpCard('After',  product, newTitle,  newDesc);
+    dpShowTab('after');
     document.getElementById('deployPreviewModal').style.display = 'flex';
 }
 
