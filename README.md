@@ -167,10 +167,10 @@ Frontend, `localhost` üzerinde çalışırken API isteklerini `http://localhost
 
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
-| `POST` | `/api/products/{id}/analyze` | Ürün analizi (SEO/AEO skor + yorum) |
-| `GET` | `/api/products/{id}/improve` | SSE stream — içerik + görsel iyileştirme |
+| `POST` | `/api/products/{product_id}/analyze` | Ürün analizi (SEO/AEO skor + yorum) |
+| `GET` | `/api/products/{product_id}/improve` | SSE stream — içerik + görsel iyileştirme |
 | `GET` | `/api/products` | Kullanıcının ürün listesi |
-| `POST` | `/api/stores/{id}/import/{pid}` | Mağazadan ürün içe aktar |
+| `POST` | `/api/stores/{store_id}/import` | Mağazadan ürün içe aktar; ürün kimlikleri istek gövdesindeki `product_ids` listesinde verilir |
 | `GET` | `/api/queue/status` | Kuyruk durumu |
 | `GET` | `/api/user/stats` | Dashboard metrikleri |
 | `GET` | `/api/test-commerce/products` | Mock mağaza ürünleri |
