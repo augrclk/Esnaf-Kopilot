@@ -144,10 +144,22 @@ cp .env.example .env
 ### Çalıştır
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn main:app --reload
 ```
 
-Dashboard: `http://localhost:8000/dashboard.html`
+API dokümantasyonu: `http://localhost:8000/docs`
+
+### Frontend
+
+Backend çalışırken ikinci bir terminalde, repo kökünden frontend'i sunun:
+
+```bash
+python3.12 -m http.server 5500 --bind 127.0.0.1 --directory frontend
+```
+
+Dashboard: `http://localhost:5500/dashboard.html`
+
+Frontend, `localhost` üzerinde çalışırken API isteklerini `http://localhost:8000` adresine gönderir. Backend frontend dosyalarını sunmadığından dashboard'u frontend sunucusunun portundan açın.
 
 ---
 
